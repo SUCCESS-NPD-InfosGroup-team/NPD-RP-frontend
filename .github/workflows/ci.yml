@@ -1,0 +1,64 @@
+# Colocar en .github/workflows/ci.yml
+name: CI
+
+# Cuándo corre: en cada pull request hacia main, y en cada push a main
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Si subes un commit nuevo a la misma PR, cancela la ejecución anterior
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Permisos mínimos: el pipeline solo necesita leer el código
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm            # guarda ~/.npm entre ejecuciones
+      - run: npm ci --ignore-scripts # instala exactamente lo del package-lock.json
+      - run: npm run lint
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Corre Vitest con cobertura; falla si las líneas están por debajo de 70%
+      # (el umbral está en vitest.config.ts, no aquí)
+      - run: npm run test:coverage
+      # Guarda el reporte para poder descargarlo desde la PR, incluso si el test falla
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build      # tsc + vite build
