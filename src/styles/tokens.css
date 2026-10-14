@@ -1,0 +1,51 @@
+/* NPD Planner — design tokens (fuente: Figma "NPD · Fundamentos")
+   Colocar en src/styles/tokens.css */
+:root {
+  /* Marca */
+  --brand-orange: #ff5000;
+  --brand-orange-deep: #c73e00;
+  --brand-orange-tint: #ffe6d9;
+  --brand-navy: #003d7a;
+  --brand-navy-tint: #e3ecf6;
+  --brand-brown: #4a231c;
+
+  /* Texto */
+  --text-primary: #333333;
+  --text-secondary: #5e5a57;
+  --text-on-brand: #ffffff;
+
+  /* Superficies y bordes */
+  --surface-page: #f5f5f5; /* verificar contra Figma */
+  --surface-card: #ffffff;
+  --border-strong: #cfcac6;
+
+  /* Estados */
+  --state-ok: #1e7b4f;
+  --state-ok-tint: #e2f2ea;
+  --state-warn: #9a5800;
+  --state-warn-tint: #fdf0dc;
+  --state-danger: #b42318;
+  --state-danger-tint: #fbe5e3;
+
+  /* Tipografía */
+  --font-display: "Barlow Condensed", system-ui, sans-serif; /* Bold: títulos y navegación */
+  --font-body: "Barlow", system-ui, sans-serif; /* Regular / SemiBold / Bold */
+  --fs-nav: 19px;
+  --fs-body: 14px;
+  --fs-tag: 11px;
+
+  /* Medidas */
+  --radius: 4px;
+  --radius-pill: 99px;
+  --control-h: 34px;
+  --topbar-h: 56px;
+  --opsbar-h: 34px;
+  --chip-h: 22px;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font: 400 var(--fs-body) / 1.4 var(--font-body);
+}
