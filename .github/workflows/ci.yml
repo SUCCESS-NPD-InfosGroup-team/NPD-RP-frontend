@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: lts/*
           cache: npm            # guarda ~/.npm entre ejecuciones
-      - run: npm ci             # instala exactamente lo del package-lock.json
+      - run: npm ci --ignore-scripts # instala exactamente lo del package-lock.json
       - run: npm run lint
 
   test:
@@ -39,7 +39,7 @@ jobs:
         with:
           node-version: lts/*
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       # Corre Vitest con cobertura; falla si las líneas están por debajo de 70%
       # (el umbral está en vitest.config.ts, no aquí)
       - run: npm run test:coverage
@@ -60,5 +60,5 @@ jobs:
         with:
           node-version: lts/*
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run build      # tsc + vite build
