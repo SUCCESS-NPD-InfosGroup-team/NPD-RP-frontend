@@ -3,9 +3,18 @@
 FROM node:24-alpine
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# Run as the image's unprivileged user; it must own /app so Vite can write node_modules/.vite
+RUN chown node:node /app
+USER node
 
-COPY . .
+# No dependency needs an install script; skipping them blocks a compromised package from running code
+COPY --chown=node:node package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+
+# Copy only what the dev server needs, never the whole context
+COPY --chown=node:node index.html vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json ./
+COPY --chown=node:node public public
+COPY --chown=node:node src src
+
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

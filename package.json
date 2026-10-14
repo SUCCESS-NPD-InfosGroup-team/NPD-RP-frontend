@@ -9,7 +9,6 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
