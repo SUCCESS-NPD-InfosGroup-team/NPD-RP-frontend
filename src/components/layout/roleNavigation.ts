@@ -1,11 +1,11 @@
-import type { UserRole } from '../../types'
-export type { UserRole } from '../../types'
+import type { Role } from '../../types'
+export type { Role } from '../../types'
 
 export interface NavigationItem {
   id: string
   label: string
   path: string
-  allowedRoles: readonly UserRole[]
+  allowedRoles: readonly Role[]
   showInNavigation?: boolean
 }
 
@@ -76,19 +76,19 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   },
 ]
 
-const knownRoles: readonly UserRole[] = [
+const knownRoles: readonly Role[] = [
   'operations-administrator',
   'guest',
   'customer-success',
   'npd-leader',
 ]
 
-export function isUserRole(role: unknown): role is UserRole {
-  return typeof role === 'string' && knownRoles.some((knownRole) => knownRole === role)
+export function isUserRole(role: unknown): role is Role {
+  return typeof role === 'string' && (knownRoles as readonly string[]).includes(role)
 }
 
 function hasAllowedRole(
-  roles: readonly UserRole[],
+  roles: readonly Role[],
   roleOrRoles: unknown,
 ): boolean {
   const candidates = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles]

@@ -113,7 +113,7 @@ export function MainLayout({
               onClick={onRegisterResource}
             >
               <span aria-hidden="true">+</span>
-              Registrar recurso
+              <span>Registrar recurso</span>
             </button>
           )}
           {canAccessNavigationItem(roles, 'notifications') && (

@@ -155,7 +155,7 @@
   color: var(--brand-navy);
 }
 
-.register-resource span {
+.register-resource > span:first-child {
   font-size: var(--fs-nav);
 }
 

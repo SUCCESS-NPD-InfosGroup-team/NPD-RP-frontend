@@ -9,13 +9,13 @@ import {
   getNavigationForRole,
   NAVIGATION_ITEMS,
 } from './roleNavigation'
-import type { OperationsStatus, UserRole } from '../../types'
+import type { OperationsStatus, Role } from '../../types'
 
 vi.mock('../../auth/keycloak', async () => ({
   keycloak: (await import('../../test/keycloakMock')).fakeKeycloak,
 }))
 
-const roleCases: Array<[UserRole, string[]]> = [
+const roleCases: Array<[Role, string[]]> = [
   [
     'operations-administrator',
     ['Recursos', 'Tablero', 'Vacaciones', 'Usuarios', 'Avisos', 'Infosweb'],
@@ -85,7 +85,7 @@ describe('role-based navigation', () => {
     expect(screen.getByRole('button', { name: /Registrar recurso/ })).toBeInTheDocument()
   })
 
-  it.each(['guest', 'customer-success', 'npd-leader'] as UserRole[])(
+  it.each(['guest', 'customer-success', 'npd-leader'] as Role[])(
     'hides resource registration from %s',
     (role) => {
       renderForRole(role, '/recursos', { onRegisterResource: vi.fn() })
