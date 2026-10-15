@@ -1,11 +1,15 @@
 // src/App.tsx
+import { Header } from './components/layout/Header';
 
 function App() {
   return (
-    <div>
-      <h1>NPD Planner</h1>
-      <p>Estructura inicial del proyecto</p>
-    </div>
+    <>
+      <Header />
+      <main>
+        <h1>NPD Planner</h1>
+        <p>Estructura inicial del proyecto</p>
+      </main>
+    </>
   );
 }
 
