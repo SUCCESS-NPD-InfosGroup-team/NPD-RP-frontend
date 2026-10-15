@@ -1,0 +1,313 @@
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background: var(--surface-page);
+}
+
+.app-header {
+  display: flex;
+  min-height: var(--topbar-h);
+  align-items: center;
+  gap: var(--space-4);
+  padding-inline: var(--space-3);
+  background: var(--brand-orange);
+  color: var(--text-on-brand);
+}
+
+.brand,
+.header-actions,
+.register-resource,
+.resource-search,
+.header-icon-button,
+.session-status {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand {
+  flex: 0 0 auto;
+  gap: var(--space-2);
+  color: inherit;
+  font: 700 var(--fs-nav) / 1 var(--font-display);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand-mark {
+  display: grid;
+  width: var(--brand-mark-size);
+  height: var(--brand-mark-size);
+  place-items: center;
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--brand-orange-deep);
+  font: 700 var(--fs-tag) / 1 var(--font-body);
+}
+
+.header-navigation {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.navigation-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navigation-link {
+  display: inline-flex;
+  min-height: var(--control-h);
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius);
+  color: var(--text-on-brand);
+  font: 700 var(--fs-nav) / 1 var(--font-display);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navigation-link svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: 0 0 auto;
+}
+
+.navigation-link:hover,
+.navigation-link:focus-visible,
+.navigation-link.is-active {
+  background: var(--brand-orange-deep);
+  color: var(--text-on-brand);
+}
+
+.development-badge {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--brand-brown);
+  color: var(--text-on-brand);
+  font: 700 var(--fs-tag) / 1 var(--font-body);
+  white-space: nowrap;
+}
+
+.header-actions {
+  flex: 0 0 auto;
+  gap: var(--space-2);
+}
+
+.resource-search {
+  display: inline-flex;
+  min-width: 0;
+  width: var(--resource-search-width);
+  min-height: var(--control-h);
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+}
+
+.resource-search svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: 0 0 auto;
+}
+
+.resource-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: 400 var(--fs-body) / 1.2 var(--font-body);
+}
+
+.resource-search:focus-within {
+  outline: var(--focus-width) solid var(--brand-navy);
+  outline-offset: var(--focus-offset);
+}
+
+.register-resource {
+  display: inline-flex;
+  min-height: var(--control-h);
+  gap: var(--space-1);
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--brand-navy);
+  color: var(--text-on-brand);
+  font: 700 var(--fs-body) / 1.2 var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.register-resource:hover,
+.register-resource:focus-visible {
+  background: var(--brand-navy-tint);
+  color: var(--brand-navy);
+}
+
+.register-resource span {
+  font-size: var(--fs-nav);
+}
+
+.header-icon-button {
+  position: relative;
+  width: var(--control-h);
+  height: var(--control-h);
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-on-brand);
+}
+
+.header-icon-button svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.notification-count {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  display: grid;
+  min-width: var(--chip-h);
+  height: var(--chip-h);
+  place-items: center;
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--state-danger);
+  color: var(--text-on-brand);
+  font: 700 var(--fs-tag) / 1 var(--font-body);
+}
+
+.profile-avatar {
+  display: inline-grid;
+  width: var(--control-h);
+  height: var(--control-h);
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--brand-brown);
+  color: var(--text-on-brand);
+  font-weight: 700;
+}
+
+.page-content {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  padding: var(--space-5);
+}
+
+.page-heading {
+  margin: 0 0 var(--space-3);
+  color: var(--text-primary);
+  font: 700 var(--fs-page-title) / 1.2 var(--font-display);
+}
+
+.operations-bar {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: var(--opsbar-h);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--space-3);
+  background: var(--brand-brown);
+  color: var(--text-on-brand);
+  font-size: var(--fs-tag);
+}
+
+.session-status {
+  gap: var(--space-1);
+}
+
+.session-status svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.no-access {
+  display: grid;
+  min-height: var(--no-access-height);
+  place-content: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.no-access h1 {
+  margin: 0;
+  font: 700 var(--fs-page-title) / 1.2 var(--font-display);
+}
+
+.no-access p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+:where(a, button):focus-visible {
+  outline: var(--focus-width) solid var(--brand-navy);
+  outline-offset: var(--focus-offset);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: var(--focus-offset);
+  height: var(--focus-offset);
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 1200px) {
+  .app-header {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding-block: var(--space-2);
+  }
+
+  .header-navigation {
+    order: 1;
+    width: 100%;
+    flex-basis: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    gap: var(--space-2);
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    order: 2;
+    gap: var(--space-1);
+  }
+
+  .resource-search {
+    width: var(--resource-search-mobile-width);
+  }
+
+  .operations-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-1);
+    padding-block: var(--space-2);
+    white-space: normal;
+  }
+}

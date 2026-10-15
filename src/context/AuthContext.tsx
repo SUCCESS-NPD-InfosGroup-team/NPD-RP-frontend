@@ -12,13 +12,34 @@ interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getRoleClaim(value: unknown): string[] {
+  if (!isRecord(value) || !Array.isArray(value.roles)) return [];
+  return value.roles.filter((role: unknown): role is string => typeof role === 'string');
+}
+
+function getTokenRoles(token: unknown): string[] {
+  if (!isRecord(token)) return [];
+
+  const realmRoles = getRoleClaim(token.realm_access);
+  const resourceAccess = token.resource_access;
+  const resourceRoles = isRecord(resourceAccess)
+    ? Object.values(resourceAccess).flatMap(getRoleClaim)
+    : [];
+
+  return [...new Set([...realmRoles, ...resourceRoles])];
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Must be rendered after initAuth() resolved, so the session already exists. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => {
     const token = keycloak.tokenParsed ?? {};
-    const roles = token.realm_access?.roles ?? [];
+    const roles = getTokenRoles(token);
     const username = (token.preferred_username as string | undefined) ?? '';
     return {
       user: {
