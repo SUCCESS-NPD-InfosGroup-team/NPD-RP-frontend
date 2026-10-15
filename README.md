@@ -5,7 +5,8 @@
 The shared application shell provides a Figma-aligned horizontal header,
 responsive navigation, and page content area. Navigation uses the Keycloak
 roles `operations-administrator`, `guest`, `customer-success`, and `npd-leader`
-from realm and client role claims. A missing or unrecognized role fails closed:
+from `realm_access.roles` and `resource_access[npd-frontend].roles`. Roles from
+other clients are ignored. A missing or unrecognized role fails closed:
 the menu is empty and restricted routes show the access-denied screen.
 
 Resource search, registration, notification counts, and operations status are

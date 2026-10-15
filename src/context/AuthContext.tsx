@@ -26,11 +26,13 @@ function getTokenRoles(token: unknown): string[] {
 
   const realmRoles = getRoleClaim(token.realm_access);
   const resourceAccess = token.resource_access;
-  const resourceRoles = isRecord(resourceAccess)
-    ? Object.values(resourceAccess).flatMap(getRoleClaim)
-    : [];
+  const clientAccess =
+    typeof keycloak.clientId === 'string' && isRecord(resourceAccess)
+      ? resourceAccess[keycloak.clientId]
+      : undefined;
+  const clientRoles = getRoleClaim(clientAccess);
 
-  return [...new Set([...realmRoles, ...resourceRoles])];
+  return [...new Set([...realmRoles, ...clientRoles])];
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);

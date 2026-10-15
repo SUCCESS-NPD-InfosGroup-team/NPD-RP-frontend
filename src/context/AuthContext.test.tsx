@@ -27,22 +27,64 @@ describe('AuthContext', () => {
     expect(result.current.hasRole('guest')).toBe(false)
   })
 
-  it('collects roles from realm and resource access claims', () => {
+  it('accepts roles from the realm claim', () => {
     fakeKeycloak.tokenParsed = {
       realm_access: { roles: ['guest'] },
+    }
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    expect(result.current.roles).toEqual(['guest'])
+  })
+
+  it('accepts roles from the configured frontend client claim', () => {
+    fakeKeycloak.tokenParsed = {
       resource_access: {
         'npd-frontend': { roles: ['customer-success', 'npd-leader'] },
+        'other-client': { roles: ['operations-administrator'] },
       },
     }
 
     const { result } = renderHook(() => useAuth(), { wrapper })
 
-    expect(result.current.roles).toEqual(['guest', 'customer-success', 'npd-leader'])
+    expect(result.current.roles).toEqual(['customer-success', 'npd-leader'])
   })
 
-  it('ignores malformed role claim values', () => {
+  it('ignores a known role that appears only under another client', () => {
     fakeKeycloak.tokenParsed = {
-      realm_access: { roles: ['guest', null, 42] },
+      resource_access: {
+        'other-client': { roles: ['operations-administrator'] },
+      },
+    }
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    expect(result.current.roles).toEqual([])
+    expect(result.current.hasRole('operations-administrator')).toBe(false)
+  })
+
+  it('accepts realm roles when resource access is absent', () => {
+    fakeKeycloak.tokenParsed = {
+      realm_access: { roles: ['guest'] },
+    }
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    expect(result.current.roles).toEqual(['guest'])
+  })
+
+  it('ignores malformed resource access values', () => {
+    fakeKeycloak.tokenParsed = {
+      resource_access: 'npd-frontend',
+    }
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    expect(result.current.roles).toEqual([])
+  })
+
+  it('ignores malformed roles under the configured client', () => {
+    fakeKeycloak.tokenParsed = {
       resource_access: {
         'npd-frontend': { roles: 'operations-administrator' },
       },
@@ -50,7 +92,7 @@ describe('AuthContext', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper })
 
-    expect(result.current.roles).toEqual(['guest'])
+    expect(result.current.roles).toEqual([])
   })
 
   it('falls back to the username when the token has no name', () => {

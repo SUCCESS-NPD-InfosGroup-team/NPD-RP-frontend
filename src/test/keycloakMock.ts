@@ -2,6 +2,7 @@
 import { vi } from 'vitest';
 
 export const fakeKeycloak = {
+  clientId: 'npd-frontend',
   token: 'fake-access-token',
   tokenParsed: {
     preferred_username: 'juan.david',
