@@ -42,7 +42,7 @@ export function MainLayout({
   onLogout,
   unreadNotificationCount,
   operationsStatus,
-}: MainLayoutProps) {
+}: Readonly<MainLayoutProps>) {
   const { roles, user, logout } = useAuth()
   const navigationItems = getNavigationForRole(roles)
   const handleLogout = onLogout ?? logout
@@ -155,7 +155,7 @@ export function MainLayout({
   )
 }
 
-function OperationsBar({ status }: { status: OperationsStatus }) {
+function OperationsBar({ status }: Readonly<{ status: OperationsStatus }>) {
   const hasStatus = Object.values(status).some((value) => value !== undefined)
 
   if (!hasStatus) {

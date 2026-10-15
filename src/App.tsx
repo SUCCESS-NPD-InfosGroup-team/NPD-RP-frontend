@@ -20,7 +20,7 @@ interface ScreenProps {
   item: (typeof NAVIGATION_ITEMS)[number]
 }
 
-function Screen({ roles, item }: ScreenProps) {
+function Screen({ roles, item }: Readonly<ScreenProps>) {
   if (!canAccessNavigationItem(roles, item.id)) {
     return (
       <section className="no-access" role="alert">
@@ -43,7 +43,7 @@ export default function App({
   onLogout,
   unreadNotificationCount,
   operationsStatus,
-}: AppProps) {
+}: Readonly<AppProps>) {
   const { roles } = useAuth()
 
   return (

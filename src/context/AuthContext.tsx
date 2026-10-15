@@ -38,7 +38,7 @@ function getTokenRoles(token: unknown): string[] {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Must be rendered after initAuth() resolved, so the session already exists. */
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const value = useMemo<AuthContextValue>(() => {
     const token = keycloak.tokenParsed ?? {};
     const roles = getTokenRoles(token);

@@ -5,7 +5,9 @@ import { fakeKeycloak } from '../test/keycloakMock'
 
 vi.mock('../auth/keycloak', async () => ({ keycloak: (await import('../test/keycloakMock')).fakeKeycloak }))
 
-const wrapper = ({ children }: { children: ReactNode }) => <AuthProvider>{children}</AuthProvider>
+const wrapper = ({ children }: Readonly<{ children: ReactNode }>) => (
+  <AuthProvider>{children}</AuthProvider>
+)
 
 describe('AuthContext', () => {
   const original = fakeKeycloak.tokenParsed
