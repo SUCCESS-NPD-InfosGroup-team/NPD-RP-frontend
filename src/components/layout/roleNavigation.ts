@@ -84,7 +84,7 @@ const knownRoles: readonly UserRole[] = [
 ]
 
 export function isUserRole(role: unknown): role is UserRole {
-  return typeof role === 'string' && knownRoles.includes(role as UserRole)
+  return typeof role === 'string' && knownRoles.some((knownRole) => knownRole === role)
 }
 
 function hasAllowedRole(

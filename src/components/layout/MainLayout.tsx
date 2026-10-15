@@ -11,7 +11,11 @@ import {
 import { NavLink, Outlet } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { canAccessNavigationItem, getNavigationForRole } from './roleNavigation'
+import {
+  canAccessNavigationItem,
+  canRegisterResources,
+  getNavigationForRole,
+} from './roleNavigation'
 import type { OperationsStatus } from '../../types'
 import './MainLayout.css'
 
@@ -42,6 +46,7 @@ export function MainLayout({
   const { roles, user, logout } = useAuth()
   const navigationItems = getNavigationForRole(roles)
   const handleLogout = onLogout ?? logout
+  const canRegister = canRegisterResources(roles)
 
   return (
     <div className="app-shell">
@@ -101,7 +106,7 @@ export function MainLayout({
               />
             </form>
           )}
-          {canRegisterResources && onRegisterResource && (
+          {canRegister && onRegisterResource && (
             <button
               className="register-resource"
               type="button"

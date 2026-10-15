@@ -27,6 +27,32 @@ describe('AuthContext', () => {
     expect(result.current.hasRole('guest')).toBe(false)
   })
 
+  it('collects roles from realm and resource access claims', () => {
+    fakeKeycloak.tokenParsed = {
+      realm_access: { roles: ['guest'] },
+      resource_access: {
+        'npd-frontend': { roles: ['customer-success', 'npd-leader'] },
+      },
+    }
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    expect(result.current.roles).toEqual(['guest', 'customer-success', 'npd-leader'])
+  })
+
+  it('ignores malformed role claim values', () => {
+    fakeKeycloak.tokenParsed = {
+      realm_access: { roles: ['guest', null, 42] },
+      resource_access: {
+        'npd-frontend': { roles: 'operations-administrator' },
+      },
+    }
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    expect(result.current.roles).toEqual(['guest'])
+  })
+
   it('falls back to the username when the token has no name', () => {
     fakeKeycloak.tokenParsed = { preferred_username: 'sin.nombre' }
 
