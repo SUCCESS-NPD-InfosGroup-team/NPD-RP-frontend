@@ -1,11 +1,19 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { keycloak } from '../auth/keycloak';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  keycloak,
+  logoutAuth,
+  subscribeToSessionEnd,
+  updateTokenOrLogout,
+} from '../auth/keycloak';
 import type { AuthUser, Role } from '../types';
 
 interface AuthContextValue {
   user: AuthUser;
   roles: string[];
+  isAuthenticated: boolean;
+  logoutInProgress: boolean;
   hasRole: (role: Role) => boolean;
   /** Returns a token valid for at least 30 more seconds, refreshing it if needed. */
   getToken: () => Promise<string>;
@@ -39,6 +47,19 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Must be rendered after initAuth() resolved, so the session already exists. */
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const [isAuthenticated, setIsAuthenticated] = useState(keycloak.authenticated);
+  const [logoutInProgress, setLogoutInProgress] = useState(false);
+
+  useEffect(
+    () => subscribeToSessionEnd(() => setIsAuthenticated(false)),
+    [],
+  );
+
+  const logout = useCallback(async () => {
+    setLogoutInProgress(true);
+    await logoutAuth();
+  }, []);
+
   const value = useMemo<AuthContextValue>(() => {
     const token = keycloak.tokenParsed ?? {};
     const roles = getTokenRoles(token);
@@ -50,14 +71,16 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         email: token.email as string | undefined,
       },
       roles,
+      isAuthenticated,
+      logoutInProgress,
       hasRole: (role) => roles.includes(role),
       getToken: async () => {
-        await keycloak.updateToken(30);
+        await updateTokenOrLogout(30);
         return keycloak.token ?? '';
       },
-      logout: () => keycloak.logout({ redirectUri: window.location.origin }),
+      logout,
     };
-  }, []);
+  }, [isAuthenticated, logout, logoutInProgress]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

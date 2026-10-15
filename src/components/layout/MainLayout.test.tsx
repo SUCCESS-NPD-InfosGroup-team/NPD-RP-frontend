@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { AuthProvider, useAuth } from '../../context/AuthContext'
 import { fakeKeycloak } from '../../test/keycloakMock'
 import App from '../../App'
+import { Header } from './Header'
 import {
   canRegisterResources,
   canAccessNavigationItem,
@@ -11,9 +12,7 @@ import {
 } from './roleNavigation'
 import type { OperationsStatus, Role } from '../../types'
 
-vi.mock('../../auth/keycloak', async () => ({
-  keycloak: (await import('../../test/keycloakMock')).fakeKeycloak,
-}))
+vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMock')).fakeAuthModule)
 
 const roleCases: Array<[Role, string[]]> = [
   [
@@ -60,6 +59,26 @@ function renderForRole(role: unknown, path = '/recursos', options: AppOptions = 
 }
 
 describe('role-based navigation', () => {
+  it('prevents repeated logout clicks in the shared header', async () => {
+    let resolveLogout: (() => void) | undefined
+    fakeKeycloak.logout.mockImplementation(
+      () => new Promise<void>((resolve) => { resolveLogout = resolve }),
+    )
+
+    render(
+      <AuthProvider>
+        <Header />
+      </AuthProvider>,
+    )
+
+    const logoutButton = screen.getByRole('button', { name: /cerrar sesión/i })
+    await userEvent.click(logoutButton)
+
+    expect(logoutButton).toBeDisabled()
+    expect(fakeKeycloak.logout).toHaveBeenCalledOnce()
+    resolveLogout?.()
+  })
+
   it.each(roleCases)('shows only the permitted menu entries for %s', (role, labels) => {
     renderForRole(role)
     const navigation = screen.getByRole('navigation', { name: 'Navegación principal' })

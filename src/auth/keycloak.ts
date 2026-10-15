@@ -8,7 +8,186 @@ export const keycloak = new Keycloak({
   clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? 'npd-frontend',
 });
 
+const LOGOUT_CHANNEL_NAME = 'npd-auth';
+const LOGOUT_MESSAGE: Readonly<{ type: 'logout' }> = { type: 'logout' };
+
+interface LogoutMessage {
+  type: 'logout';
+}
+
+const sessionEndListeners = new Set<() => void>();
 let initPromise: Promise<void> | undefined;
+let logoutChannel: BroadcastChannel | undefined;
+let lifecycleInstalled = false;
+let sessionEnded = false;
+let loginRedirectStarted = false;
+let logoutPromise: Promise<void> | undefined;
+let authLogoutEvents = 0;
+
+function clearSessionMemory(): void {
+  keycloak.authenticated = false;
+  keycloak.token = undefined;
+  keycloak.tokenParsed = undefined;
+  keycloak.refreshToken = undefined;
+  keycloak.refreshTokenParsed = undefined;
+  keycloak.idToken = undefined;
+  keycloak.idTokenParsed = undefined;
+  keycloak.subject = undefined;
+  keycloak.realmAccess = undefined;
+  keycloak.resourceAccess = undefined;
+  keycloak.onTokenExpired = undefined;
+}
+
+function notifySessionEnded(): void {
+  for (const listener of sessionEndListeners) {
+    listener();
+  }
+}
+
+function getLogoutChannel(): BroadcastChannel | undefined {
+  if (typeof BroadcastChannel === 'undefined') {
+    return undefined;
+  }
+
+  if (!logoutChannel) {
+    logoutChannel = new BroadcastChannel(LOGOUT_CHANNEL_NAME);
+    logoutChannel.onmessage = (event: MessageEvent<unknown>) => {
+      if (isLogoutMessage(event.data)) {
+        endSession(false, true);
+      }
+    };
+  }
+
+  return logoutChannel;
+}
+
+function isLogoutMessage(value: unknown): value is LogoutMessage {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'logout'
+  );
+}
+
+function publishLogout(): void {
+  getLogoutChannel()?.postMessage(LOGOUT_MESSAGE);
+}
+
+function redirectToLogin(): void {
+  if (loginRedirectStarted) {
+    return;
+  }
+
+  loginRedirectStarted = true;
+  void keycloak.login().catch((error: unknown) => {
+    console.error('Unable to redirect to Keycloak login.', error);
+    loginRedirectStarted = false;
+    window.location.assign(window.location.origin);
+  });
+}
+
+function endSession(broadcast: boolean, redirect: boolean): void {
+  const isFirstEnd = !sessionEnded;
+  sessionEnded = true;
+  clearSessionMemory();
+
+  if (isFirstEnd) {
+    if (broadcast) {
+      publishLogout();
+    }
+    notifySessionEnded();
+  }
+
+  if (redirect) {
+    redirectToLogin();
+  }
+}
+
+export function handlePageShow(
+  event: Pick<PageTransitionEvent, 'persisted'>,
+  reload: () => void = () => window.location.reload(),
+): void {
+  if (event.persisted && !(keycloak.authenticated && keycloak.token)) {
+    endSession(false, false);
+    reload();
+  }
+}
+
+function installAuthLifecycle(): void {
+  if (lifecycleInstalled) {
+    return;
+  }
+
+  lifecycleInstalled = true;
+  getLogoutChannel();
+  window.addEventListener('pageshow', handlePageShow);
+  keycloak.onAuthLogout = () => {
+    authLogoutEvents += 1;
+    const wasAuthenticated = keycloak.authenticated;
+    endSession(true, wasAuthenticated);
+  };
+}
+
+export function subscribeToSessionEnd(listener: () => void): () => void {
+  sessionEndListeners.add(listener);
+  return () => {
+    sessionEndListeners.delete(listener);
+  };
+}
+
+export async function updateTokenOrLogout(minValidity?: number): Promise<boolean> {
+  const previousAuthLogoutEvents = authLogoutEvents;
+
+  try {
+    return await keycloak.updateToken(minValidity);
+  } catch (error) {
+    const keycloakWillRedirect = authLogoutEvents !== previousAuthLogoutEvents;
+    endSession(true, !keycloakWillRedirect);
+    throw error;
+  }
+}
+
+export function logoutAuth(): Promise<void> {
+  if (logoutPromise) {
+    return logoutPromise;
+  }
+
+  if (sessionEnded) {
+    return Promise.resolve();
+  }
+
+  sessionEnded = true;
+  loginRedirectStarted = false;
+  publishLogout();
+
+  logoutPromise = (async () => {
+    let request: Promise<void>;
+    try {
+      request = keycloak.logout({ redirectUri: window.location.origin });
+    } catch (error: unknown) {
+      clearSessionMemory();
+      notifySessionEnded();
+      console.error('Unable to start Keycloak logout; redirecting to login.', error);
+      redirectToLogin();
+      return;
+    }
+
+    clearSessionMemory();
+    notifySessionEnded();
+
+    try {
+      await request;
+    } catch (error: unknown) {
+      console.error('Keycloak logout failed; redirecting to login.', error);
+      redirectToLogin();
+    }
+  })().finally(() => {
+    logoutPromise = undefined;
+  });
+
+  return logoutPromise;
+}
 
 /**
  * Starts the session before the app renders. Without a session Keycloak redirects
@@ -24,8 +203,13 @@ export function initAuth(): Promise<void> {
       checkLoginIframe: false,
     })
     .then(() => {
+      sessionEnded = false;
+      loginRedirectStarted = false;
+      installAuthLifecycle();
       keycloak.onTokenExpired = () => {
-        keycloak.updateToken().catch(() => keycloak.login());
+        void updateTokenOrLogout().catch((error: unknown) => {
+          console.error('Unable to refresh the Keycloak session.', error);
+        });
       };
     })
     .catch((error: unknown) => {

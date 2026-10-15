@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 import { fakeKeycloak } from '../test/keycloakMock'
 
-vi.mock('../auth/keycloak', async () => ({ keycloak: (await import('../test/keycloakMock')).fakeKeycloak }))
+vi.mock('../auth/keycloak', async () => (await import('../test/keycloakMock')).fakeAuthModule)
 
 describe('apiFetch', () => {
   const fetchMock = vi.fn<typeof fetch>()
