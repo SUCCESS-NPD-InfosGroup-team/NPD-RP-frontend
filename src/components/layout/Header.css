@@ -1,0 +1,47 @@
+/* Uses the design tokens from src/styles/tokens.css when loaded, with the same values as fallback */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--topbar-h, 56px);
+  padding: 0 16px;
+  background: var(--brand-navy, #003d7a);
+  color: var(--text-on-brand, #fff);
+}
+
+.app-header__title {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-header__user > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h, 34px);
+  padding: 0 12px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius, 4px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-header__logout:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
