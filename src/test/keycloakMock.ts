@@ -12,11 +12,11 @@ export const fakeKeycloak = {
     realm_access: { roles: ['operations-administrator'] },
   } as Record<string, unknown> | undefined,
   updateToken: vi.fn<(minValidity?: number) => Promise<boolean>>().mockResolvedValue(true),
-  login: vi.fn(async () => {}),
+  login: vi.fn<() => Promise<void>>().mockResolvedValue(),
   logout: vi.fn<
     (options?: { redirectUri?: string }) => Promise<void>
   >().mockResolvedValue(),
-  init: vi.fn(async () => true),
+  init: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
   onTokenExpired: undefined as (() => void) | undefined,
   onAuthLogout: undefined as (() => void) | undefined,
 };
