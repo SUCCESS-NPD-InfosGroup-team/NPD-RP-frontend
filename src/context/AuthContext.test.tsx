@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import { fakeKeycloak } from '../test/keycloakMock'
 
-vi.mock('../auth/keycloak', async () => ({ keycloak: (await import('../test/keycloakMock')).fakeKeycloak }))
+vi.mock('../auth/keycloak', async () => (await import('../test/keycloakMock')).fakeAuthModule)
 
 const wrapper = ({ children }: Readonly<{ children: ReactNode }>) => (
   <AuthProvider>{children}</AuthProvider>

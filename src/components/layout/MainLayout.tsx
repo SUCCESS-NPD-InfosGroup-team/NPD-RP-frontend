@@ -8,6 +8,7 @@ import {
   Search,
   UsersRound,
 } from 'lucide-react'
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
@@ -43,10 +44,30 @@ export function MainLayout({
   unreadNotificationCount,
   operationsStatus,
 }: Readonly<MainLayoutProps>) {
-  const { roles, user, logout } = useAuth()
+  const { roles, user, logout, logoutInProgress } = useAuth()
+  const [providedLogoutInProgress, setProvidedLogoutInProgress] = useState(false)
   const navigationItems = getNavigationForRole(roles)
   const handleLogout = onLogout ?? logout
+  const isLogoutInProgress = logoutInProgress || providedLogoutInProgress
   const canRegister = canRegisterResources(roles)
+
+  async function handleLogoutClick(): Promise<void> {
+    if (isLogoutInProgress) {
+      return
+    }
+
+    if (onLogout) {
+      setProvidedLogoutInProgress(true)
+      try {
+        await handleLogout()
+      } finally {
+        setProvidedLogoutInProgress(false)
+      }
+      return
+    }
+
+    await handleLogout()
+  }
 
   return (
     <div className="app-shell">
@@ -138,8 +159,9 @@ export function MainLayout({
           <button
             className="header-icon-button"
             type="button"
-            onClick={() => { void handleLogout() }}
+            onClick={() => { void handleLogoutClick() }}
             aria-label="Cerrar sesión"
+            disabled={isLogoutInProgress}
           >
             <LogOut aria-hidden="true" />
           </button>

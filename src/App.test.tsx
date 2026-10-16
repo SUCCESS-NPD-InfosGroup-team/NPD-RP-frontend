@@ -4,9 +4,7 @@ import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { fakeKeycloak } from './test/keycloakMock'
 
-vi.mock('./auth/keycloak', async () => ({
-  keycloak: (await import('./test/keycloakMock')).fakeKeycloak,
-}))
+vi.mock('./auth/keycloak', async () => (await import('./test/keycloakMock')).fakeAuthModule)
 
 const routeCases = [
   ['/recursos', 'Recursos'],
@@ -21,6 +19,7 @@ const routeCases = [
 
 function setRoles(role: unknown) {
   const roles = Array.isArray(role) ? role : role === undefined ? [] : [role]
+  fakeKeycloak.authenticated = true
   fakeKeycloak.tokenParsed = {
     ...fakeKeycloak.tokenParsed,
     realm_access: { roles },
@@ -49,6 +48,31 @@ describe('App', () => {
     expect(fakeKeycloak.logout).toHaveBeenCalledWith({
       redirectUri: window.location.origin,
     })
+  })
+
+  it('disables logout while the Keycloak request is pending', async () => {
+    let resolveLogout: (() => void) | undefined
+    fakeKeycloak.logout.mockImplementation(
+      () => new Promise<void>((resolve) => { resolveLogout = resolve }),
+    )
+    renderAtPath('operations-administrator', '/recursos')
+    const logoutButton = screen.getByRole('button', { name: /cerrar sesión/i })
+
+    await userEvent.click(logoutButton)
+    await userEvent.click(logoutButton)
+
+    expect(fakeKeycloak.logout).toHaveBeenCalledOnce()
+    expect(logoutButton).toBeDisabled()
+    resolveLogout?.()
+  })
+
+  it('does not render the previous interface without an authenticated session', () => {
+    fakeKeycloak.authenticated = false
+
+    render(<AuthProvider><App /></AuthProvider>)
+
+    expect(screen.queryByRole('navigation', { name: 'Navegación principal' }))
+      .not.toBeInTheDocument()
   })
 })
 

@@ -44,7 +44,11 @@ export default function App({
   unreadNotificationCount,
   operationsStatus,
 }: Readonly<AppProps>) {
-  const { roles } = useAuth()
+  const { roles, isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return null
+  }
 
   return (
     <BrowserRouter>
