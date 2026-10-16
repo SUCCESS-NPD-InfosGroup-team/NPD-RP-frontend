@@ -22,6 +22,7 @@ let lifecycleInstalled = false;
 let sessionEnded = false;
 let loginRedirectStarted = false;
 let logoutPromise: Promise<void> | undefined;
+let keycloakLogoutStarted = false;
 let authLogoutEvents = 0;
 
 function clearSessionMemory(): void {
@@ -53,7 +54,7 @@ function getLogoutChannel(): BroadcastChannel | undefined {
     logoutChannel = new BroadcastChannel(LOGOUT_CHANNEL_NAME);
     logoutChannel.onmessage = (event: MessageEvent<unknown>) => {
       if (isLogoutMessage(event.data)) {
-        endSession(false, true);
+        void startKeycloakLogout(false, false);
       }
     };
   }
@@ -149,42 +150,40 @@ export async function updateTokenOrLogout(minValidity?: number): Promise<boolean
 }
 
 export function logoutAuth(): Promise<void> {
-  if (logoutPromise) {
-    return logoutPromise;
+  return startKeycloakLogout(true, true);
+}
+
+function startKeycloakLogout(
+  broadcast: boolean,
+  fallbackToLogin: boolean,
+): Promise<void> {
+  if (keycloakLogoutStarted) {
+    return logoutPromise ?? Promise.resolve();
   }
 
-  if (sessionEnded) {
-    return Promise.resolve();
-  }
-
-  sessionEnded = true;
+  keycloakLogoutStarted = true;
   loginRedirectStarted = false;
-  publishLogout();
+  const isFirstEnd = !sessionEnded;
+  sessionEnded = true;
+
+  if (broadcast) {
+    publishLogout();
+  }
+  clearSessionMemory();
+  if (isFirstEnd) {
+    notifySessionEnded();
+  }
 
   logoutPromise = (async () => {
-    let request: Promise<void>;
     try {
-      request = keycloak.logout({ redirectUri: window.location.origin });
+      await keycloak.logout({ redirectUri: window.location.origin });
     } catch (error: unknown) {
-      clearSessionMemory();
-      notifySessionEnded();
-      console.error('Unable to start Keycloak logout; redirecting to login.', error);
-      redirectToLogin();
-      return;
+      console.error('Keycloak logout failed.', error);
+      if (fallbackToLogin) {
+        redirectToLogin();
+      }
     }
-
-    clearSessionMemory();
-    notifySessionEnded();
-
-    try {
-      await request;
-    } catch (error: unknown) {
-      console.error('Keycloak logout failed; redirecting to login.', error);
-      redirectToLogin();
-    }
-  })().finally(() => {
-    logoutPromise = undefined;
-  });
+  })();
 
   return logoutPromise;
 }
@@ -205,6 +204,7 @@ export function initAuth(): Promise<void> {
     .then(() => {
       sessionEnded = false;
       loginRedirectStarted = false;
+      keycloakLogoutStarted = false;
       installAuthLifecycle();
       keycloak.onTokenExpired = () => {
         void updateTokenOrLogout().catch((error: unknown) => {

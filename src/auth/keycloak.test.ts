@@ -122,15 +122,20 @@ describe('Keycloak session lifecycle', () => {
     expect(fakeKeycloak.login).toHaveBeenCalledOnce()
   })
 
-  it('ends the local session and logs in when another tab publishes logout', async () => {
+  it('logs out once without republishing when another tab publishes logout', async () => {
     await initialize()
     const channel = MockBroadcastChannel.instances[0]
 
     channel.dispatchMessage({ type: 'logout' })
+    channel.dispatchMessage({ type: 'logout' })
 
     expect(fakeKeycloak.authenticated).toBe(false)
     expect(fakeKeycloak.token).toBeUndefined()
-    expect(fakeKeycloak.login).toHaveBeenCalledOnce()
+    expect(fakeKeycloak.logout).toHaveBeenCalledOnce()
+    expect(fakeKeycloak.logout).toHaveBeenCalledWith({
+      redirectUri: window.location.origin,
+    })
+    expect(fakeKeycloak.login).not.toHaveBeenCalled()
     expect(channel.messages).toEqual([])
   })
 
