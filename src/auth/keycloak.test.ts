@@ -54,6 +54,7 @@ describe('Keycloak session lifecycle', () => {
     vi.mocked(fakeKeycloak.logout).mockResolvedValue()
     fakeKeycloak.authenticated = true
     fakeKeycloak.token = 'fake-access-token'
+    fakeKeycloak.idToken = 'fake-id-token'
     fakeKeycloak.tokenParsed = {
       preferred_username: 'juan.david',
       realm_access: { roles: ['operations-administrator'] },
@@ -81,6 +82,11 @@ describe('Keycloak session lifecycle', () => {
 
   it('publishes only a logout type and uses the fixed origin as the redirect URI', async () => {
     await initialize()
+    let idTokenWhenLogoutStarted: string | undefined
+    vi.mocked(fakeKeycloak.logout).mockImplementation(() => {
+      idTokenWhenLogoutStarted = fakeKeycloak.idToken
+      return Promise.resolve()
+    })
 
     await auth.logoutAuth()
 
@@ -91,6 +97,8 @@ describe('Keycloak session lifecycle', () => {
     expect(MockBroadcastChannel.instances[0].messages).toEqual([{ type: 'logout' }])
     expect(fakeKeycloak.authenticated).toBe(false)
     expect(fakeKeycloak.token).toBeUndefined()
+    expect(idTokenWhenLogoutStarted).toBe('fake-id-token')
+    expect(fakeKeycloak.idToken).toBeUndefined()
   })
 
   it('ignores repeated logout clicks while the Keycloak request is pending', async () => {

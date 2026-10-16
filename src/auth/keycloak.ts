@@ -169,21 +169,34 @@ function startKeycloakLogout(
   if (broadcast) {
     publishLogout();
   }
+
+  let request: Promise<void>;
+  try {
+    request = keycloak.logout({ redirectUri: window.location.origin });
+  } catch (error: unknown) {
+    console.error('Keycloak logout failed.', error);
+    clearSessionMemory();
+    if (isFirstEnd) {
+      notifySessionEnded();
+    }
+    if (fallbackToLogin) {
+      redirectToLogin();
+    }
+    logoutPromise = Promise.resolve();
+    return logoutPromise;
+  }
+
   clearSessionMemory();
   if (isFirstEnd) {
     notifySessionEnded();
   }
 
-  logoutPromise = (async () => {
-    try {
-      await keycloak.logout({ redirectUri: window.location.origin });
-    } catch (error: unknown) {
-      console.error('Keycloak logout failed.', error);
-      if (fallbackToLogin) {
-        redirectToLogin();
-      }
+  logoutPromise = request.catch((error: unknown) => {
+    console.error('Keycloak logout failed.', error);
+    if (fallbackToLogin) {
+      redirectToLogin();
     }
-  })();
+  });
 
   return logoutPromise;
 }
