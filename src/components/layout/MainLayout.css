@@ -43,7 +43,7 @@
   place-items: center;
   border-radius: var(--radius);
   background: var(--surface-card);
-  color: var(--brand-orange-deep);
+  color: var(--brand-orange);
   font: 700 var(--fs-brand-mark) / 1 var(--font-display);
 }
 
