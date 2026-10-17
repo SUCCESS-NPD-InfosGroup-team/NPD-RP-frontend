@@ -84,7 +84,8 @@ describe('App routes', () => {
     expect(screen.getByRole('navigation', { name: 'Navegación principal' }))
       .toBeInTheDocument()
     expect(screen.getByRole('search')).toBeInTheDocument()
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+    expect(screen.getByRole('contentinfo', { name: 'Estado de operaciones' }))
+      .toHaveTextContent('Última actualización de datos: — por —')
     expect(screen.queryByText(/María Pérez|161 recursos|28:41|Vista previa/))
       .not.toBeInTheDocument()
   })
@@ -103,7 +104,8 @@ describe('App routes', () => {
       .not.toBeDisabled()
     expect(screen.getByRole('button', { name: 'Cerrar sesión' }))
       .toBeInTheDocument()
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+    expect(screen.getByRole('contentinfo', { name: 'Estado de operaciones' }))
+      .toHaveTextContent('La sesión expira en — sin actividad')
   })
 
   it.each([

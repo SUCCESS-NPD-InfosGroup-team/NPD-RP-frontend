@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { Clock3 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import {
   BellIcon,
   ChartIcon,
+  ClockIcon,
+  EditIcon,
   LogoutIcon,
   PlusIcon,
   PlaneIcon,
@@ -180,52 +181,86 @@ export function MainLayout({
         <Outlet />
       </main>
 
-      {operationsStatus && <OperationsBar status={operationsStatus} />}
+      <OperationsBar status={operationsStatus} />
     </div>
   )
 }
 
-function OperationsBar({ status }: Readonly<{ status: OperationsStatus }>) {
-  const hasStatus = Object.values(status).some((value) => value !== undefined)
+function OperationsBar({ status }: Readonly<{ status?: OperationsStatus }>) {
+  const [now, setNow] = useState(() => Date.now())
 
-  if (!hasStatus) {
-    return null
-  }
+  useEffect(() => {
+    if (!isValidDate(status?.sessionExpiresAt)) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(intervalId)
+  }, [status?.sessionExpiresAt])
 
   return (
     <footer className="operations-bar" aria-label="Estado de operaciones">
-      {status.lastUpdatedAt && (
-        <span>
-          Última actualización: {formatDateTime(status.lastUpdatedAt)}
-          {status.lastUpdatedBy && ` por ${status.lastUpdatedBy}`}
-        </span>
-      )}
-      {status.activeResources !== undefined && (
-        <span>{status.activeResources} recursos activos</span>
-      )}
-      {status.clientCount !== undefined && (
-        <span>{status.clientCount} clientes</span>
-      )}
-      {status.nextNotificationAt && (
-        <span>
-          Próximo envío de avisos: {formatDateTime(status.nextNotificationAt)}
-        </span>
-      )}
-      {status.sessionExpiresAt && (
-        <span className="session-status">
-          <Clock3 aria-hidden="true" />
-          Sesión expira: {formatDateTime(status.sessionExpiresAt)}
-        </span>
-      )}
+      <span className="operations-status-item">
+        <EditIcon />
+        <span>Última actualización de datos:</span>{' '}
+        <strong>
+          {isValidDate(status?.lastUpdatedAt)
+            ? formatDateTime(status.lastUpdatedAt)
+            : '—'}
+        </strong>{' '}
+        <span>por</span>{' '}
+        <strong>{status?.lastUpdatedBy?.trim() || '—'}</strong>
+      </span>
+      <span className="operations-status-item">
+        <strong>{status?.activeResources ?? '—'}</strong>
+        {' '}
+        <span>recursos activos ·</span>{' '}
+        <strong>{status?.clientCount ?? '—'}</strong>{' '}
+        <span>clientes</span>
+      </span>
+      <span className="operations-status-item">
+        <span>Próximo envío de avisos:</span>{' '}
+        <strong>
+          {isValidDate(status?.nextNotificationAt)
+            ? formatDateTime(status.nextNotificationAt)
+            : '—'}
+        </strong>
+      </span>
+      <span className="session-status">
+        <ClockIcon />
+        <span>La sesión expira en</span>{' '}
+        <strong>
+          {isValidDate(status?.sessionExpiresAt)
+            ? formatSessionTime(status.sessionExpiresAt, now)
+            : '—'}
+        </strong>{' '}
+        <span>sin actividad</span>
+      </span>
     </footer>
   )
 }
 
 function formatDateTime(value: Date): string {
+  if (!isValidDate(value)) {
+    return '—'
+  }
+
   return new Intl.DateTimeFormat('es', {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(value)
+}
+
+function isValidDate(value?: Date): value is Date {
+  return value instanceof Date && Number.isFinite(value.getTime())
+}
+
+function formatSessionTime(expiresAt: Date, now: number): string {
+  const totalSeconds = Math.floor(Math.max(0, expiresAt.getTime() - now) / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
 function getInitials(name: string): string {

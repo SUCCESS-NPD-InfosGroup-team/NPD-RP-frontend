@@ -2,19 +2,23 @@
 
 ## Main layout and role navigation
 
-The shared application shell provides a Figma-aligned horizontal header,
-responsive navigation, and page content area. Navigation uses the Keycloak
+The shared application shell provides a Figma-aligned desktop header with a
+1200 px minimum width, horizontal navigation, and page content area. Navigation uses the Keycloak
 roles `operations-administrator`, `guest`, `customer-success`, and `npd-leader`
 from `realm_access.roles` and `resource_access[npd-frontend].roles`. Roles from
 other clients are ignored. A missing or unrecognized role fails closed:
 the menu is empty and restricted routes show the access-denied screen.
 
-Resource search, registration, notification counts, and operations status are
-rendered only when their real callbacks or data are provided. User identity and
-logout are supplied by the existing Keycloak authentication context. There are
-no sample resource counts, sample user names, notification counts, or session
-timers in the application shell. Feature pages and API integration still need
-to be connected before production use.
+Resource search is shown for roles with access to a screen. Resource registration
+is shown only to `operations-administrator`; the controls remain inert until
+their feature callbacks are connected. The notification badge appears only for
+a real unread count greater than zero. The operations status bar is always
+visible and displays `—` for values not supplied by real status data. User
+identity and logout are supplied by the existing Keycloak authentication
+context. There are no sample resource counts, sample user names, notification
+counts, or session timers in the application shell. Feature-page content is
+still represented by placeholder headings, and API integration still needs to
+be connected before production use.
 
 The frontend menu and route checks are for user experience only. The API must
 continue to enforce authorization for every protected operation. No credentials

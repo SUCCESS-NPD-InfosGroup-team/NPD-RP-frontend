@@ -222,22 +222,34 @@ describe('role-based navigation', () => {
       displayName: 'Ana Pérez',
       operationsStatus: {
         activeResources: 42,
+        clientCount: 3,
         lastUpdatedAt: new Date('2026-10-15T10:00:00Z'),
         lastUpdatedBy: 'Ana Pérez',
+        nextNotificationAt: new Date('2026-10-16T10:00:00Z'),
+        sessionExpiresAt: new Date(0),
       },
     })
 
-    expect(screen.getByText('42 recursos activos')).toBeInTheDocument()
+    expect(screen.getByRole('contentinfo', { name: 'Estado de operaciones' }))
+      .toHaveTextContent('Última actualización de datos:')
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('42 recursos activos · 3 clientes')
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Próximo envío de avisos:')
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('La sesión expira en 00:00 sin actividad')
     expect(screen.getByText(/Ana Pérez/)).toBeInTheDocument()
     expect(screen.getByLabelText('Perfil de Ana Pérez')).toHaveTextContent('AP')
     expect(screen.queryByText(/161 recursos|16 clientes|28:41|María Pérez/))
       .not.toBeInTheDocument()
   })
 
-  it('omits the operations bar when no real status data is connected', () => {
-    renderForRole('guest', '/recursos', { operationsStatus: {} })
+  it('shows placeholders in the operations bar when real status is missing', () => {
+    renderForRole('guest')
 
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+    const operationsBar = screen.getByRole('contentinfo', { name: 'Estado de operaciones' })
+    expect(operationsBar).toHaveTextContent('Última actualización de datos: — por —')
+    expect(operationsBar).toHaveTextContent('— recursos activos · — clientes')
+    expect(operationsBar).toHaveTextContent('Próximo envío de avisos: —')
+    expect(operationsBar).toHaveTextContent('La sesión expira en — sin actividad')
+    expect(operationsBar).not.toHaveTextContent(/María Pérez|161|16 clientes|28:41|hoy 09:12|mañana 06:00/)
   })
 
   it('marks the current menu entry as the current page', () => {
