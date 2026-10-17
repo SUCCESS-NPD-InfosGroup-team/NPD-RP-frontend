@@ -8,3 +8,12 @@ export interface AuthUser {
   fullName: string;
   email?: string;
 }
+
+export interface OperationsStatus {
+  lastUpdatedAt?: Date
+  lastUpdatedBy?: string
+  activeResources?: number
+  clientCount?: number
+  nextNotificationAt?: Date
+  sessionExpiresAt?: Date
+}

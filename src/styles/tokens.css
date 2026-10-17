@@ -41,6 +41,22 @@
   --topbar-h: 56px;
   --opsbar-h: 34px;
   --chip-h: 22px;
+
+  /* Layout */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --brand-mark-size: 32px;
+  --icon-size: 16px;
+  --resource-search-width: 150px;
+  --resource-search-mobile-width: 120px;
+  --fs-page-title: 28px;
+  --border-width: 1px;
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --no-access-height: 320px;
 }
 
 body {
