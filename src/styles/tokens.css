@@ -8,11 +8,13 @@
   --brand-navy: #003d7a;
   --brand-navy-tint: #e3ecf6;
   --brand-brown: #4a231c;
+  --nav-active-bg: rgba(74, 35, 28, 0.18);
 
   /* Texto */
   --text-primary: #333333;
   --text-secondary: #5e5a57;
   --text-on-brand: #ffffff;
+  --text-on-brand-muted: #f3e6e2;
 
   /* Superficies y bordes */
   --surface-page: #f5f5f5; /* verificar contra Figma */
@@ -33,6 +35,8 @@
   --fs-nav: 19px;
   --fs-body: 14px;
   --fs-tag: 11px;
+  --fs-avatar: 13px;
+  --fs-ops-status: 12.5px;
 
   /* Medidas */
   --radius: 4px;
@@ -48,10 +52,25 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
-  --brand-mark-size: 32px;
+  --brand-mark-size: 34px;
   --icon-size: 16px;
+  --navigation-icon-size: 15px;
+  --header-action-icon-size: 18px;
+  --opsbar-icon-size: 14px;
   --resource-search-width: 150px;
-  --resource-search-mobile-width: 120px;
+  --topbar-padding-inline: 20px;
+  --topbar-gap: 18px;
+  --brand-gap: 10px;
+  --navigation-gap: 2px;
+  --navigation-item-gap: 7px;
+  --navigation-item-padding-inline: 10px;
+  --development-badge-height: 18px;
+  --development-badge-padding-inline: 6px;
+  --header-actions-gap: 8px;
+  --search-gap: 8px;
+  --search-padding-inline: 10px;
+  --opsbar-padding-inline: 20px;
+  --opsbar-gap: 22px;
   --fs-page-title: 28px;
   --border-width: 1px;
   --focus-width: 2px;

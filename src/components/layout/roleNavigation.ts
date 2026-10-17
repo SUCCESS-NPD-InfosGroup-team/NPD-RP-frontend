@@ -1,8 +1,18 @@
 import type { Role } from '../../types'
 export type { Role } from '../../types'
 
+export type NavigationItemId =
+  | 'resources'
+  | 'arrivals'
+  | 'dashboard'
+  | 'vacations'
+  | 'users'
+  | 'notifications'
+  | 'audit'
+  | 'infosweb'
+
 export interface NavigationItem {
-  id: string
+  id: NavigationItemId
   label: string
   path: string
   allowedRoles: readonly Role[]
@@ -50,6 +60,12 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     ],
   },
   {
+    id: 'infosweb',
+    label: 'Infosweb',
+    path: '/infosweb',
+    allowedRoles: ['operations-administrator'],
+  },
+  {
     id: 'users',
     label: 'Usuarios',
     path: '/usuarios',
@@ -59,7 +75,7 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     id: 'notifications',
     label: 'Avisos',
     path: '/avisos',
-    allowedRoles: ['operations-administrator'],
+    allowedRoles: ['operations-administrator'    ],
   },
   {
     id: 'audit',
@@ -67,12 +83,6 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     path: '/auditoria',
     allowedRoles: ['operations-administrator'],
     showInNavigation: false,
-  },
-  {
-    id: 'infosweb',
-    label: 'Infosweb',
-    path: '/infosweb',
-    allowedRoles: ['operations-administrator'],
   },
 ]
 

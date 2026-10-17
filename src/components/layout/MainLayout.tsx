@@ -1,22 +1,22 @@
-import {
-  Bell,
-  BriefcaseBusiness,
-  ChartColumn,
-  ClipboardList,
-  Clock3,
-  LogOut,
-  Search,
-  UsersRound,
-} from 'lucide-react'
 import { useState } from 'react'
+import type { ComponentType } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import type { LucideIcon } from 'lucide-react'
+import { Bell, Clock3, LogOut, Search } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import {
+  BellIcon,
+  ChartIcon,
+  PlaneIcon,
+  ShieldIcon,
+  SunIcon,
+  SyncIcon,
+} from '../icons'
 import {
   canAccessNavigationItem,
   canRegisterResources,
   getNavigationForRole,
 } from './roleNavigation'
+import type { NavigationItemId } from './roleNavigation'
 import type { OperationsStatus } from '../../types'
 import './MainLayout.css'
 
@@ -28,13 +28,15 @@ interface MainLayoutProps {
   operationsStatus?: OperationsStatus
 }
 
-const iconById: Record<string, LucideIcon> = {
-  resources: BriefcaseBusiness,
-  dashboard: ChartColumn,
-  vacations: Clock3,
-  users: UsersRound,
-  notifications: Bell,
-  infosweb: ClipboardList,
+const iconById: Record<NavigationItemId, ComponentType> = {
+  resources: PlaneIcon,
+  arrivals: PlaneIcon,
+  dashboard: ChartIcon,
+  vacations: SunIcon,
+  users: ShieldIcon,
+  notifications: BellIcon,
+  audit: ShieldIcon,
+  infosweb: SyncIcon,
 }
 
 export function MainLayout({

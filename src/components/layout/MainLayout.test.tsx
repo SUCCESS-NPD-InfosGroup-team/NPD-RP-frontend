@@ -17,7 +17,7 @@ vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMoc
 const roleCases: Array<[Role, string[]]> = [
   [
     'operations-administrator',
-    ['Recursos', 'Tablero', 'Vacaciones', 'Usuarios', 'Avisos', 'Infosweb'],
+    ['Recursos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'],
   ],
   ['guest', ['Recursos']],
   ['customer-success', ['Recursos', 'Vacaciones']],
@@ -199,8 +199,14 @@ describe('role-based navigation', () => {
   it('marks the current menu entry as the current page', () => {
     renderForRole('guest', '/recursos')
 
-    expect(screen.getByRole('link', { name: /Recursos/ }))
-      .toHaveAttribute('aria-current', 'page')
+    const currentLink = screen.getByRole('link', { name: /Recursos/ })
+    expect(currentLink).toHaveAttribute('aria-current', 'page')
+    expect(currentLink).toHaveClass('is-active')
+  })
+
+  it('keeps the requested presentation order for the administrator menu', () => {
+    expect(getNavigationForRole('operations-administrator').map(({ label }) => label))
+      .toEqual(['Recursos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'])
   })
 
   it('keeps arrivals and audit out of the top navigation in the mockup', () => {
