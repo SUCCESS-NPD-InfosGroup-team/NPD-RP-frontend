@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { Bell, Clock3, LogOut, Search } from 'lucide-react'
+import { Clock3 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import {
   BellIcon,
   ChartIcon,
+  LogoutIcon,
+  PlusIcon,
   PlaneIcon,
+  SearchIcon,
   ShieldIcon,
   SunIcon,
   SyncIcon,
@@ -103,7 +106,7 @@ export function MainLayout({
           </ul>
         </nav>
         <div className="header-actions">
-          {onSearchResources && (
+          {navigationItems.length > 0 && (
             <form
               className="resource-search"
               role="search"
@@ -112,32 +115,35 @@ export function MainLayout({
                 const formData = new FormData(event.currentTarget)
                 const query = formData.get('query')
 
-                if (typeof query === 'string') {
+                if (typeof query === 'string' && onSearchResources) {
                   onSearchResources(query.trim())
                 }
               }}
             >
               <label className="visually-hidden" htmlFor="resource-search">
-                Buscar recurso
+                Buscar recurso o N° empleado
               </label>
-              <Search aria-hidden="true" />
+              <SearchIcon />
               <input
                 id="resource-search"
                 name="query"
                 type="search"
-                placeholder="Buscar recurso..."
+                placeholder="Buscar recurso o N° empleado"
               />
             </form>
           )}
-          {canRegister && onRegisterResource && (
-            <button
-              className="register-resource"
-              type="button"
-              onClick={onRegisterResource}
-            >
-              <span aria-hidden="true">+</span>
-              <span>Registrar recurso</span>
-            </button>
+          {canRegister && (
+            <>
+              {/* TODO: Connect resource registration to its feature flow. */}
+              <button
+                className="register-resource"
+                type="button"
+                onClick={() => onRegisterResource?.()}
+              >
+                <PlusIcon />
+                <span>Registrar recurso</span>
+              </button>
+            </>
           )}
           {canAccessNavigationItem(roles, 'notifications') && (
             <NavLink
@@ -145,7 +151,7 @@ export function MainLayout({
               to="/avisos"
               aria-label={getNotificationLabel(unreadNotificationCount)}
             >
-              <Bell aria-hidden="true" />
+              <BellIcon />
               {unreadNotificationCount !== undefined && unreadNotificationCount > 0 && (
                 <span className="notification-count" aria-hidden="true">
                   {unreadNotificationCount}
@@ -165,7 +171,7 @@ export function MainLayout({
             aria-label="Cerrar sesión"
             disabled={isLogoutInProgress}
           >
-            <LogOut aria-hidden="true" />
+            <LogoutIcon />
           </button>
         </div>
       </header>

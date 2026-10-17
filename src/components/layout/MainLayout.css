@@ -1,6 +1,6 @@
 .app-shell {
   display: flex;
-  min-width: 1200px;
+  min-width: var(--shell-min-width);
   min-height: 100vh;
   flex-direction: column;
   background: var(--surface-page);
@@ -44,7 +44,7 @@
   border-radius: var(--radius);
   background: var(--surface-card);
   color: var(--brand-orange-deep);
-  font: 700 15px / 1 var(--font-display);
+  font: 700 var(--fs-brand-mark) / 1 var(--font-display);
 }
 
 .header-navigation {
@@ -69,7 +69,7 @@
   align-items: center;
   gap: var(--navigation-item-gap);
   padding-inline: var(--navigation-item-padding-inline);
-  border-bottom: 3px solid transparent;
+  border-bottom: var(--navigation-active-border-width) solid transparent;
   border-radius: 0;
   color: var(--text-on-brand);
   font: 700 var(--fs-nav) / 1 var(--font-display);
@@ -108,16 +108,16 @@
 
 .header-actions {
   flex: 0 0 auto;
-  gap: var(--space-2);
+  gap: var(--header-actions-gap);
 }
 
 .resource-search {
   display: inline-flex;
   min-width: 0;
   width: var(--resource-search-width);
-  min-height: var(--control-h);
-  gap: var(--space-1);
-  padding-inline: var(--space-2);
+  height: var(--control-h);
+  gap: var(--search-gap);
+  padding-inline: var(--search-padding-inline);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-card);
@@ -125,8 +125,8 @@
 }
 
 .resource-search svg {
-  width: var(--icon-size);
-  height: var(--icon-size);
+  width: var(--navigation-icon-size);
+  height: var(--navigation-icon-size);
   flex: 0 0 auto;
 }
 
@@ -141,6 +141,14 @@
   font: 400 var(--fs-body) / 1.2 var(--font-body);
 }
 
+.resource-search input::placeholder {
+  overflow: hidden;
+  color: var(--text-secondary);
+  opacity: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .resource-search:focus-within {
   outline: var(--focus-width) solid var(--brand-navy);
   outline-offset: var(--focus-offset);
@@ -148,27 +156,25 @@
 
 .register-resource {
   display: inline-flex;
-  min-height: var(--control-h);
-  gap: var(--space-1);
-  padding-inline: var(--space-3);
-  border: 0;
+  height: var(--control-h);
+  gap: var(--navigation-item-gap);
+  padding-inline: var(--register-padding-inline);
+  border: var(--border-width) solid var(--brand-navy);
   border-radius: var(--radius);
   background: var(--brand-navy);
   color: var(--text-on-brand);
-  font: 700 var(--fs-body) / 1.2 var(--font-body);
-  font-weight: 700;
+  font: 600 var(--fs-body) / 1.2 var(--font-body);
   cursor: pointer;
   white-space: nowrap;
 }
 
-.register-resource:hover,
-.register-resource:focus-visible {
-  background: var(--brand-navy-tint);
-  color: var(--brand-navy);
+.register-resource svg {
+  width: var(--navigation-icon-size);
+  height: var(--navigation-icon-size);
 }
 
-.register-resource > span:first-child {
-  font-size: var(--fs-nav);
+.register-resource:hover {
+  background: var(--brand-navy);
 }
 
 .header-icon-button {
@@ -183,35 +189,35 @@
 }
 
 .header-icon-button svg {
-  width: var(--icon-size);
-  height: var(--icon-size);
+  width: var(--header-action-icon-size);
+  height: var(--header-action-icon-size);
 }
 
 .notification-count {
   position: absolute;
-  inset-block-start: 0;
-  inset-inline-end: 0;
+  inset-block-start: -1px;
+  inset-inline-end: -1px;
   display: grid;
-  min-width: var(--chip-h);
-  height: var(--chip-h);
+  width: var(--notification-badge-size);
+  height: var(--notification-badge-size);
   place-items: center;
-  padding-inline: var(--space-1);
+  padding: 0;
   border-radius: var(--radius-pill);
-  background: var(--state-danger);
+  background: var(--brand-brown);
   color: var(--text-on-brand);
-  font: 700 var(--fs-tag) / 1 var(--font-body);
+  font: 700 var(--notification-badge-font-size) / 1 var(--font-body);
 }
 
 .profile-avatar {
   display: inline-grid;
-  width: var(--control-h);
-  height: var(--control-h);
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   flex: 0 0 auto;
   place-items: center;
   border-radius: var(--radius-pill);
   background: var(--brand-brown);
   color: var(--text-on-brand);
-  font-weight: 700;
+  font: 600 var(--fs-avatar) / 1 var(--font-body);
 }
 
 .page-content {

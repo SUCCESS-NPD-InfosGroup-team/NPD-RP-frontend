@@ -130,7 +130,7 @@ describe('role-based navigation', () => {
     renderForRole('guest', '/recursos', { onSearchResources: onSearch })
 
     await user.type(
-      screen.getByRole('searchbox', { name: 'Buscar recurso' }),
+      screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' }),
       '  Ana Pérez  ',
     )
     await user.keyboard('{Enter}')
@@ -138,10 +138,54 @@ describe('role-based navigation', () => {
     expect(onSearch).toHaveBeenCalledWith('Ana Pérez')
   })
 
-  it('does not render search when no search implementation is connected', () => {
+  it.each(roleCases)('shows search for every role with navigation access: %s', (role) => {
+    renderForRole(role)
+
+    expect(screen.getByRole('search')).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' }))
+      .toHaveAttribute('placeholder', 'Buscar recurso o N° empleado')
+  })
+
+  it('does nothing when search is submitted without a handler', async () => {
+    const user = userEvent.setup()
     renderForRole('guest')
+    const search = screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' })
+
+    await user.type(search, 'Ana Pérez')
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByRole('search')).toBeInTheDocument()
+    expect(search).toHaveValue('Ana Pérez')
+  })
+
+  it('shows resource registration for Operations administrator without a handler', () => {
+    renderForRole('operations-administrator')
+
+    expect(screen.getByRole('button', { name: /Registrar recurso/ }))
+      .not.toBeDisabled()
+  })
+
+  it('does not render search for a role without navigation access', () => {
+    renderForRole(undefined)
 
     expect(screen.queryByRole('search')).not.toBeInTheDocument()
+  })
+
+  it('does not invent notification or user data', () => {
+    renderForRole('operations-administrator')
+
+    expect(screen.getAllByRole('link', { name: 'Avisos' })).toHaveLength(2)
+    expect(screen.queryByText('4', { selector: '.notification-count' }))
+      .not.toBeInTheDocument()
+  })
+
+  it('does not show a notification badge for a real zero count', () => {
+    renderForRole('operations-administrator', '/recursos', {
+      unreadNotificationCount: 0,
+    })
+
+    expect(screen.queryByText('0', { selector: '.notification-count' }))
+      .not.toBeInTheDocument()
   })
 
   it('invokes the supplied logout callback', async () => {

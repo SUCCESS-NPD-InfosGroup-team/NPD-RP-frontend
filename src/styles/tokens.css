@@ -35,6 +35,7 @@
   --fs-nav: 19px;
   --fs-body: 14px;
   --fs-tag: 11px;
+  --fs-brand-mark: 15px;
   --fs-avatar: 13px;
   --fs-ops-status: 12.5px;
 
@@ -55,8 +56,14 @@
   --brand-mark-size: 34px;
   --icon-size: 16px;
   --navigation-icon-size: 15px;
+  --navigation-active-border-width: 3px;
   --header-action-icon-size: 18px;
+  --avatar-size: 32px;
+  --notification-badge-size: 16px;
+  --notification-badge-font-size: 10px;
+  --register-padding-inline: 14px;
   --opsbar-icon-size: 14px;
+  --shell-min-width: 1200px;
   --resource-search-width: 150px;
   --topbar-padding-inline: 20px;
   --topbar-gap: 18px;
