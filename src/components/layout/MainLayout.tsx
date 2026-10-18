@@ -1,22 +1,26 @@
-import {
-  Bell,
-  BriefcaseBusiness,
-  ChartColumn,
-  ClipboardList,
-  Clock3,
-  LogOut,
-  Search,
-  UsersRound,
-} from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { ComponentType } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import {
+  BellIcon,
+  ChartIcon,
+  ClockIcon,
+  EditIcon,
+  LogoutIcon,
+  PlusIcon,
+  PlaneIcon,
+  SearchIcon,
+  ShieldIcon,
+  SunIcon,
+  SyncIcon,
+} from '../icons'
 import {
   canAccessNavigationItem,
   canRegisterResources,
   getNavigationForRole,
 } from './roleNavigation'
+import type { NavigationItemId } from './roleNavigation'
 import type { OperationsStatus } from '../../types'
 import './MainLayout.css'
 
@@ -28,13 +32,15 @@ interface MainLayoutProps {
   operationsStatus?: OperationsStatus
 }
 
-const iconById: Record<string, LucideIcon> = {
-  resources: BriefcaseBusiness,
-  dashboard: ChartColumn,
-  vacations: Clock3,
-  users: UsersRound,
-  notifications: Bell,
-  infosweb: ClipboardList,
+const iconById: Record<NavigationItemId, ComponentType> = {
+  resources: PlaneIcon,
+  arrivals: PlaneIcon,
+  dashboard: ChartIcon,
+  vacations: SunIcon,
+  users: ShieldIcon,
+  notifications: BellIcon,
+  audit: ShieldIcon,
+  infosweb: SyncIcon,
 }
 
 export function MainLayout({
@@ -101,7 +107,7 @@ export function MainLayout({
           </ul>
         </nav>
         <div className="header-actions">
-          {onSearchResources && (
+          {navigationItems.length > 0 && (
             <form
               className="resource-search"
               role="search"
@@ -110,32 +116,35 @@ export function MainLayout({
                 const formData = new FormData(event.currentTarget)
                 const query = formData.get('query')
 
-                if (typeof query === 'string') {
+                if (typeof query === 'string' && onSearchResources) {
                   onSearchResources(query.trim())
                 }
               }}
             >
               <label className="visually-hidden" htmlFor="resource-search">
-                Buscar recurso
+                Buscar recurso o N° empleado
               </label>
-              <Search aria-hidden="true" />
+              <SearchIcon />
               <input
                 id="resource-search"
                 name="query"
                 type="search"
-                placeholder="Buscar recurso..."
+                placeholder="Buscar recurso o N° empleado"
               />
             </form>
           )}
-          {canRegister && onRegisterResource && (
-            <button
-              className="register-resource"
-              type="button"
-              onClick={onRegisterResource}
-            >
-              <span aria-hidden="true">+</span>
-              <span>Registrar recurso</span>
-            </button>
+          {canRegister && (
+            <>
+              {/* TODO: Connect resource registration to its feature flow. */}
+              <button
+                className="register-resource"
+                type="button"
+                onClick={() => onRegisterResource?.()}
+              >
+                <PlusIcon />
+                <span>Registrar recurso</span>
+              </button>
+            </>
           )}
           {canAccessNavigationItem(roles, 'notifications') && (
             <NavLink
@@ -143,7 +152,7 @@ export function MainLayout({
               to="/avisos"
               aria-label={getNotificationLabel(unreadNotificationCount)}
             >
-              <Bell aria-hidden="true" />
+              <BellIcon />
               {unreadNotificationCount !== undefined && unreadNotificationCount > 0 && (
                 <span className="notification-count" aria-hidden="true">
                   {unreadNotificationCount}
@@ -163,7 +172,7 @@ export function MainLayout({
             aria-label="Cerrar sesión"
             disabled={isLogoutInProgress}
           >
-            <LogOut aria-hidden="true" />
+            <LogoutIcon />
           </button>
         </div>
       </header>
@@ -172,52 +181,86 @@ export function MainLayout({
         <Outlet />
       </main>
 
-      {operationsStatus && <OperationsBar status={operationsStatus} />}
+      <OperationsBar status={operationsStatus} />
     </div>
   )
 }
 
-function OperationsBar({ status }: Readonly<{ status: OperationsStatus }>) {
-  const hasStatus = Object.values(status).some((value) => value !== undefined)
+function OperationsBar({ status }: Readonly<{ status?: OperationsStatus }>) {
+  const [now, setNow] = useState(() => Date.now())
 
-  if (!hasStatus) {
-    return null
-  }
+  useEffect(() => {
+    if (!isValidDate(status?.sessionExpiresAt)) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(intervalId)
+  }, [status?.sessionExpiresAt])
 
   return (
     <footer className="operations-bar" aria-label="Estado de operaciones">
-      {status.lastUpdatedAt && (
-        <span>
-          Última actualización: {formatDateTime(status.lastUpdatedAt)}
-          {status.lastUpdatedBy && ` por ${status.lastUpdatedBy}`}
-        </span>
-      )}
-      {status.activeResources !== undefined && (
-        <span>{status.activeResources} recursos activos</span>
-      )}
-      {status.clientCount !== undefined && (
-        <span>{status.clientCount} clientes</span>
-      )}
-      {status.nextNotificationAt && (
-        <span>
-          Próximo envío de avisos: {formatDateTime(status.nextNotificationAt)}
-        </span>
-      )}
-      {status.sessionExpiresAt && (
-        <span className="session-status">
-          <Clock3 aria-hidden="true" />
-          Sesión expira: {formatDateTime(status.sessionExpiresAt)}
-        </span>
-      )}
+      <span className="operations-status-item">
+        <EditIcon />
+        <span>Última actualización de datos:</span>{' '}
+        <strong>
+          {isValidDate(status?.lastUpdatedAt)
+            ? formatDateTime(status.lastUpdatedAt)
+            : '—'}
+        </strong>{' '}
+        <span>por</span>{' '}
+        <strong>{status?.lastUpdatedBy?.trim() || '—'}</strong>
+      </span>
+      <span className="operations-status-item">
+        <strong>{status?.activeResources ?? '—'}</strong>
+        {' '}
+        <span>recursos activos ·</span>{' '}
+        <strong>{status?.clientCount ?? '—'}</strong>{' '}
+        <span>clientes</span>
+      </span>
+      <span className="operations-status-item">
+        <span>Próximo envío de avisos:</span>{' '}
+        <strong>
+          {isValidDate(status?.nextNotificationAt)
+            ? formatDateTime(status.nextNotificationAt)
+            : '—'}
+        </strong>
+      </span>
+      <span className="session-status">
+        <ClockIcon />
+        <span>La sesión expira en</span>{' '}
+        <strong>
+          {isValidDate(status?.sessionExpiresAt)
+            ? formatSessionTime(status.sessionExpiresAt, now)
+            : '—'}
+        </strong>{' '}
+        <span>sin actividad</span>
+      </span>
     </footer>
   )
 }
 
 function formatDateTime(value: Date): string {
+  if (!isValidDate(value)) {
+    return '—'
+  }
+
   return new Intl.DateTimeFormat('es', {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(value)
+}
+
+function isValidDate(value?: Date): value is Date {
+  return value instanceof Date && Number.isFinite(value.getTime())
+}
+
+function formatSessionTime(expiresAt: Date, now: number): string {
+  const totalSeconds = Math.floor(Math.max(0, expiresAt.getTime() - now) / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
 function getInitials(name: string): string {

@@ -45,3 +45,8 @@
 .app-header__logout:hover {
   background: rgba(255, 255, 255, 0.12);
 }
+
+.app-header__logout svg {
+  width: var(--header-action-icon-size);
+  height: var(--header-action-icon-size);
+}

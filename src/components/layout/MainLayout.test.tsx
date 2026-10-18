@@ -17,7 +17,7 @@ vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMoc
 const roleCases: Array<[Role, string[]]> = [
   [
     'operations-administrator',
-    ['Recursos', 'Tablero', 'Vacaciones', 'Usuarios', 'Avisos', 'Infosweb'],
+    ['Recursos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'],
   ],
   ['guest', ['Recursos']],
   ['customer-success', ['Recursos', 'Vacaciones']],
@@ -130,7 +130,7 @@ describe('role-based navigation', () => {
     renderForRole('guest', '/recursos', { onSearchResources: onSearch })
 
     await user.type(
-      screen.getByRole('searchbox', { name: 'Buscar recurso' }),
+      screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' }),
       '  Ana Pérez  ',
     )
     await user.keyboard('{Enter}')
@@ -138,10 +138,54 @@ describe('role-based navigation', () => {
     expect(onSearch).toHaveBeenCalledWith('Ana Pérez')
   })
 
-  it('does not render search when no search implementation is connected', () => {
+  it.each(roleCases)('shows search for every role with navigation access: %s', (role) => {
+    renderForRole(role)
+
+    expect(screen.getByRole('search')).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' }))
+      .toHaveAttribute('placeholder', 'Buscar recurso o N° empleado')
+  })
+
+  it('does nothing when search is submitted without a handler', async () => {
+    const user = userEvent.setup()
     renderForRole('guest')
+    const search = screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' })
+
+    await user.type(search, 'Ana Pérez')
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByRole('search')).toBeInTheDocument()
+    expect(search).toHaveValue('Ana Pérez')
+  })
+
+  it('shows resource registration for Operations administrator without a handler', () => {
+    renderForRole('operations-administrator')
+
+    expect(screen.getByRole('button', { name: /Registrar recurso/ }))
+      .not.toBeDisabled()
+  })
+
+  it('does not render search for a role without navigation access', () => {
+    renderForRole(undefined)
 
     expect(screen.queryByRole('search')).not.toBeInTheDocument()
+  })
+
+  it('does not invent notification or user data', () => {
+    renderForRole('operations-administrator')
+
+    expect(screen.getAllByRole('link', { name: 'Avisos' })).toHaveLength(2)
+    expect(screen.queryByText('4', { selector: '.notification-count' }))
+      .not.toBeInTheDocument()
+  })
+
+  it('does not show a notification badge for a real zero count', () => {
+    renderForRole('operations-administrator', '/recursos', {
+      unreadNotificationCount: 0,
+    })
+
+    expect(screen.queryByText('0', { selector: '.notification-count' }))
+      .not.toBeInTheDocument()
   })
 
   it('invokes the supplied logout callback', async () => {
@@ -178,29 +222,47 @@ describe('role-based navigation', () => {
       displayName: 'Ana Pérez',
       operationsStatus: {
         activeResources: 42,
+        clientCount: 3,
         lastUpdatedAt: new Date('2026-10-15T10:00:00Z'),
         lastUpdatedBy: 'Ana Pérez',
+        nextNotificationAt: new Date('2026-10-16T10:00:00Z'),
+        sessionExpiresAt: new Date(0),
       },
     })
 
-    expect(screen.getByText('42 recursos activos')).toBeInTheDocument()
+    expect(screen.getByRole('contentinfo', { name: 'Estado de operaciones' }))
+      .toHaveTextContent('Última actualización de datos:')
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('42 recursos activos · 3 clientes')
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Próximo envío de avisos:')
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('La sesión expira en 00:00 sin actividad')
     expect(screen.getByText(/Ana Pérez/)).toBeInTheDocument()
     expect(screen.getByLabelText('Perfil de Ana Pérez')).toHaveTextContent('AP')
     expect(screen.queryByText(/161 recursos|16 clientes|28:41|María Pérez/))
       .not.toBeInTheDocument()
   })
 
-  it('omits the operations bar when no real status data is connected', () => {
-    renderForRole('guest', '/recursos', { operationsStatus: {} })
+  it('shows placeholders in the operations bar when real status is missing', () => {
+    renderForRole('guest')
 
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+    const operationsBar = screen.getByRole('contentinfo', { name: 'Estado de operaciones' })
+    expect(operationsBar).toHaveTextContent('Última actualización de datos: — por —')
+    expect(operationsBar).toHaveTextContent('— recursos activos · — clientes')
+    expect(operationsBar).toHaveTextContent('Próximo envío de avisos: —')
+    expect(operationsBar).toHaveTextContent('La sesión expira en — sin actividad')
+    expect(operationsBar).not.toHaveTextContent(/María Pérez|161|16 clientes|28:41|hoy 09:12|mañana 06:00/)
   })
 
   it('marks the current menu entry as the current page', () => {
     renderForRole('guest', '/recursos')
 
-    expect(screen.getByRole('link', { name: /Recursos/ }))
-      .toHaveAttribute('aria-current', 'page')
+    const currentLink = screen.getByRole('link', { name: /Recursos/ })
+    expect(currentLink).toHaveAttribute('aria-current', 'page')
+    expect(currentLink).toHaveClass('is-active')
+  })
+
+  it('keeps the requested presentation order for the administrator menu', () => {
+    expect(getNavigationForRole('operations-administrator').map(({ label }) => label))
+      .toEqual(['Recursos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'])
   })
 
   it('keeps arrivals and audit out of the top navigation in the mockup', () => {

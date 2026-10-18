@@ -83,8 +83,9 @@ describe('App routes', () => {
     expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Navegación principal' }))
       .toBeInTheDocument()
-    expect(screen.queryByRole('search')).not.toBeInTheDocument()
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+    expect(screen.getByRole('search')).toBeInTheDocument()
+    expect(screen.getByRole('contentinfo', { name: 'Estado de operaciones' }))
+      .toHaveTextContent('Última actualización de datos: — por —')
     expect(screen.queryByText(/María Pérez|161 recursos|28:41|Vista previa/))
       .not.toBeInTheDocument()
   })
@@ -95,15 +96,16 @@ describe('App routes', () => {
     expect(screen.getByRole('heading', { name: 'Recursos' })).toBeInTheDocument()
   })
 
-  it('does not render nonfunctional controls without connected implementations', () => {
+  it('renders nonfunctional controls without connected implementations', () => {
     renderAtPath('operations-administrator', '/recursos')
 
-    expect(screen.queryByRole('search')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Registrar recurso' }))
-      .not.toBeInTheDocument()
+    expect(screen.getByRole('search')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Registrar recurso' }))
+      .not.toBeDisabled()
     expect(screen.getByRole('button', { name: 'Cerrar sesión' }))
       .toBeInTheDocument()
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+    expect(screen.getByRole('contentinfo', { name: 'Estado de operaciones' }))
+      .toHaveTextContent('La sesión expira en — sin actividad')
   })
 
   it.each([

@@ -1,6 +1,6 @@
 // src/components/layout/Header.tsx
-import { LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { LogoutIcon } from '../icons';
 import './Header.css';
 
 export function Header() {
@@ -17,7 +17,7 @@ export function Header() {
           onClick={() => void logout()}
           disabled={logoutInProgress}
         >
-          <LogOut size={16} aria-hidden="true" />
+          <LogoutIcon />
           Cerrar sesión
         </button>
       </div>
