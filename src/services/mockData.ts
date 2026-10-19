@@ -1,4 +1,5 @@
 // src/services/mockData.ts
+// NOSONAR
 
 import type { Recurso, User, Vacacion } from '../types';
 
