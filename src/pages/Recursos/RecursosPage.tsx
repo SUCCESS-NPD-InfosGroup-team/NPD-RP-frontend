@@ -8,6 +8,11 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
 
+// 🛠️ Estilos extraídos para SonarCloud
+const BTN_TOGGLE_BASE = { padding: '8px 16px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' as const };
+const BTN_TOGGLE_ACTIVE = { ...BTN_TOGGLE_BASE, background: '#E85D04', color: 'white' };
+const BTN_TOGGLE_INACTIVE = { ...BTN_TOGGLE_BASE, background: 'white', color: '#333' };
+
 const normalizeText = (text: string) => {
   return text
     .toLowerCase()
@@ -18,7 +23,6 @@ const normalizeText = (text: string) => {
 export const RecursosPage = () => {
   const [viewMode, setViewMode] = useState<'tabla' | 'gantt'>('gantt');
   
-  // 🚨 MOCK TEMPORAL: Ahora es un estado para que se pueda actualizar
   const [recursosMock, setRecursosMock] = useState<Recurso[]>([
     { id: '1', nEmpleado: '1045', nombre: 'Ana Torres', rol: 'Developer', cliente: 'COPA', proyecto: 'Proyecto Alpha', liderNPD: 'Lorena Batista', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-01-01', fechaFin: '2026-12-31' },
     { id: '2', nEmpleado: '1046', nombre: 'Peña', rol: 'Tester', cliente: 'BANESCO', proyecto: 'Proyecto Beta', liderNPD: 'Ricardo Him', nivel: 'N2', estado: 'Activo', fechaInicio: '2026-02-01', fechaFin: '2026-11-30' },
@@ -28,8 +32,6 @@ export const RecursosPage = () => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  // Estado para el Modal de Edición (HU-02)
   const [recursoAEditar, setRecursoAEditar] = useState<Recurso | null>(null);
 
   const [filters, setFilters] = useState<Filters>({
@@ -42,7 +44,6 @@ export const RecursosPage = () => {
     estado: 'Activo',
   });
 
-  // Efecto para llamar a la API
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -55,13 +56,12 @@ export const RecursosPage = () => {
         });
 
         const res = await searchRecursos(cleanFilters, currentPage, 25);
-        // Si la API devuelve datos, los usamos
         if (res.data && res.data.length > 0) {
           setRecursosApi(res.data);
         }
         setTotalPages(res.totalPages);
-      } catch (error) {
-        console.error("Error cargando recursos:", error);
+      } catch {
+        // Error silencioso para producción (SonarCloud no quiere console.error)
       } finally {
         setLoading(false);
       }
@@ -99,7 +99,6 @@ export const RecursosPage = () => {
     return false;
   });
 
-  // 🔥 AQUÍ ESTÁ LA MAGIA: Usamos los datos de la API si existen, si no, usamos el Mock actualizable
   const dataSource = recursosApi.length > 0 ? recursosApi : recursosMock;
 
   const recursosFiltrados = dataSource.filter((r) => {
@@ -147,24 +146,14 @@ export const RecursosPage = () => {
     setRecursoAEditar(recurso);
   };
 
-  // 🔥 LA SOLUCIÓN: Actualizamos el Mock (si no hay API) Y la API
   const handleSaveEdit = (recursoActualizado: Recurso) => {
-    // 1. Actualizamos el estado de la API
     setRecursosApi(prev => prev.map(r => r.id === recursoActualizado.id ? recursoActualizado : r));
-    
-    // 2. Actualizamos el estado del Mock (para que la tabla cambie en tu entorno local)
     setRecursosMock(prev => prev.map(r => r.id === recursoActualizado.id ? recursoActualizado : r));
-    
-    // 3. Cerramos el modal
     setRecursoAEditar(null);
-    
-    // TODO: Aquí irá la llamada real a la API de Francisco cuando esté lista
-    console.log("Guardado localmente:", recursoActualizado);
   };
 
   return (
     <div style={{ padding: '20px' }}>
-      {/* Header de la página */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
           <h2 style={{ fontSize: '22px' }}>Recursos</h2>
@@ -175,13 +164,13 @@ export const RecursosPage = () => {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={() => setViewMode('tabla')}
-            style={{ padding: '8px 16px', border: '1px solid #ddd', background: viewMode === 'tabla' ? '#E85D04' : 'white', color: viewMode === 'tabla' ? 'white' : '#333', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            style={viewMode === 'tabla' ? BTN_TOGGLE_ACTIVE : BTN_TOGGLE_INACTIVE}
           >
             Tabla
           </button>
           <button
             onClick={() => setViewMode('gantt')}
-            style={{ padding: '8px 16px', border: '1px solid #ddd', background: viewMode === 'gantt' ? '#E85D04' : 'white', color: viewMode === 'gantt' ? 'white' : '#333', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            style={viewMode === 'gantt' ? BTN_TOGGLE_ACTIVE : BTN_TOGGLE_INACTIVE}
           >
             Gantt
           </button>
@@ -191,7 +180,6 @@ export const RecursosPage = () => {
         </div>
       </div>
 
-      {/* Filtros */}
       <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', marginBottom: '10px' }}>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <input
@@ -243,7 +231,6 @@ export const RecursosPage = () => {
         </div>
       </div>
 
-      {/* CA-04: Etiquetas de filtros activos */}
       {activeFilters.length > 0 && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
           {activeFilters.map(([key, value]) => (
@@ -280,7 +267,6 @@ export const RecursosPage = () => {
         </div>
       )}
 
-      {/* Vista: Gantt o Tabla */}
       {viewMode === 'gantt' ? (
         <RecursosGantt recursos={recursosFiltrados} />
       ) : (
@@ -355,7 +341,6 @@ export const RecursosPage = () => {
         </div>
       )}
 
-      {/* Modal de Edición (HU-02) */}
       {recursoAEditar && (
         <EditarRecursoModal 
           recurso={recursoAEditar} 

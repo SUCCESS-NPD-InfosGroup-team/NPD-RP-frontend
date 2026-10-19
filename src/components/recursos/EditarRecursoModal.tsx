@@ -2,6 +2,15 @@
 import { useState } from 'react';
 import type { Recurso } from '../../types';
 
+// 🛠️ Estilos extraídos para evitar duplicación en SonarCloud
+const MODAL_OVERLAY = { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
+const MODAL_CONTENT = { backgroundColor: 'white', padding: '30px', borderRadius: '8px', width: '500px', maxWidth: '90%' };
+const INPUT_STYLE = { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' as const };
+const LABEL_STYLE = { display: 'block', marginBottom: '5px', fontSize: '14px' };
+const ROW_STYLE = { display: 'flex', gap: '15px' };
+const COL_STYLE = { flex: 1 };
+const ERROR_BOX = { backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '4px', marginBottom: '15px' };
+
 interface Props {
   recurso: Recurso;
   onClose: () => void;
@@ -9,7 +18,6 @@ interface Props {
 }
 
 export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
-  // Estado local para el formulario
   const [formData, setFormData] = useState<Recurso>({ ...recurso });
   const [error, setError] = useState<string>('');
 
@@ -21,19 +29,16 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
     e.preventDefault();
     setError('');
 
-    // CA-02: Validar campos requeridos
     if (!formData.cliente || !formData.rol || !formData.nivel) {
       setError('El cliente, rol y nivel son obligatorios.');
       return;
     }
 
-    // CA-02: Validar fechas
     if (formData.fechaInicio && formData.fechaFin && formData.fechaFin < formData.fechaInicio) {
       setError('La fecha de fin no puede ser anterior a la fecha de inicio.');
       return;
     }
 
-    // CA-03: Si no hay cambios, no hacer nada (en producción esto lo maneja el backend)
     const hasChanges = JSON.stringify(formData) !== JSON.stringify(recurso);
     if (!hasChanges) {
       onClose();
@@ -44,44 +49,44 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-      <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '8px', width: '500px', maxWidth: '90%' }}>
+    <div style={MODAL_OVERLAY}>
+      <div style={MODAL_CONTENT}>
         <h2 style={{ marginBottom: '20px' }}>Editar Recurso: {recurso.nombre}</h2>
         
-        {error && <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '4px', marginBottom: '15px' }}>{error}</div>}
+        {error && <div style={ERROR_BOX}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Cliente *</label>
-              <input name="cliente" value={formData.cliente} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
+          <div style={ROW_STYLE}>
+            <div style={COL_STYLE}>
+              <label style={LABEL_STYLE}>Cliente *</label>
+              <input name="cliente" value={formData.cliente} onChange={handleChange} style={INPUT_STYLE} />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Proyecto *</label>
-              <input name="proyecto" value={formData.proyecto} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Rol *</label>
-              <input name="rol" value={formData.rol} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Nivel *</label>
-              <input name="nivel" value={formData.nivel} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
+            <div style={COL_STYLE}>
+              <label style={LABEL_STYLE}>Proyecto *</label>
+              <input name="proyecto" value={formData.proyecto} onChange={handleChange} style={INPUT_STYLE} />
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Fecha Inicio</label>
-              <input type="date" name="fechaInicio" value={formData.fechaInicio} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
+          <div style={ROW_STYLE}>
+            <div style={COL_STYLE}>
+              <label style={LABEL_STYLE}>Rol *</label>
+              <input name="rol" value={formData.rol} onChange={handleChange} style={INPUT_STYLE} />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Fecha Fin</label>
-              <input type="date" name="fechaFin" value={formData.fechaFin} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
+            <div style={COL_STYLE}>
+              <label style={LABEL_STYLE}>Nivel *</label>
+              <input name="nivel" value={formData.nivel} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
+          </div>
+
+          <div style={ROW_STYLE}>
+            <div style={COL_STYLE}>
+              <label style={LABEL_STYLE}>Fecha Inicio</label>
+              <input type="date" name="fechaInicio" value={formData.fechaInicio} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
+            <div style={COL_STYLE}>
+              <label style={LABEL_STYLE}>Fecha Fin</label>
+              <input type="date" name="fechaFin" value={formData.fechaFin} onChange={handleChange} style={INPUT_STYLE} />
             </div>
           </div>
 
