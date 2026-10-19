@@ -3,7 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { Modal } from '../ui/Modal';
 import { useVacaciones } from '../../context/VacacionesContext';
-import { MOCK_RECURSOS } from '../../services/mockData';
+// 🛠️ 1. Importamos la función en lugar de la variable
+import { getMockRecursos } from '../../services/mockData';
 import type { Vacacion } from '../../types';
 
 interface RegistrarVacacionModalProps {
@@ -74,7 +75,8 @@ export const RegistrarVacacionModal = ({ isOpen, onClose }: RegistrarVacacionMod
 
     if (!validate()) return;
 
-    const recurso = MOCK_RECURSOS.find((r) => r.nEmpleado === formData.nEmpleado);
+    // 🛠️ 2. Usamos la función aquí
+    const recurso = getMockRecursos().find((r) => r.nEmpleado === formData.nEmpleado);
     if (!recurso) return;
 
     const nuevaVacacion: Vacacion = {
@@ -155,7 +157,8 @@ export const RegistrarVacacionModal = ({ isOpen, onClose }: RegistrarVacacionMod
           style={inputStyle('colaborador')}
         >
           <option value="">Selecciona un colaborador</option>
-          {MOCK_RECURSOS.map((r) => (
+          {/* 🛠️ 3. Usamos la función para mapear los recursos */}
+          {getMockRecursos().map((r) => (
             <option key={r.id} value={r.nEmpleado}>
               {r.nombre} · {r.nEmpleado} · {r.cliente}
             </option>
