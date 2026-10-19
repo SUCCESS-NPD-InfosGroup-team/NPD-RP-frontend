@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { Vacacion } from '../types';
-import { MOCK_VACACIONES } from '../services/mockData';
+import { getMockVacaciones } from '../services/mockData';
 
 interface VacacionesContextType {
   vacaciones: Vacacion[];
@@ -14,7 +14,8 @@ interface VacacionesContextType {
 const VacacionesContext = createContext<VacacionesContextType | undefined>(undefined);
 
 export function VacacionesProvider({ children }: { children: ReactNode }) {
-  const [vacaciones, setVacaciones] = useState<Vacacion[]>(MOCK_VACACIONES);
+  // 🛠️ Usamos la función getMockVacaciones() con paréntesis
+  const [vacaciones, setVacaciones] = useState<Vacacion[]>(getMockVacaciones());
 
   const addVacacion = (vacacion: Vacacion) => {
     setVacaciones((prev) => [...prev, vacacion]);

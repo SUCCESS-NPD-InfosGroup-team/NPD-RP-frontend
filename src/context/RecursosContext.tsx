@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { Recurso } from '../types';
-import { MOCK_RECURSOS } from '../services/mockData';
+import { getMockRecursos } from '../services/mockData';
 import { useAuditoria } from './AuditoriaContext';
 import { useAuth } from './AuthContext';
 
@@ -16,7 +16,7 @@ interface RecursosContextType {
 const RecursosContext = createContext<RecursosContextType | undefined>(undefined);
 
 export function RecursosProvider({ children }: { children: ReactNode }) {
-  const [recursos, setRecursos] = useState<Recurso[]>(MOCK_RECURSOS);
+  const [recursos, setRecursos] = useState<Recurso[]>(getMockRecursos());
   const { addEntry } = useAuditoria();
   const { user } = useAuth();
 

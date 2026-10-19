@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { User, Role } from '../types';
-import { MOCK_USERS } from '../services/mockData';
+// 🛠️ Cambiamos la importación a la función
+import { getMockUsers } from '../services/mockData';
 
 interface UsuariosContextType {
   usuarios: User[];
@@ -15,7 +16,8 @@ interface UsuariosContextType {
 const UsuariosContext = createContext<UsuariosContextType | undefined>(undefined);
 
 export function UsuariosProvider({ children }: { children: ReactNode }) {
-  const [usuarios, setUsuarios] = useState<User[]>(MOCK_USERS);
+  // 🛠️ Usamos la función getMockUsers() con paréntesis
+  const [usuarios, setUsuarios] = useState<User[]>(getMockUsers());
 
   const addUsuario = (usuario: User) => {
     setUsuarios((prev) => [...prev, usuario]);

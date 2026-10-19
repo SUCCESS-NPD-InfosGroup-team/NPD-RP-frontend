@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { RecursosGantt } from '../../components/recursos/RecursosGantt';
 import type { Filters, Recurso } from '../../types';
 import { searchRecursos } from '../../services/api';
+import { getMockRecursos } from '../../services/mockData'; // <-- Importación necesaria
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
@@ -23,10 +24,8 @@ const normalizeText = (text: string) => {
 export const RecursosPage = () => {
   const [viewMode, setViewMode] = useState<'tabla' | 'gantt'>('gantt');
   
-  const [recursosMock, setRecursosMock] = useState<Recurso[]>([
-    { id: '1', nEmpleado: '1045', nombre: 'Ana Torres', rol: 'Developer', cliente: 'COPA', proyecto: 'Proyecto Alpha', liderNPD: 'Lorena Batista', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-01-01', fechaFin: '2026-12-31' },
-    { id: '2', nEmpleado: '1046', nombre: 'Peña', rol: 'Tester', cliente: 'BANESCO', proyecto: 'Proyecto Beta', liderNPD: 'Ricardo Him', nivel: 'N2', estado: 'Activo', fechaInicio: '2026-02-01', fechaFin: '2026-11-30' },
-  ]);
+  // 🛠️ El estado se inicializa llamando a la función
+  const [recursosMock, setRecursosMock] = useState<Recurso[]>(getMockRecursos());
 
   const [recursosApi, setRecursosApi] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(false);

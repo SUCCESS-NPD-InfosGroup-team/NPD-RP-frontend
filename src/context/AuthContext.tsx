@@ -3,7 +3,7 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { User, Role } from '../types';
-import { MOCK_USERS } from '../services/mockData';
+import { getMockUsers } from '../services/mockData';
 
 interface AuthContextType {
   user: User | null;
@@ -18,7 +18,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const login = (role: Role) => {
-    const foundUser = MOCK_USERS.find((u) => u.role === role);
+    // 🛠️ AQUÍ ESTABA EL ERROR: Cambiamos MOCK_USERS por getMockUsers()
+    const foundUser = getMockUsers().find((u) => u.role === role);
     if (foundUser) setUser(foundUser);
   };
 
