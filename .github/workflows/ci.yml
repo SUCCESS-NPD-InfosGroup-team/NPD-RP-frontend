@@ -1,12 +1,12 @@
 # Colocar en .github/workflows/ci.yml
 name: CI
 
-# Cuándo corre: en cada pull request hacia main, y en cada push a main
+# Cuándo corre: en cada pull request hacia develop/main, y en cada push a develop/main
 on:
   pull_request:
-    branches: [main]
+    branches: [develop, main]
   push:
-    branches: [main]
+    branches: [develop, main]
 
 # Si subes un commit nuevo a la misma PR, cancela la ejecución anterior
 concurrency:

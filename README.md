@@ -1,5 +1,32 @@
 # React + TypeScript + Vite
 
+## Main layout and role navigation
+
+The shared application shell provides a Figma-aligned desktop header with a
+1200 px minimum width, horizontal navigation, and page content area. Navigation uses the Keycloak
+roles `operations-administrator`, `guest`, `customer-success`, and `npd-leader`
+from `realm_access.roles` and `resource_access[npd-frontend].roles`. Roles from
+other clients are ignored. A missing or unrecognized role fails closed:
+the menu is empty and restricted routes show the access-denied screen.
+
+Resource search is shown for roles with access to a screen. Resource registration
+is shown only to `operations-administrator`; the controls remain inert until
+their feature callbacks are connected. The notification badge appears only for
+a real unread count greater than zero. The operations status bar is always
+visible and displays `—` for values not supplied by real status data. User
+identity and logout are supplied by the existing Keycloak authentication
+context. There are no sample resource counts, sample user names, notification
+counts, or session timers in the application shell. Feature-page content is
+still represented by placeholder headings, and API integration still needs to
+be connected before production use.
+
+The frontend menu and route checks are for user experience only. The API must
+continue to enforce authorization for every protected operation. No credentials
+or tokens are persisted by this layout.
+
+Run `npm test` for the local suite, `npm run test:coverage` for coverage, and
+`npm run build` for the production TypeScript/build check.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
