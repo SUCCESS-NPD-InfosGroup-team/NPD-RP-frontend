@@ -6,8 +6,8 @@ import type { Filters, Recurso } from '../../types';
 import { searchRecursos } from '../../services/api';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
 
-// CA-05: Función para ignorar mayúsculas y acentos
 const normalizeText = (text: string) => {
   return text
     .toLowerCase()
@@ -18,13 +18,20 @@ const normalizeText = (text: string) => {
 export const RecursosPage = () => {
   const [viewMode, setViewMode] = useState<'tabla' | 'gantt'>('gantt');
   
-  // Estados para la data que viene de la API
+  // 🚨 MOCK TEMPORAL: Ahora es un estado para que se pueda actualizar
+  const [recursosMock, setRecursosMock] = useState<Recurso[]>([
+    { id: '1', nEmpleado: '1045', nombre: 'Ana Torres', rol: 'Developer', cliente: 'COPA', proyecto: 'Proyecto Alpha', liderNPD: 'Lorena Batista', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-01-01', fechaFin: '2026-12-31' },
+    { id: '2', nEmpleado: '1046', nombre: 'Peña', rol: 'Tester', cliente: 'BANESCO', proyecto: 'Proyecto Beta', liderNPD: 'Ricardo Him', nivel: 'N2', estado: 'Activo', fechaInicio: '2026-02-01', fechaFin: '2026-11-30' },
+  ]);
+
   const [recursosApi, setRecursosApi] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Filtros (CA-10: Por defecto Estado = Activo)
+  // Estado para el Modal de Edición (HU-02)
+  const [recursoAEditar, setRecursoAEditar] = useState<Recurso | null>(null);
+
   const [filters, setFilters] = useState<Filters>({
     search: '',
     cliente: 'Todos',
@@ -35,13 +42,7 @@ export const RecursosPage = () => {
     estado: 'Activo',
   });
 
-  // 🚨 MOCK TEMPORAL (BORRAR CUANDO CONECTES LA API REAL)
-  const mockRecursos: Recurso[] = [
-    { id: '1', nEmpleado: '1045', nombre: 'Ana Torres', rol: 'Developer', cliente: 'COPA', proyecto: 'Proyecto Alpha', liderNPD: 'Lorena Batista', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-01-01', fechaFin: '2026-12-31' },
-    { id: '2', nEmpleado: '1046', nombre: 'Peña', rol: 'Tester', cliente: 'BANESCO', proyecto: 'Proyecto Beta', liderNPD: 'Ricardo Him', nivel: 'N2', estado: 'Activo', fechaInicio: '2026-02-01', fechaFin: '2026-11-30' },
-  ];
-
-  // Efecto para llamar a la API cuando cambian los filtros o la página
+  // Efecto para llamar a la API
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -54,7 +55,10 @@ export const RecursosPage = () => {
         });
 
         const res = await searchRecursos(cleanFilters, currentPage, 25);
-        setRecursosApi(res.data);
+        // Si la API devuelve datos, los usamos
+        if (res.data && res.data.length > 0) {
+          setRecursosApi(res.data);
+        }
         setTotalPages(res.totalPages);
       } catch (error) {
         console.error("Error cargando recursos:", error);
@@ -65,19 +69,16 @@ export const RecursosPage = () => {
     fetchData();
   }, [filters, currentPage]);
 
-  // Función para manejar cambios en los filtros
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
     setCurrentPage(1);
   };
 
-  // Función para quitar un filtro individual (CA-04)
   const removeFilter = (key: keyof Filters) => {
     setFilters({ ...filters, [key]: key === 'estado' ? 'Activo' : 'Todos' });
     setCurrentPage(1);
   };
 
-  // Limpiar todos los filtros
   const clearAllFilters = () => {
     setFilters({
       search: '',
@@ -91,7 +92,6 @@ export const RecursosPage = () => {
     setCurrentPage(1);
   };
 
-  // Calculamos los filtros activos para las etiquetas (CA-04)
   const activeFilters = Object.entries(filters).filter(([key, value]) => {
     if (key === 'search' && value !== '') return true;
     if (key === 'estado' && value !== 'Activo' && value !== 'Todos') return true;
@@ -99,9 +99,10 @@ export const RecursosPage = () => {
     return false;
   });
 
-  // Lógica de filtrado local (CA-05) - APLICA AL MOCK
-  const recursosFiltrados = (recursosApi.length > 0 ? recursosApi : mockRecursos).filter((r) => {
-    // Usamos || '' para solucionar el error de TypeScript con los campos opcionales
+  // 🔥 AQUÍ ESTÁ LA MAGIA: Usamos los datos de la API si existen, si no, usamos el Mock actualizable
+  const dataSource = recursosApi.length > 0 ? recursosApi : recursosMock;
+
+  const recursosFiltrados = dataSource.filter((r) => {
     const searchTxt = filters.search || '';
     
     const matchSearch =
@@ -120,7 +121,6 @@ export const RecursosPage = () => {
     return matchSearch && matchCliente && matchProyecto && matchLider && matchRol && matchNivel && matchEstado;
   });
 
-  // Exportar a Excel
   const handleExport = () => {
     const dataToExport = recursosFiltrados.map((r) => ({
       'N° Empleado': r.nEmpleado,
@@ -141,6 +141,25 @@ export const RecursosPage = () => {
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
     saveAs(blob, `Recursos_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleEditClick = (recurso: Recurso) => {
+    setRecursoAEditar(recurso);
+  };
+
+  // 🔥 LA SOLUCIÓN: Actualizamos el Mock (si no hay API) Y la API
+  const handleSaveEdit = (recursoActualizado: Recurso) => {
+    // 1. Actualizamos el estado de la API
+    setRecursosApi(prev => prev.map(r => r.id === recursoActualizado.id ? recursoActualizado : r));
+    
+    // 2. Actualizamos el estado del Mock (para que la tabla cambie en tu entorno local)
+    setRecursosMock(prev => prev.map(r => r.id === recursoActualizado.id ? recursoActualizado : r));
+    
+    // 3. Cerramos el modal
+    setRecursoAEditar(null);
+    
+    // TODO: Aquí irá la llamada real a la API de Francisco cuando esté lista
+    console.log("Guardado localmente:", recursoActualizado);
   };
 
   return (
@@ -271,7 +290,6 @@ export const RecursosPage = () => {
           {loading ? (
              <p>Cargando recursos...</p>
           ) : recursosFiltrados.length === 0 ? (
-             /* CA-03: EMPTY STATE */
              <div style={{ textAlign: 'center', padding: '40px', border: '2px dashed #ddd', borderRadius: '8px' }}>
                 <h3>¡Ningún recurso coincide con tu búsqueda!</h3>
                 <button onClick={clearAllFilters} style={{ marginTop: '10px', padding: '8px 16px', background: '#E85D04', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
@@ -288,6 +306,7 @@ export const RecursosPage = () => {
                   <th style={{ padding: '10px' }}>Líder NPD</th>
                   <th style={{ padding: '10px' }}>Nivel</th>
                   <th style={{ padding: '10px' }}>Estado</th>
+                  <th style={{ padding: '10px' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -307,13 +326,21 @@ export const RecursosPage = () => {
                         {rec.estado}
                       </span>
                     </td>
+                    <td style={{ padding: '10px' }}>
+                      <button 
+                        onClick={() => handleEditClick(rec)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
+                        title="Editar recurso"
+                      >
+                        ✏️
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
 
-          {/* CA-06: Paginación */}
           {!loading && recursosFiltrados.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
               <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} style={{ padding: '6px 12px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}>
@@ -326,6 +353,15 @@ export const RecursosPage = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Modal de Edición (HU-02) */}
+      {recursoAEditar && (
+        <EditarRecursoModal 
+          recurso={recursoAEditar} 
+          onClose={() => setRecursoAEditar(null)} 
+          onSave={handleSaveEdit} 
+        />
       )}
     </div>
   );
