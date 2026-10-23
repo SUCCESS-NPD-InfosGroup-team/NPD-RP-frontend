@@ -6,6 +6,7 @@ import {
 } from './components/layout/roleNavigation'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
+import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 
 export interface AppProps {
   onSearchResources?: (query: string) => void
@@ -28,6 +29,10 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
         <p>Tu perfil no tiene permiso para consultar esta sección.</p>
       </section>
     )
+  }
+
+  if (item.id === 'projects') {
+    return <ProjectsPage />
   }
 
   return (

@@ -1,0 +1,40 @@
+.ui-paginador {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ui-paginador__range {
+  padding-right: 6px;
+  color: var(--text-primary);
+  font: 600 13px / 1.2 var(--font-body);
+  white-space: nowrap;
+}
+
+.ui-paginador__button {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.ui-paginador__button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ui-paginador__button:hover:not(:disabled) {
+  background: var(--surface-header);
+}
+
+.ui-paginador__button:disabled {
+  color: var(--border-strong);
+  cursor: not-allowed;
+}
