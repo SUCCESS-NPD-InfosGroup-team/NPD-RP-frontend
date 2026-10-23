@@ -7,6 +7,7 @@ import {
   ChartIcon,
   ClockIcon,
   EditIcon,
+  FolderIcon,
   LogoutIcon,
   PlusIcon,
   PlaneIcon,
@@ -34,7 +35,7 @@ interface MainLayoutProps {
 
 const iconById: Record<NavigationItemId, ComponentType> = {
   resources: PlaneIcon,
-  projects: ChartIcon,
+  projects: FolderIcon,
   arrivals: PlaneIcon,
   dashboard: ChartIcon,
   vacations: SunIcon,
