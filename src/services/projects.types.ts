@@ -17,6 +17,7 @@ export interface Project {
   teamSize: number
   members: ProjectMember[]
   leads: string[]
+  leadIds?: number[]
   startDate: string
   contractEnd: string | null
   pendingCount: number

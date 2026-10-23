@@ -82,4 +82,28 @@ describe('NewProjectModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(onClose).toHaveBeenCalledOnce()
   })
+
+  it('creates a new internal client and returns the add-members intent', async () => {
+    const createProject = vi.fn().mockResolvedValue({ id: 'project-4' })
+    const onCreated = vi.fn()
+    vi.mocked(getProjectsApi).mockResolvedValue({
+      createProject,
+      listProjects: vi.fn(),
+      listClients: vi.fn(),
+      createClient: vi.fn(),
+    })
+    render(<NewProjectModal open clients={[]} onCreated={onCreated} onClose={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: '__new__' } })
+    fireEvent.change(screen.getByLabelText('Nombre del cliente *'), { target: { value: 'Tigo' } })
+    fireEvent.click(screen.getByLabelText('Cliente interno'))
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Tigo QA' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear y agregar colaboradores' }))
+    await waitFor(() => expect(createProject).toHaveBeenCalledWith({
+      clientId: undefined,
+      newClient: { name: 'Tigo', isInternal: true },
+      name: 'Tigo QA',
+      contractEnd: undefined,
+    }))
+    expect(onCreated).toHaveBeenCalledWith({ id: 'project-4' }, { addMembers: true })
+  })
 })

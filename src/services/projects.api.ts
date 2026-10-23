@@ -47,6 +47,7 @@ function mapProject(project: ApiProject): Project {
     teamSize: project.teamSize,
     members: [],
     leads: project.leads.map((lead) => lead.name),
+    leadIds: project.leads.map((lead) => lead.id),
     startDate: project.startDate,
     contractEnd: project.contractEndDate,
     pendingCount: project.pendingConfirmation,
@@ -95,7 +96,7 @@ export const projectsApi = {
   },
   async listClients(): Promise<Client[]> {
     const response = await read<{ items: Array<Omit<Client, 'id'> & { id: number }> }>(await apiFetch('/clients?active=true'))
-    return response.items.map((client) => ({ ...client, id: String(client.id) }))
+    return response.items.map((client) => ({ ...client, id: String(client.id), active: true }))
   },
   async createClient(input: { name: string; isInternal: boolean }): Promise<Client> {
     return read<Client>(await apiFetch('/clients', {

@@ -40,6 +40,7 @@ const projects: Project[] = projectNames.map((name, index) => {
     teamSize: noTeam ? 0 : 2 + (index % 4),
     members: noTeam ? [] : [{ id: `member-${index}-a`, initials: 'AR' }, { id: `member-${index}-b`, initials: 'LM' }],
     leads: noTeam ? [] : [index % 2 ? 'Mara Sol' : 'Noel Vega'],
+    leadIds: noTeam ? [] : [index % 2 ? 2 : 1],
     startDate: '2025-02-03',
     contractEnd,
     pendingCount: index === 2 || index === 9 ? 1 : 0,
@@ -53,7 +54,7 @@ function filtered(filters: ProjectFilters): Project[] {
     const text = `${project.name} ${project.client.name}`.toLowerCase()
     if (filters.search && !text.includes(filters.search.toLowerCase())) return false
     if (filters.clientId && project.client.id !== filters.clientId) return false
-    if (filters.leadId && !project.leads.includes(filters.leadId)) return false
+    if (filters.leadId && !project.leadIds?.includes(Number(filters.leadId))) return false
     if (filters.contractEnd === 'none' && project.contractEnd !== null) return false
     return true
   })
@@ -77,7 +78,10 @@ export const projectsMock = {
     const client = input.clientId
       ? clients.find((item) => item.id === input.clientId)
       : undefined
-    const targetClient = client ?? clients[0]
+    const targetClient = client ?? (input.newClient
+      ? { id: `client-${clients.length + 1}`, ...input.newClient, active: true }
+      : clients[0])
+    if (input.newClient && !client) clients.push(targetClient)
     const duplicate = projects.find((project) => project.client.id === targetClient.id && project.name.toLowerCase() === input.name.toLowerCase())
     if (duplicate) {
       throw { status: 409, code: 'PROJECT_NAME_TAKEN', detail: 'El nombre ya existe.', field: 'name', existingProjectId: Number(duplicate.id.replace('project-', '')), existingProjectName: duplicate.name }
@@ -89,6 +93,7 @@ export const projectsMock = {
       teamSize: 0,
       members: [],
       leads: [],
+      leadIds: [],
       startDate: new Date().toISOString(),
       contractEnd: input.contractEnd ?? null,
       pendingCount: 0,
