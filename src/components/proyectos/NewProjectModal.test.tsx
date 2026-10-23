@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NewProjectModal } from './NewProjectModal'
 import { getProjectsApi } from '../../services/projects'
 
@@ -18,14 +17,13 @@ describe('NewProjectModal', () => {
       createClient: vi.fn(),
     })
     const onCreated = vi.fn()
-    const user = userEvent.setup()
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={onCreated} onClose={vi.fn()} />)
-    await user.click(screen.getByRole('button', { name: 'Crear proyecto' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Cliente y nombre son obligatorios.')
-    await user.selectOptions(screen.getByLabelText('Cliente *'), 'client-1')
-    await user.type(screen.getByLabelText('Nombre del proyecto *'), 'Nuevo')
-    await user.click(screen.getByRole('button', { name: 'Crear proyecto' }))
-    expect(createProject).toHaveBeenCalledWith({ clientId: 'client-1', name: 'Nuevo', contractEnd: undefined })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('No se creó el proyecto. Corrige el campo marcado.')
+    fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Nuevo' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
+    await waitFor(() => expect(createProject).toHaveBeenCalledWith({ clientId: 'client-1', name: 'Nuevo', contractEnd: undefined }))
     expect(onCreated).toHaveBeenCalledOnce()
   })
 
@@ -37,11 +35,11 @@ describe('NewProjectModal', () => {
       listClients: vi.fn(),
       createClient: vi.fn(),
     })
-    const user = userEvent.setup()
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={vi.fn()} />)
-    await user.selectOptions(screen.getByLabelText('Cliente *'), 'client-1')
-    await user.type(screen.getByLabelText('Nombre del proyecto *'), 'Nuevo')
-    await user.click(screen.getByRole('button', { name: 'Crear proyecto' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('No tienes permisos para crear proyectos.')
+    fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Nuevo' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se creó el proyecto. Corrige el campo marcado.')
+    expect(screen.getByText('No tienes permisos para crear proyectos.')).toBeInTheDocument()
   })
 })

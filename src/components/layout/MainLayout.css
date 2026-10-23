@@ -50,6 +50,7 @@
 .header-navigation {
   min-width: 0;
   flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .navigation-list {
@@ -57,9 +58,15 @@
   height: var(--topbar-h);
   align-items: stretch;
   gap: var(--navigation-gap);
+  overflow-x: auto;
   margin: 0;
   padding: 0;
   list-style: none;
+  scrollbar-width: none;
+}
+
+.navigation-list::-webkit-scrollbar {
+  display: none;
 }
 
 .navigation-link {
@@ -109,6 +116,9 @@
 .header-actions {
   flex: 0 0 auto;
   gap: var(--header-actions-gap);
+  position: relative;
+  z-index: 1;
+  background: var(--brand-orange);
 }
 
 .resource-search {

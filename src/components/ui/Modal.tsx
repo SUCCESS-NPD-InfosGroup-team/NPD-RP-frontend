@@ -26,6 +26,7 @@ export function Modal({ open, title, children, onClose, className = '' }: Readon
       '[tabindex]:not([tabindex="-1"])',
     ].join(',')
     const focusable = () => Array.from(dialogElement.querySelectorAll<HTMLElement>(focusableSelector))
+      .filter((element) => !element.classList.contains('ui-modal__close'))
     const firstFocusable = focusable()[0]
     firstFocusable?.focus()
 
@@ -70,7 +71,12 @@ export function Modal({ open, title, children, onClose, className = '' }: Readon
         aria-labelledby={title ? 'ui-modal-title' : undefined}
         tabIndex={-1}
       >
-        {title && <h2 id="ui-modal-title">{title}</h2>}
+        {title && (
+          <div className="ui-modal__header">
+            <h2 id="ui-modal-title">{title}</h2>
+            <button className="ui-modal__close" type="button" aria-label="Cerrar" onClick={onClose}>×</button>
+          </div>
+        )}
         {children}
       </div>
     </div>
