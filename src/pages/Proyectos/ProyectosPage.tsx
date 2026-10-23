@@ -1,16 +1,35 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useProjects } from '../../hooks/useProjects'
 import { Button } from '../../components/ui/Button'
+import { Field } from '../../components/ui/Field'
+import { Paginador } from '../../components/ui/Paginador'
 import { DownloadIcon, PlusIcon } from '../../components/icons'
 import { ProjectsTable } from '../../components/proyectos/ProjectsTable'
 import '../../components/proyectos/ProjectsPage.css'
 
 export function ProjectsPage() {
   const { roles } = useAuth()
-  const filters = useMemo(() => ({}), [])
-  const { data, summary, loading } = useProjects(filters)
+  const [search, setSearch] = useState('')
+  const [contractEnd, setContractEnd] = useState<'any' | 'none' | 'next30'>('any')
+  const [page, setPage] = useState(1)
+  const filters = useMemo(() => ({ search, contractEnd }), [search, contractEnd])
+  const { data, summary, loading, setPage: updatePage } = useProjects(filters)
   const canEdit = roles.includes('operations-administrator')
+  useEffect(() => {
+    const handleSlash = (event: KeyboardEvent) => {
+      if (event.key === '/' && event.target instanceof HTMLElement && !['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) {
+        event.preventDefault()
+        document.getElementById('project-search')?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleSlash)
+    return () => window.removeEventListener('keydown', handleSlash)
+  }, [])
+  useEffect(() => {
+    const reset = window.setTimeout(() => { setPage(1); updatePage(1) }, 0)
+    return () => window.clearTimeout(reset)
+  }, [search, contractEnd, updatePage])
 
   return (
     <section className="screen projects-page">
@@ -30,7 +49,12 @@ export function ProjectsPage() {
         <Kpi label="SIN EQUIPO" value={summary?.withoutTeam} note="proyectos creados sin colaboradores" />
         <Kpi label="COLABORADORES SIN PROYECTO" value={summary?.unassignedPeople} note="disponibles para asignar" />
       </div>
+      <div className="projects-page__filters">
+        <Field id="project-search" label="Buscar" placeholder="Cliente o proyecto…" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <Field id="project-contract" label="Fin de contrato" type="select" value={contractEnd} onChange={(event) => setContractEnd(event.target.value as typeof contractEnd)} options={[{ value: 'any', label: 'Cualquier fecha' }, { value: 'next30', label: 'Próximos 30 días' }, { value: 'none', label: 'Sin fecha' }]} />
+      </div>
       {loading && !data ? <div className="projects-page__empty">Cargando proyectos…</div> : <ProjectsTable projects={data?.items ?? []} canEdit={canEdit} />}
+      {data && <Paginador range={`${(page - 1) * 25 + 1}–${Math.min(page * 25, data.total)} de ${data.total}`} page={page} totalPages={Math.ceil(data.total / 25)} onPageChange={(nextPage) => { setPage(nextPage); updatePage(nextPage) }} />}
     </section>
   )
 }

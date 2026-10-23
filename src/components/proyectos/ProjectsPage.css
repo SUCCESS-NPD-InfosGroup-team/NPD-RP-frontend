@@ -4,6 +4,8 @@
 .projects-page__actions { gap: var(--space-2); }
 .projects-page__subtitle { margin: 2px 0 0; color: var(--text-secondary); }
 .projects-page__kpis { gap: var(--space-3); }
+.projects-page__filters { display: flex; gap: var(--space-3); padding: var(--space-3); background: var(--surface-card); border: var(--border-width) solid var(--border-default); border-radius: var(--radius); }
+.projects-page__filters .ui-field { min-width: 220px; }
 .projects-page__kpi { flex: 1; padding: var(--space-3); background: var(--surface-card); border: var(--border-width) solid var(--border-default); border-radius: var(--radius); }
 .projects-page__kpi-label { color: var(--text-secondary); font: 600 var(--fs-tag) var(--font-body); letter-spacing: .04em; }
 .projects-page__kpi-value { margin: 2px 0; font: 700 28px var(--font-display); }
