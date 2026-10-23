@@ -1,0 +1,25 @@
+.ui-modal__overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: color-mix(in srgb, var(--text-primary) 45%, transparent);
+}
+
+.ui-modal {
+  width: min(100%, 560px);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  box-shadow: 0 12px 32px var(--border-strong);
+}
+
+.ui-modal h2 {
+  margin: 0 0 var(--space-4);
+  color: var(--text-primary);
+  font: 700 19px / 1.2 var(--font-display);
+}
