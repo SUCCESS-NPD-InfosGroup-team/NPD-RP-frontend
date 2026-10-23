@@ -7,6 +7,10 @@
 }
 
 .app-header {
+  position: fixed;
+  z-index: 10;
+  inset-block-start: 0;
+  inset-inline: 0;
   display: flex;
   height: var(--topbar-h);
   min-height: var(--topbar-h);
@@ -234,7 +238,7 @@
   width: 100%;
   min-width: 0;
   flex: 1;
-  padding: var(--space-5);
+  padding: calc(var(--space-5) + var(--topbar-h)) var(--space-5) calc(var(--space-5) + var(--opsbar-h));
 }
 
 .page-heading {
@@ -244,6 +248,10 @@
 }
 
 .operations-bar {
+  position: fixed;
+  z-index: 10;
+  inset-inline: 0;
+  inset-block-end: 0;
   display: flex;
   height: var(--opsbar-h);
   min-height: var(--opsbar-h);
