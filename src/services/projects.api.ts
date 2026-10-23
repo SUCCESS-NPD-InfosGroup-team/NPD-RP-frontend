@@ -8,6 +8,7 @@ import type {
   ProjectFilters,
   ProjectsSummary,
 } from './projects.types'
+import { ApiRequestError } from './projects.types'
 
 function query(filters: ProjectFilters, page: number): string {
   const params = new URLSearchParams({ page: String(page), pageSize: '25' })
@@ -20,14 +21,14 @@ function query(filters: ProjectFilters, page: number): string {
 async function read<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
   const body = await response.json().catch(() => ({})) as Partial<ApiError>
-  throw {
+  throw new ApiRequestError({
     status: response.status,
     code: body.code ?? 'API_ERROR',
     message: body.message ?? 'No se pudo completar la operación.',
     field: body.field,
     existingProjectId: body.existingProjectId,
     existingProjectName: body.existingProjectName,
-  } satisfies ApiError
+  } satisfies ApiError)
 }
 
 export const projectsApi = {

@@ -1,4 +1,3 @@
-// TODO confirmar contrato con Vela (SCRUM-121)
 export interface Client {
   id: string
   name: string
@@ -61,4 +60,22 @@ export interface ApiError {
   field?: string
   existingProjectId?: string
   existingProjectName?: string
+}
+
+export class ApiRequestError extends Error implements ApiError {
+  readonly status: number
+  readonly code: string
+  readonly field?: string
+  readonly existingProjectId?: string
+  readonly existingProjectName?: string
+
+  constructor(error: ApiError) {
+    super(error.message)
+    this.name = 'ApiRequestError'
+    this.status = error.status
+    this.code = error.code
+    this.field = error.field
+    this.existingProjectId = error.existingProjectId
+    this.existingProjectName = error.existingProjectName
+  }
 }
