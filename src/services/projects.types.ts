@@ -34,8 +34,9 @@ export interface ProjectFilters {
 export interface Page<T> {
   items: T[]
   page: number
-  pageSize: 25
+  pageSize: number
   total: number
+  totalPages?: number
 }
 
 export interface ProjectsSummary {
@@ -56,24 +57,28 @@ export interface CreateProjectInput {
 export interface ApiError {
   status: number
   code: string
-  message: string
+  detail: string
+  title?: string
+  errors?: Array<{ field: string; code: string; message: string }>
   field?: string
-  existingProjectId?: string
+  existingProjectId?: number
   existingProjectName?: string
 }
 
 export class ApiRequestError extends Error implements ApiError {
   readonly status: number
   readonly code: string
+  readonly detail: string
   readonly field?: string
-  readonly existingProjectId?: string
+  readonly existingProjectId?: number
   readonly existingProjectName?: string
 
   constructor(error: ApiError) {
-    super(error.message)
+    super(error.detail)
     this.name = 'ApiRequestError'
     this.status = error.status
     this.code = error.code
+    this.detail = error.detail
     this.field = error.field
     this.existingProjectId = error.existingProjectId
     this.existingProjectName = error.existingProjectName

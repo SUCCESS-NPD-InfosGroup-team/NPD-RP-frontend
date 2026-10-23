@@ -62,7 +62,7 @@ function filtered(filters: ProjectFilters): Project[] {
 export const projectsMock = {
   async listProjects(filters: ProjectFilters = {}, page = 1): Promise<Page<Project>> {
     const items = filtered(filters)
-    return { items: items.slice((page - 1) * 25, page * 25), page, pageSize: 25, total: items.length }
+    return { items: items.slice((page - 1) * 25, page * 25), page, pageSize: 25, total: items.length, totalPages: Math.ceil(items.length / 25) }
   },
   async getSummary(): Promise<ProjectsSummary> {
     return {
@@ -80,7 +80,7 @@ export const projectsMock = {
     const targetClient = client ?? clients[0]
     const duplicate = projects.find((project) => project.client.id === targetClient.id && project.name.toLowerCase() === input.name.toLowerCase())
     if (duplicate) {
-      throw { status: 409, code: 'DUPLICATE_PROJECT_NAME', message: 'El nombre ya existe.', field: 'name', existingProjectId: duplicate.id, existingProjectName: duplicate.name }
+      throw { status: 409, code: 'PROJECT_NAME_TAKEN', detail: 'El nombre ya existe.', field: 'name', existingProjectId: Number(duplicate.id.replace('project-', '')), existingProjectName: duplicate.name }
     }
     const project: Project = {
       id: `project-${projects.length + 1}`,

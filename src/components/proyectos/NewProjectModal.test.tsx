@@ -12,7 +12,6 @@ describe('NewProjectModal', () => {
     vi.mocked(getProjectsApi).mockResolvedValue({
       createProject,
       listProjects: vi.fn(),
-      getSummary: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
     })
@@ -31,7 +30,6 @@ describe('NewProjectModal', () => {
     vi.mocked(getProjectsApi).mockResolvedValue({
       createProject: vi.fn().mockRejectedValue({ status: 403, message: 'Forbidden' }),
       listProjects: vi.fn(),
-      getSummary: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
     })
@@ -48,7 +46,6 @@ describe('NewProjectModal', () => {
     vi.mocked(getProjectsApi).mockResolvedValue({
       createProject,
       listProjects: vi.fn(),
-      getSummary: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
     })
@@ -67,13 +64,12 @@ describe('NewProjectModal', () => {
     const onClose = vi.fn()
     vi.mocked(getProjectsApi).mockResolvedValue({
       createProject: vi.fn().mockRejectedValue({
-        code: 'DUPLICATE_PROJECT_NAME',
+        code: 'PROJECT_NAME_TAKEN',
         existingProjectName: 'Atlas',
-        existingProjectId: 'project-1',
+        existingProjectId: 1,
         message: 'Duplicate',
       }),
       listProjects: vi.fn(),
-      getSummary: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
     })
@@ -82,7 +78,7 @@ describe('NewProjectModal', () => {
     fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Atlas' } })
     fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
     expect(await screen.findByText('Atlas ya tiene un proyecto con este nombre.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Abrir Atlas' })).toHaveAttribute('href', '/proyectos?project=project-1')
+    expect(screen.getByRole('link', { name: 'Abrir Atlas' })).toHaveAttribute('href', '/proyectos?project=1')
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(onClose).toHaveBeenCalledOnce()
   })

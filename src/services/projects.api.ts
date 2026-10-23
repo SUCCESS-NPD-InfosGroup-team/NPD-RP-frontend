@@ -6,16 +6,52 @@ import type {
   Page,
   Project,
   ProjectFilters,
-  ProjectsSummary,
 } from './projects.types'
 import { ApiRequestError } from './projects.types'
 
 function query(filters: ProjectFilters, page: number): string {
-  const params = new URLSearchParams({ page: String(page), pageSize: '25' })
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && value !== '') params.set(key, String(value))
+  const params = new URLSearchParams({ page: String(Math.max(page - 1, 0)), size: '25' })
+  if (filters.clientId && /^\d+$/.test(filters.clientId)) params.set('clientId', filters.clientId)
+  if (filters.leadId && /^\d+$/.test(filters.leadId)) params.set('leaderId', filters.leadId)
+  if (filters.contractEnd === 'next30') {
+    const date = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10)
+    params.set('contractEndBefore', date)
   }
+  if (filters.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive))
   return params.toString()
+}
+
+interface ApiProject {
+  id: number
+  name: string
+  client: { id: number; name: string; isInternal: boolean }
+  active: boolean
+  startDate: string
+  contractEndDate: string | null
+  daysToContractEnd: number | null
+  teamSize: number
+  pendingConfirmation: number
+  leads: Array<{ id: number; name: string }>
+}
+
+interface ApiPage<T> {
+  items: T[]
+  page: { number: number; size: number; totalElements: number; totalPages: number }
+}
+
+function mapProject(project: ApiProject): Project {
+  return {
+    id: String(project.id),
+    name: project.name,
+    client: { ...project.client, id: String(project.client.id) },
+    teamSize: project.teamSize,
+    members: [],
+    leads: project.leads.map((lead) => lead.name),
+    startDate: project.startDate,
+    contractEnd: project.contractEndDate,
+    pendingCount: project.pendingConfirmation,
+    active: project.active,
+  }
 }
 
 async function read<T>(response: Response): Promise<T> {
@@ -24,7 +60,9 @@ async function read<T>(response: Response): Promise<T> {
   throw new ApiRequestError({
     status: response.status,
     code: body.code ?? 'API_ERROR',
-    message: body.message ?? 'No se pudo completar la operación.',
+    detail: body.detail ?? 'No se pudo completar la operación.',
+    title: body.title,
+    errors: body.errors,
     field: body.field,
     existingProjectId: body.existingProjectId,
     existingProjectName: body.existingProjectName,
@@ -33,20 +71,31 @@ async function read<T>(response: Response): Promise<T> {
 
 export const projectsApi = {
   async listProjects(filters: ProjectFilters = {}, page = 1): Promise<Page<Project>> {
-    return read<Page<Project>>(await apiFetch(`/projects?${query(filters, page)}`))
-  },
-  async getSummary(): Promise<ProjectsSummary> {
-    return read<ProjectsSummary>(await apiFetch('/projects/summary'))
+    const response = await read<ApiPage<ApiProject>>(await apiFetch(`/projects?${query(filters, page)}`))
+    return {
+      items: response.items.map(mapProject),
+      page: response.page.number + 1,
+      pageSize: response.page.size,
+      total: response.page.totalElements,
+      totalPages: response.page.totalPages,
+    }
   },
   async createProject(input: CreateProjectInput): Promise<Project> {
-    return read<Project>(await apiFetch('/projects', {
+    const response = await read<ApiProject>(await apiFetch('/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        clientId: input.clientId && /^\d+$/.test(input.clientId) ? Number(input.clientId) : undefined,
+        newClient: input.newClient,
+        name: input.name,
+        contractEndDate: input.contractEnd ?? null,
+      }),
     }))
+    return mapProject(response)
   },
   async listClients(): Promise<Client[]> {
-    return read<Client[]>(await apiFetch('/clients'))
+    const response = await read<{ items: Array<Omit<Client, 'id'> & { id: number }> }>(await apiFetch('/clients?active=true'))
+    return response.items.map((client) => ({ ...client, id: String(client.id) }))
   },
   async createClient(input: { name: string; isInternal: boolean }): Promise<Client> {
     return read<Client>(await apiFetch('/clients', {

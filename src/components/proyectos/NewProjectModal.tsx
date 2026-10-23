@@ -48,7 +48,7 @@ function getApiErrorMessage(cause: unknown): string {
 }
 
 function getDuplicateProject(cause: unknown, fallbackName: string): { name: string; id?: string } | undefined {
-  if (!cause || typeof cause !== 'object' || !('code' in cause) || cause.code !== 'DUPLICATE_PROJECT_NAME') return undefined
+  if (!cause || typeof cause !== 'object' || !('code' in cause) || cause.code !== 'PROJECT_NAME_TAKEN') return undefined
   return {
     name: 'existingProjectName' in cause ? String(cause.existingProjectName) : fallbackName,
     id: 'existingProjectId' in cause ? String(cause.existingProjectId) : undefined,

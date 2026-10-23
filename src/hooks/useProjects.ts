@@ -16,12 +16,15 @@ export function useProjects(filters: ProjectFilters = {}) {
     try {
       const selectedApi = api ?? await getProjectsApi()
       setApi(selectedApi)
-      const [projectsPage, projectsSummary] = await Promise.all([
-        selectedApi.listProjects(filters, page),
-        selectedApi.getSummary(),
-      ])
+      const projectsPage = await selectedApi.listProjects(filters, page)
       setData(projectsPage)
-      setSummary(projectsSummary)
+      setSummary({
+        activeProjects: projectsPage.total,
+        activeClients: new Set(projectsPage.items.map((project) => project.client.id)).size,
+        contractEndingSoon: projectsPage.items.filter((project) => project.contractEnd !== null).length,
+        withoutTeam: projectsPage.items.filter((project) => project.teamSize === 0).length,
+        unassignedPeople: 0,
+      })
     } catch (cause) {
       setError(cause)
     } finally {
