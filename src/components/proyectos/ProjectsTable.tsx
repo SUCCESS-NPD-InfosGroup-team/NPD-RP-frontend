@@ -4,9 +4,13 @@ import { UserPlusIcon } from '../icons'
 import type { Project } from '../../services/projects.types'
 import { daysUntil, formatProjectDate, groupProjectsByClient } from './projectsView'
 
-interface ProjectsTableProps { projects: Project[]; canEdit: boolean }
+interface ProjectsTableProps {
+  projects: Project[]
+  canEdit: boolean
+  onAddMembers: (project: Project) => void
+}
 
-export function ProjectsTable({ projects, canEdit }: Readonly<ProjectsTableProps>) {
+export function ProjectsTable({ projects, canEdit, onAddMembers }: Readonly<ProjectsTableProps>) {
   return (
     <div className="projects-page__table">
       <div className="projects-page__row projects-page__row--head">
@@ -30,7 +34,7 @@ export function ProjectsTable({ projects, canEdit }: Readonly<ProjectsTableProps
                 <span>{formatProjectDate(project.startDate)}</span>
                 <span>{remaining !== null && remaining <= 30 && remaining >= 0 ? <Chip tone="solid-danger">{`D-${remaining}`}</Chip> : formatProjectDate(project.contractEnd)}</span>
                 <span>{project.pendingCount || '—'}</span>
-                <span>{canEdit && <Button variant="ghost" icon={<UserPlusIcon />}>Agregar colaboradores</Button>}</span>
+                <span>{canEdit && <Button variant="ghost" icon={<UserPlusIcon />} onClick={() => onAddMembers(project)}>Agregar colaboradores</Button>}</span>
               </div>
             )
           })}

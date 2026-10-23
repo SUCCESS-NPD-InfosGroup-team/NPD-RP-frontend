@@ -8,6 +8,7 @@ import { DownloadIcon, PlusIcon } from '../../components/icons'
 import { ProjectsTable } from '../../components/proyectos/ProjectsTable'
 import { NewProjectModal } from '../../components/proyectos/NewProjectModal'
 import type { Client } from '../../services/projects.types'
+import { canCreateProjects } from '../../components/layout/roleNavigation'
 import '../../components/proyectos/ProjectsPage.css'
 
 export function ProjectsPage() {
@@ -19,7 +20,8 @@ export function ProjectsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const filters = useMemo(() => ({ search, contractEnd }), [search, contractEnd])
   const { data, summary, loading, setPage: updatePage, api, refetch } = useProjects(filters)
-  const canEdit = roles.includes('operations-administrator')
+  // Frontend checks are UX only; the API remains the authority for authorization.
+  const canEdit = canCreateProjects(roles)
   useEffect(() => {
     const handleSlash = (event: KeyboardEvent) => {
       if (event.key === '/' && event.target instanceof HTMLElement && !['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) {
@@ -60,7 +62,7 @@ export function ProjectsPage() {
         <Field id="project-search" label="Buscar" placeholder="Cliente o proyecto…" value={search} onChange={(event) => setSearch(event.target.value)} />
         <Field id="project-contract" label="Fin de contrato" type="select" value={contractEnd} onChange={(event) => setContractEnd(event.target.value as typeof contractEnd)} options={[{ value: 'any', label: 'Cualquier fecha' }, { value: 'next30', label: 'Próximos 30 días' }, { value: 'none', label: 'Sin fecha' }]} />
       </div>
-      {loading && !data ? <div className="projects-page__empty">Cargando proyectos…</div> : <ProjectsTable projects={data?.items ?? []} canEdit={canEdit} />}
+      {loading && !data ? <div className="projects-page__empty">Cargando proyectos…</div> : <ProjectsTable projects={data?.items ?? []} canEdit={canEdit} onAddMembers={() => { /* TODO: asignación de colaboradores (otra historia) */ }} />}
       {data && <Paginador range={`${(page - 1) * 25 + 1}–${Math.min(page * 25, data.total)} de ${data.total}`} page={page} totalPages={Math.ceil(data.total / 25)} onPageChange={(nextPage) => { setPage(nextPage); updatePage(nextPage) }} />}
       <NewProjectModal open={newProjectOpen} clients={clients} onCreated={() => void refetch()} onClose={() => setNewProjectOpen(false)} />
     </section>

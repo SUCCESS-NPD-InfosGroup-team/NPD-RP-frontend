@@ -32,7 +32,9 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
       onClose()
     } catch (cause) {
       const message = cause && typeof cause === 'object' && 'message' in cause ? String(cause.message) : 'No se pudo crear el proyecto.'
-      setError(message)
+      setError(cause && typeof cause === 'object' && 'status' in cause && cause.status === 403
+        ? 'No tienes permisos para crear proyectos.'
+        : message)
     } finally {
       setSaving(false)
     }
