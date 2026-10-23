@@ -6,6 +6,8 @@ import { Field } from '../../components/ui/Field'
 import { Paginador } from '../../components/ui/Paginador'
 import { DownloadIcon, PlusIcon } from '../../components/icons'
 import { ProjectsTable } from '../../components/proyectos/ProjectsTable'
+import { NewProjectModal } from '../../components/proyectos/NewProjectModal'
+import type { Client } from '../../services/projects.types'
 import '../../components/proyectos/ProjectsPage.css'
 
 export function ProjectsPage() {
@@ -13,8 +15,10 @@ export function ProjectsPage() {
   const [search, setSearch] = useState('')
   const [contractEnd, setContractEnd] = useState<'any' | 'none' | 'next30'>('any')
   const [page, setPage] = useState(1)
+  const [newProjectOpen, setNewProjectOpen] = useState(false)
+  const [clients, setClients] = useState<Client[]>([])
   const filters = useMemo(() => ({ search, contractEnd }), [search, contractEnd])
-  const { data, summary, loading, setPage: updatePage } = useProjects(filters)
+  const { data, summary, loading, setPage: updatePage, api, refetch } = useProjects(filters)
   const canEdit = roles.includes('operations-administrator')
   useEffect(() => {
     const handleSlash = (event: KeyboardEvent) => {
@@ -30,6 +34,9 @@ export function ProjectsPage() {
     const reset = window.setTimeout(() => { setPage(1); updatePage(1) }, 0)
     return () => window.clearTimeout(reset)
   }, [search, contractEnd, updatePage])
+  useEffect(() => {
+    if (api) void api.listClients().then(setClients).catch(() => setClients([]))
+  }, [api])
 
   return (
     <section className="screen projects-page">
@@ -40,7 +47,7 @@ export function ProjectsPage() {
         </div>
         <div className="projects-page__actions">
           <Button variant="secondary" icon={<DownloadIcon />}>Exportar</Button>
-          {canEdit && <Button icon={<PlusIcon />}>Nuevo proyecto</Button>}
+          {canEdit && <Button icon={<PlusIcon />} onClick={() => setNewProjectOpen(true)}>Nuevo proyecto</Button>}
         </div>
       </header>
       <div className="projects-page__kpis">
@@ -55,6 +62,7 @@ export function ProjectsPage() {
       </div>
       {loading && !data ? <div className="projects-page__empty">Cargando proyectos…</div> : <ProjectsTable projects={data?.items ?? []} canEdit={canEdit} />}
       {data && <Paginador range={`${(page - 1) * 25 + 1}–${Math.min(page * 25, data.total)} de ${data.total}`} page={page} totalPages={Math.ceil(data.total / 25)} onPageChange={(nextPage) => { setPage(nextPage); updatePage(nextPage) }} />}
+      <NewProjectModal open={newProjectOpen} clients={clients} onCreated={() => void refetch()} onClose={() => setNewProjectOpen(false)} />
     </section>
   )
 }
