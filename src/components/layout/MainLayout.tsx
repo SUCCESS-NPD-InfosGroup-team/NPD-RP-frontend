@@ -34,6 +34,7 @@ interface MainLayoutProps {
 
 const iconById: Record<NavigationItemId, ComponentType> = {
   resources: PlaneIcon,
+  projects: ChartIcon,
   arrivals: PlaneIcon,
   dashboard: ChartIcon,
   vacations: SunIcon,
