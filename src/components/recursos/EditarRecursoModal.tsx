@@ -34,16 +34,34 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: { recurso: Recu
         {error && <div style={ERROR_BOX}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div style={ROW_STYLE}>
-            <div style={COL_STYLE}><label style={LABEL_STYLE}>Cliente *</label><input name="cliente" value={formData.cliente} onChange={handleChange} style={INPUT_STYLE} /></div>
-            <div style={COL_STYLE}><label style={LABEL_STYLE}>Proyecto *</label><input name="proyecto" value={formData.proyecto} onChange={handleChange} style={INPUT_STYLE} /></div>
+            <div style={COL_STYLE}>
+              <label htmlFor="edit-cliente" style={LABEL_STYLE}>Cliente *</label>
+              <input id="edit-cliente" name="cliente" value={formData.cliente} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
+            <div style={COL_STYLE}>
+              <label htmlFor="edit-proyecto" style={LABEL_STYLE}>Proyecto *</label>
+              <input id="edit-proyecto" name="proyecto" value={formData.proyecto} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
           </div>
           <div style={ROW_STYLE}>
-            <div style={COL_STYLE}><label style={LABEL_STYLE}>Rol *</label><input name="rol" value={formData.rol} onChange={handleChange} style={INPUT_STYLE} /></div>
-            <div style={COL_STYLE}><label style={LABEL_STYLE}>Nivel *</label><input name="nivel" value={formData.nivel} onChange={handleChange} style={INPUT_STYLE} /></div>
+            <div style={COL_STYLE}>
+              <label htmlFor="edit-rol" style={LABEL_STYLE}>Rol *</label>
+              <input id="edit-rol" name="rol" value={formData.rol} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
+            <div style={COL_STYLE}>
+              <label htmlFor="edit-nivel" style={LABEL_STYLE}>Nivel *</label>
+              <input id="edit-nivel" name="nivel" value={formData.nivel} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
           </div>
           <div style={ROW_STYLE}>
-            <div style={COL_STYLE}><label style={LABEL_STYLE}>Fecha Inicio</label><input type="date" name="fechaInicio" value={formData.fechaInicio} onChange={handleChange} style={INPUT_STYLE} /></div>
-            <div style={COL_STYLE}><label style={LABEL_STYLE}>Fecha Fin</label><input type="date" name="fechaFin" value={formData.fechaFin} onChange={handleChange} style={INPUT_STYLE} /></div>
+            <div style={COL_STYLE}>
+              <label htmlFor="edit-fechaInicio" style={LABEL_STYLE}>Fecha Inicio</label>
+              <input id="edit-fechaInicio" type="date" name="fechaInicio" value={formData.fechaInicio} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
+            <div style={COL_STYLE}>
+              <label htmlFor="edit-fechaFin" style={LABEL_STYLE}>Fecha Fin</label>
+              <input id="edit-fechaFin" type="date" name="fechaFin" value={formData.fechaFin} onChange={handleChange} style={INPUT_STYLE} />
+            </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
             <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #ccc', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>Cancelar</button>

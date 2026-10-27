@@ -1,5 +1,5 @@
-import { Gantt, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
+import { Gantt, ViewMode } from 'gantt-task-react';
 import type { Recurso } from '../../types';
 
 interface GanttTask {
