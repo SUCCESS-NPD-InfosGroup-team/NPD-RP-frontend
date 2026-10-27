@@ -24,7 +24,7 @@ describe('apiFetch', () => {
     expect(fakeKeycloak.updateToken).toHaveBeenCalledWith(30)
     const [url, init] = fetchMock.mock.calls[0]
     const headers = new Headers(init?.headers)
-    expect(url).toBe('/api/employees')
+    expect(url).toBe('/api/v1/employees')
     expect(headers.get('Authorization')).toBe('Bearer fake-access-token')
     expect(headers.get('Accept')).toBe('application/json')
     expect(fakeKeycloak.login).not.toHaveBeenCalled()
@@ -35,7 +35,7 @@ describe('apiFetch', () => {
 
     const response = await apiFetch('/employees')
 
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/employees')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/employees')
     expect(response.status).toBe(401)
     expect(fakeKeycloak.login).toHaveBeenCalled()
   })

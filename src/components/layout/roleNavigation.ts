@@ -3,6 +3,7 @@ export type { Role } from '../../types'
 
 export type NavigationItemId =
   | 'resources'
+  | 'projects'
   | 'arrivals'
   | 'dashboard'
   | 'vacations'
@@ -24,6 +25,17 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     id: 'resources',
     label: 'Recursos',
     path: '/recursos',
+    allowedRoles: [
+      'operations-administrator',
+      'guest',
+      'customer-success',
+      'npd-leader',
+    ],
+  },
+  {
+    id: 'projects',
+    label: 'Proyectos',
+    path: '/proyectos',
     allowedRoles: [
       'operations-administrator',
       'guest',
@@ -126,5 +138,9 @@ export function canAccessNavigationItem(
 }
 
 export function canRegisterResources(role: unknown): boolean {
+  return hasAllowedRole(['operations-administrator'], role)
+}
+
+export function canCreateProjects(role: unknown): boolean {
   return hasAllowedRole(['operations-administrator'], role)
 }

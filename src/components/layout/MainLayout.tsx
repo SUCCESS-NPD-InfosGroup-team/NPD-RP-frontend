@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   BellIcon,
   ChartIcon,
   ClockIcon,
   EditIcon,
+  FolderIcon,
   LogoutIcon,
   PlusIcon,
   PlaneIcon,
@@ -34,6 +35,7 @@ interface MainLayoutProps {
 
 const iconById: Record<NavigationItemId, ComponentType> = {
   resources: PlaneIcon,
+  projects: FolderIcon,
   arrivals: PlaneIcon,
   dashboard: ChartIcon,
   vacations: SunIcon,
@@ -51,6 +53,7 @@ export function MainLayout({
   operationsStatus,
 }: Readonly<MainLayoutProps>) {
   const { roles, user, logout, logoutInProgress } = useAuth()
+  const navigate = useNavigate()
   const [providedLogoutInProgress, setProvidedLogoutInProgress] = useState(false)
   const navigationItems = getNavigationForRole(roles)
   const handleLogout = onLogout ?? logout
@@ -134,17 +137,14 @@ export function MainLayout({
             </form>
           )}
           {canRegister && (
-            <>
-              {/* TODO: Connect resource registration to its feature flow. */}
-              <button
-                className="register-resource"
-                type="button"
-                onClick={() => onRegisterResource?.()}
-              >
-                <PlusIcon />
-                <span>Registrar recurso</span>
-              </button>
-            </>
+            <button
+              className="register-resource"
+              type="button"
+              onClick={() => (onRegisterResource ? onRegisterResource() : navigate('/recursos/nuevo'))}
+            >
+              <PlusIcon />
+              <span>Registrar recurso</span>
+            </button>
           )}
           {canAccessNavigationItem(roles, 'notifications') && (
             <NavLink

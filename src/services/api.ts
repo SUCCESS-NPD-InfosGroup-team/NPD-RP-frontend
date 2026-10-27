@@ -10,7 +10,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   const headers = new Headers(init.headers);
   headers.set('Authorization', `Bearer ${keycloak.token}`);
 
-  const response = await fetch(`/api${path.startsWith('/') ? path : `/${path}`}`, { ...init, headers });
+  const response = await fetch(`/api/v1${path.startsWith('/') ? path : `/${path}`}`, { ...init, headers });
   if (response.status === 401) {
     // Session revoked or expired in Keycloak: send the user back to the login page
     await keycloak.login();
