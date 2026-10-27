@@ -17,11 +17,11 @@ vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMoc
 const roleCases: Array<[Role, string[]]> = [
   [
     'operations-administrator',
-    ['Recursos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'],
+    ['Recursos', 'Proyectos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'],
   ],
-  ['guest', ['Recursos']],
-  ['customer-success', ['Recursos', 'Vacaciones']],
-  ['npd-leader', ['Recursos', 'Vacaciones']],
+  ['guest', ['Recursos', 'Proyectos']],
+  ['customer-success', ['Recursos', 'Proyectos', 'Vacaciones']],
+  ['npd-leader', ['Recursos', 'Proyectos', 'Vacaciones']],
 ]
 
 interface AppOptions {
@@ -262,7 +262,7 @@ describe('role-based navigation', () => {
 
   it('keeps the requested presentation order for the administrator menu', () => {
     expect(getNavigationForRole('operations-administrator').map(({ label }) => label))
-      .toEqual(['Recursos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'])
+      .toEqual(['Recursos', 'Proyectos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'])
   })
 
   it('keeps arrivals and audit out of the top navigation in the mockup', () => {
@@ -311,7 +311,7 @@ describe('role-based navigation', () => {
       expect(getNavigationForRole(role).map(({ label }) => label)).toEqual(expectedLabels)
     }
 
-    expect(NAVIGATION_ITEMS).toHaveLength(8)
+    expect(NAVIGATION_ITEMS).toHaveLength(9)
     expect(canAccessNavigationItem('npd-leader', 'vacations')).toBe(true)
     expect(canAccessNavigationItem('customer-success', 'dashboard')).toBe(false)
     expect(canAccessNavigationItem('operations-administrator', 'audit')).toBe(true)
@@ -319,7 +319,7 @@ describe('role-based navigation', () => {
 
   it('combines navigation permissions for multiple roles in token claims', () => {
     expect(getNavigationForRole(['guest', 'customer-success']).map(({ label }) => label))
-      .toEqual(['Recursos', 'Vacaciones'])
+      .toEqual(['Recursos', 'Proyectos', 'Vacaciones'])
     expect(canAccessNavigationItem(['guest', 'operations-administrator'], 'dashboard'))
       .toBe(true)
     expect(canRegisterResources(['guest', 'operations-administrator'])).toBe(true)

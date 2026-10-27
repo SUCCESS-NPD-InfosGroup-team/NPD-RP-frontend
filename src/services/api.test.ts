@@ -16,15 +16,15 @@ describe('apiFetch', () => {
     vi.unstubAllGlobals()
   })
 
-  it('calls /api with a fresh bearer token and keeps the caller headers', async () => {
+  it('calls /api/v1/{module} with a fresh bearer token and keeps the caller headers', async () => {
     fetchMock.mockResolvedValue(new Response('{}', { status: 200 }))
 
-    await apiFetch('employees', { headers: { Accept: 'application/json' } })
+    await apiFetch('planner', 'resources', { headers: { Accept: 'application/json' } })
 
     expect(fakeKeycloak.updateToken).toHaveBeenCalledWith(30)
     const [url, init] = fetchMock.mock.calls[0]
     const headers = new Headers(init?.headers)
-    expect(url).toBe('/api/employees')
+    expect(url).toBe('/api/v1/planner/resources')
     expect(headers.get('Authorization')).toBe('Bearer fake-access-token')
     expect(headers.get('Accept')).toBe('application/json')
     expect(fakeKeycloak.login).not.toHaveBeenCalled()
@@ -33,9 +33,9 @@ describe('apiFetch', () => {
   it('sends the user to the login page on 401', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 401 }))
 
-    const response = await apiFetch('/employees')
+    const response = await apiFetch('access', '/users')
 
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/employees')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/access/users')
     expect(response.status).toBe(401)
     expect(fakeKeycloak.login).toHaveBeenCalled()
   })
