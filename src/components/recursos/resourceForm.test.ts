@@ -3,6 +3,7 @@ import {
   EMPTY_RESOURCE_FORM,
   orderedErrorFields,
   previewSituation,
+  probationInfo,
   toResourceRequest,
   validateResourceForm,
   type ResourceFormValues,
@@ -85,7 +86,7 @@ describe('validateResourceForm', () => {
 
 describe('toResourceRequest', () => {
   it('builds the contract request with an assignment that only carries the project id', () => {
-    expect(toResourceRequest({ ...valid, level: '3', email: ' ', indefinite: false, endDate: '31/12/2026', clientRoleId: '7' })).toEqual({
+    expect(toResourceRequest({ ...valid, level: '3', email: ' ', indefinite: false, endDate: '31/12/2026', clientRoleId: '7' }, TODAY)).toEqual({
       employeeNumber: '1102',
       name: 'Laura Gómez',
       email: null,
@@ -97,6 +98,7 @@ describe('toResourceRequest', () => {
       genderId: 1,
       talentReviewId: null,
       hireDate: '2026-10-20',
+      inProbation: true,
       status: 'ACTIVO',
       termination: null,
       assignment: {
@@ -120,6 +122,25 @@ describe('toResourceRequest', () => {
 
   it('sends a null end date when it is indefinite', () => {
     expect(toResourceRequest({ ...valid, endDate: '31/12/2026' }).assignment?.endDate).toBeNull()
+  })
+})
+
+describe('probationInfo', () => {
+  it('follows the calculation until the user marks or unmarks it', () => {
+    expect(probationInfo(valid, TODAY)).toEqual({ endDate: '2027-01-18', vacationMonth: 9, checked: true })
+    expect(probationInfo(valid, '2027-01-19').checked).toBe(false)
+    expect(probationInfo({ ...valid, inProbation: false }, TODAY).checked).toBe(false)
+    expect(probationInfo({ ...valid, inProbation: true }, '2027-06-01').checked).toBe(true)
+    expect(toResourceRequest({ ...valid, inProbation: false }, TODAY).inProbation).toBe(false)
+  })
+
+  it('places the vacation month 11 months after the hire date', () => {
+    expect(probationInfo({ ...valid, hireDate: '03/08/2026' }, TODAY).vacationMonth).toBe(7)
+    expect(probationInfo({ ...valid, hireDate: '15/01/2026' }, TODAY).vacationMonth).toBe(12)
+  })
+
+  it('has nothing to calculate without a valid hire date', () => {
+    expect(probationInfo({ ...valid, hireDate: '' }, TODAY)).toEqual({ checked: false })
   })
 })
 

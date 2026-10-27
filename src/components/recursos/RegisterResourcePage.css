@@ -1,4 +1,5 @@
-.resource-form { display: flex; max-width: 1100px; flex-direction: column; gap: var(--space-3); }
+.resource-form { display: flex; flex-direction: column; gap: var(--space-3); }
+.resource-form__layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
 .resource-form .page-heading { margin: 0; }
 .resource-form__breadcrumb { display: flex; align-items: center; gap: var(--space-2); color: var(--text-secondary); font-size: 13px; }
 .resource-form__breadcrumb a { color: var(--text-secondary); }
@@ -14,7 +15,9 @@
 .resource-form__card { background: var(--surface-card); border: var(--border-width) solid var(--border-default); border-radius: var(--radius); }
 .resource-form__section { padding: var(--space-5) var(--space-5) var(--space-4); border-bottom: var(--border-width) solid var(--border-default); }
 .resource-form__section:last-of-type { border-bottom: 0; }
-.resource-form__section h2 { margin: 0; font: 700 20px / 1.2 var(--font-display); }
+.resource-form__section h2 { margin: 0; font: 700 18px / 1.2 var(--font-display); }
+.resource-form__subheading { margin: 20px 0 0; color: var(--text-secondary); font: 700 12px / 1.2 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.resource-form__subheading + .resource-form__grid { margin-top: 10px; }
 .resource-form__hint { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; }
 .resource-form__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin-top: var(--space-4); align-items: start; }
 .resource-form__grid .ui-field { width: 100%; }
@@ -23,10 +26,14 @@
 .resource-form__align-end { align-self: end; margin-bottom: 10px; }
 .resource-form__duplicate { display: inline-block; margin-top: 4px; color: var(--brand-navy); font-size: 12.5px; }
 
-.resource-form__probation { display: flex; align-self: stretch; gap: var(--space-2); padding: var(--space-3); border: var(--border-width) solid var(--border-default); border-radius: var(--radius); background: var(--surface-group); }
-.resource-form__probation p { margin: 2px 0 0; color: var(--text-secondary); font-size: 12.5px; }
-.resource-form__probation-mark { display: inline-flex; width: 18px; height: 18px; flex: 0 0 auto; align-items: center; justify-content: center; border: 2px solid var(--border-strong); border-radius: 3px; color: var(--text-on-brand); font-size: 12px; }
-.resource-form__probation-mark.is-on { border-color: var(--brand-navy); background: var(--brand-navy); }
+.resource-form__probation { display: flex; flex-direction: column; gap: 5px; }
+.resource-form__probation-label { font: 600 13px / 1.2 var(--font-body); }
+.resource-form__probation-box { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: var(--border-width) solid var(--border-default); border-radius: var(--radius); background: var(--surface-card); cursor: pointer; }
+.resource-form__probation-box:has(input:disabled) { cursor: default; }
+.resource-form__probation-box input { width: 18px; height: 18px; flex: 0 0 auto; margin: 1px 0 0; accent-color: var(--brand-navy); cursor: inherit; }
+.resource-form__probation-box > span { display: flex; flex-direction: column; gap: 2px; }
+.resource-form__probation-box strong { font-size: 13px; font-weight: 600; }
+.resource-form__probation-box small { color: var(--text-secondary); font-size: 12.5px; font-weight: 600; }
 
 .resource-form__situation { display: flex; flex-direction: column; gap: 10px; }
 .resource-form__situation-label { font: 600 13px / 1.2 var(--font-body); }
@@ -50,3 +57,31 @@
 .resource-form__actions > div { display: flex; gap: var(--space-2); }
 
 .resources-page__notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius); background: var(--state-ok-tint); color: var(--state-ok); font-weight: 600; }
+
+.roster-preview { position: sticky; top: calc(var(--topbar-h) + var(--space-4)); padding: var(--space-4); border: var(--border-width) solid var(--border-default); border-radius: var(--radius); background: var(--surface-card); }
+.roster-preview h2 { margin: 0; font: 700 18px / 1.2 var(--font-display); }
+.roster-preview__empty { margin: var(--space-3) 0 0; color: var(--text-secondary); font-size: 13px; }
+.roster-preview__months,
+.roster-preview__row { display: grid; grid-template-columns: 74px repeat(7, minmax(0, 1fr)); }
+.roster-preview__months { margin-top: var(--space-3); padding-bottom: 6px; border-bottom: var(--border-width) solid var(--border-default); color: var(--text-secondary); font: 700 11px / 1.2 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.roster-preview__row { height: 36px; align-items: center; border-bottom: var(--border-width) solid #f1eeeb; }
+.roster-preview__label { overflow: hidden; padding-right: 6px; color: var(--text-secondary); font-size: 11.5px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.roster-preview__track { position: relative; height: 36px; grid-column: 2 / -1; }
+.roster-preview__line { position: absolute; top: 17px; right: 0; height: 2px; background: var(--brand-navy); opacity: 0.35; }
+.roster-preview__start { position: absolute; top: 10px; height: 16px; border-left: 1.6px solid var(--brand-navy); }
+.roster-preview__probation { position: absolute; top: 13px; width: 10px; height: 10px; margin-left: -5px; border: 0.8px solid #fff; background: var(--brand-navy); transform: rotate(45deg); }
+.roster-preview__today { position: absolute; top: 0; height: 36px; border-left: 1.6px solid var(--brand-navy); }
+.roster-preview__bar { position: absolute; top: 8px; box-sizing: border-box; height: 20px; overflow: visible; padding-inline: 7px; border: 0.8px solid #ff9a66; border-radius: 3px; background: var(--brand-orange-tint); color: var(--brand-brown); font-size: 11.5px; font-weight: 600; line-height: 18px; white-space: nowrap; }
+.roster-preview__bar.is-open { border-right-style: dashed; border-radius: 3px 0 0 3px; }
+.roster-preview__notice { position: absolute; top: -4px; height: 26.4px; border-left: 0.8px solid var(--brand-brown); }
+.roster-preview__none { position: absolute; top: 9px; left: 0; color: var(--text-secondary); font-size: 12px; }
+.roster-preview__legend { display: grid; gap: 6px; margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+.roster-preview__legend li { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; line-height: 1.45; }
+.roster-preview__chip { display: inline-flex; height: var(--chip-h); flex: 0 0 auto; align-items: center; padding-inline: 8px; border-radius: 11px; background: var(--brand-orange-tint); color: var(--brand-brown); font-size: 12px; font-weight: 600; }
+.roster-preview__chip--danger { background: var(--state-danger-tint); color: var(--state-danger); }
+.roster-preview__note { margin: var(--space-3) 0 0; color: var(--text-secondary); font-size: 12.5px; line-height: 1.45; }
+
+@media (max-width: 1100px) {
+  .resource-form__layout { grid-template-columns: minmax(0, 1fr); }
+  .roster-preview { position: static; }
+}

@@ -53,10 +53,25 @@ async function fillCollaborator() {
   change('Modalidad laboral *', '1')
   change('Género *', '1')
   change('Nivel', '3')
-  change('Inicio de contrato *', '20102026')
+  change('Fecha de inicio de contrato *', '20102026')
 }
 
 describe('RegisterResourceForm', () => {
+  it('waits for the hire date to calculate the probation and the roster preview', async () => {
+    setup()
+    await screen.findByRole('option', { name: 'Analista' })
+    expect(screen.getByLabelText(/En periodo de prueba/)).toBeDisabled()
+    expect(screen.getByText('Escribe el inicio de contrato para ver la línea de tiempo.')).toBeInTheDocument()
+    change('Fecha de inicio de contrato *', '01012020')
+    expect(screen.getByLabelText(/En periodo de prueba/)).not.toBeChecked()
+    fireEvent.click(screen.getByLabelText(/En periodo de prueba/))
+    expect(screen.getByLabelText(/En periodo de prueba/)).toBeChecked()
+    // Changing the hire date goes back to the calculation
+    change('Fecha de inicio de contrato *', '02012020')
+    expect(screen.getByLabelText(/En periodo de prueba/)).not.toBeChecked()
+    expect(screen.getByText('No está en periodo de prueba')).toBeInTheDocument()
+  })
+
   it('summarizes the missing fields and creates nothing', async () => {
     const { createResource } = setup()
     fireEvent.click(screen.getByRole('button', { name: 'Registrar recurso' }))
@@ -70,7 +85,8 @@ describe('RegisterResourceForm', () => {
   it('registers a collaborator in an existing project', async () => {
     const { createResource, listClientProjects, onCreated } = setup()
     await fillCollaborator()
-    expect(screen.getByText('Día 90 calculado desde el inicio de contrato: 18/01/2027.')).toBeInTheDocument()
+    expect(screen.getByText('Día 90 calculado desde el inicio de contrato: 18/01/2027. El mes de vacaciones (septiembre) también sale de esta fecha.')).toBeInTheDocument()
+    expect(screen.getByLabelText(/En periodo de prueba/)).toBeChecked()
     change('Cliente *', '3')
     await waitFor(() => expect(listClientProjects).toHaveBeenCalledWith('3'))
     change('Proyecto asignado *', await screen.findByRole('option', { name: 'Programa de automatización (DEYEL)' }).then(() => '41'))
@@ -85,6 +101,7 @@ describe('RegisterResourceForm', () => {
       employeeNumber: '1102',
       level: 3,
       hireDate: '2026-10-20',
+      inProbation: true,
       assignment: expect.objectContaining({ projectId: 41, leaderId: 755, indefinite: true, endDate: null }),
     }))
     expect(createResource.mock.calls[0][0].assignment).not.toHaveProperty('clientId')
@@ -95,8 +112,10 @@ describe('RegisterResourceForm', () => {
     await fillCollaborator()
     fireEvent.click(screen.getByRole('button', { name: 'Sin proyecto por ahora' }))
     expect(screen.queryByLabelText('Líder NPD *')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText(/En periodo de prueba/))
+    expect(screen.getByLabelText(/En periodo de prueba/)).not.toBeChecked()
     fireEvent.click(screen.getByRole('button', { name: 'Registrar recurso' }))
-    await waitFor(() => expect(createResource).toHaveBeenCalledWith(expect.objectContaining({ assignment: null })))
+    await waitFor(() => expect(createResource).toHaveBeenCalledWith(expect.objectContaining({ assignment: null, inProbation: false })))
   })
 
   it('asks for reason and termination date with Estado = Baja', async () => {

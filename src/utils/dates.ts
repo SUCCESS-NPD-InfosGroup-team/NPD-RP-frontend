@@ -36,3 +36,11 @@ export function todayIso(now = new Date()): string {
   const day = String(now.getDate()).padStart(2, '0')
   return `${now.getFullYear()}-${month}-${day}`
 }
+
+export const SHORT_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+/** yyyy-MM-dd as "dd mmm", adding the year only when asked */
+export function formatShortDate(isoDate: string, withYear = false): string {
+  const label = `${isoDate.slice(8, 10)} ${SHORT_MONTHS[Number(isoDate.slice(5, 7)) - 1]}`
+  return withYear ? `${label} ${isoDate.slice(0, 4)}` : label
+}

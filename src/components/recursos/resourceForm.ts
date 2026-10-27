@@ -1,6 +1,6 @@
 import type { ApiError } from '../../services/projects.types'
 import type { ResourceRequest, ResourceSituationCode, ResourceStatusCode, StatusOption } from '../../services/resources.types'
-import { toIsoDate } from '../../utils/dates'
+import { addDaysIso, todayIso, toIsoDate } from '../../utils/dates'
 
 /** Probation ends on day 90 counted from the contract start date (generated column in the DB) */
 export const PROBATION_DAYS = 90
@@ -19,6 +19,8 @@ export interface ResourceFormValues {
   genderId: string
   talentReviewId: string
   hireDate: string
+  /** null = follow the calculation from the hire date until the user marks or unmarks it */
+  inProbation: boolean | null
   status: ResourceStatusCode | ''
   terminationDate: string
   terminationReasonId: string
@@ -46,6 +48,7 @@ export const EMPTY_RESOURCE_FORM: ResourceFormValues = {
   genderId: '',
   talentReviewId: '',
   hireDate: '',
+  inProbation: null,
   status: 'ACTIVO',
   terminationDate: '',
   terminationReasonId: '',
@@ -74,7 +77,7 @@ export const FIELD_LABELS: Record<string, string> = {
   workModeId: 'Modalidad laboral',
   genderId: 'Género',
   talentReviewId: 'Resultado de Talent Review',
-  hireDate: 'Inicio de contrato',
+  hireDate: 'Fecha de inicio de contrato',
   status: 'Estado',
   'termination.reasonId': 'Motivo de desvinculación',
   'termination.date': 'Fecha de desvinculación',
@@ -146,10 +149,29 @@ function isSmallint(value: string): boolean {
   return /^\d+$/.test(value) && Number(value) > 0 && Number(value) <= SMALLINT_MAX
 }
 
+export interface ProbationInfo {
+  /** Day 90 from the hire date, as yyyy-MM-dd */
+  endDate?: string
+  /** Month (1-12) when 11 months since the hire date are completed */
+  vacationMonth?: number
+  checked: boolean
+}
+
+export function probationInfo(values: ResourceFormValues, today: string): ProbationInfo {
+  const hireDate = toIsoDate(values.hireDate)
+  if (!hireDate) return { checked: values.inProbation ?? false }
+  const endDate = addDaysIso(hireDate, PROBATION_DAYS)
+  return {
+    endDate,
+    vacationMonth: ((Number(hireDate.slice(5, 7)) + 10) % 12) + 1,
+    checked: values.inProbation ?? today <= endDate,
+  }
+}
+
 const optionalId = (value: string) => (value ? Number(value) : null)
 const optionalText = (value: string) => value.trim() || null
 
-export function toResourceRequest(values: ResourceFormValues): ResourceRequest {
+export function toResourceRequest(values: ResourceFormValues, today = todayIso()): ResourceRequest {
   const terminated = values.status === 'BAJA'
   return {
     employeeNumber: values.employeeNumber.trim(),
@@ -163,6 +185,7 @@ export function toResourceRequest(values: ResourceFormValues): ResourceRequest {
     genderId: Number(values.genderId),
     talentReviewId: optionalId(values.talentReviewId),
     hireDate: toIsoDate(values.hireDate) ?? '',
+    inProbation: probationInfo(values, today).checked,
     status: values.status || 'ACTIVO',
     termination: terminated
       ? { date: toIsoDate(values.terminationDate) ?? '', reasonId: Number(values.terminationReasonId) }
