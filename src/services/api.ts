@@ -39,7 +39,7 @@ export const searchRecursos = async (filters: Filters, page: number = 1, limit: 
   }).toString();
 
   // Usamos apiFetch que ya incluye el token de Keycloak
-  const response = await apiFetch(`/resources?${queryParams}`);
+  const response = await apiFetch('planner', `/resources?${queryParams}`);
   
   if (!response.ok) {
     throw new Error('Error al buscar recursos');
