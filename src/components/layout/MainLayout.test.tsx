@@ -11,8 +11,18 @@ import {
   NAVIGATION_ITEMS,
 } from './roleNavigation'
 import type { OperationsStatus, Role } from '../../types'
+import { vi } from 'vitest'
 
 vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMock')).fakeAuthModule)
+
+// MOCKS PARA EVITAR QUE EL GANTT Y TU PÁGINA ROMPAN LOS TESTS DE LAYOUT
+vi.mock('../recursos/RecursosGantt', () => ({
+  RecursosGantt: () => 'Mock Gantt'
+}))
+
+vi.mock('../../pages/Recursos/ResourcesPage', () => ({
+  ResourcesPage: () => <h1>Recursos</h1>
+}))
 
 const roleCases: Array<[Role, string[]]> = [
   [
