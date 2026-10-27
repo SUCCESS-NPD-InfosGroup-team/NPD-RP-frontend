@@ -7,7 +7,6 @@ import {
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
-
 export interface AppProps {
   onSearchResources?: (query: string) => void
   onRegisterResource?: () => void

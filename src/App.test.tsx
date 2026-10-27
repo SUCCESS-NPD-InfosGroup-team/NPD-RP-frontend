@@ -9,6 +9,11 @@ vi.mock('./components/recursos/RecursosGantt', () => ({
   RecursosGantt: () => 'Mock Gantt'
 }))
 
+// Mock de ResourcesPage para que los tests de App no carguen la tabla real
+vi.mock('./pages/Recursos/ResourcesPage', () => ({
+  ResourcesPage: () => <h1 className="page-heading">Recursos</h1>
+}))
+
 vi.mock('./auth/keycloak', async () => (await import('./test/keycloakMock')).fakeAuthModule)
 
 const routeCases = [
