@@ -4,6 +4,11 @@ import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { fakeKeycloak } from './test/keycloakMock'
 
+// Mock del Gantt para que no falle en JSDOM
+vi.mock('./components/recursos/RecursosGantt', () => ({
+  RecursosGantt: () => 'Mock Gantt'
+}))
+
 vi.mock('./auth/keycloak', async () => (await import('./test/keycloakMock')).fakeAuthModule)
 
 const routeCases = [

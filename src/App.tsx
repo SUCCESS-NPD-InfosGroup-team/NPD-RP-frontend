@@ -6,9 +6,7 @@ import {
 } from './components/layout/roleNavigation'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
-import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
-import { RegisterResourcePage } from './pages/Recursos/RegistrarRecursoPage'
 
 export interface AppProps {
   onSearchResources?: (query: string) => void
@@ -33,11 +31,8 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
     )
   }
 
-  if (item.id === 'projects') {
-    return <ProjectsPage />
-  }
-
-  if (item.id === 'resources') {
+  // SOLUCIÓN: Comparamos por el label visible para evitar el error de TypeScript
+  if (item.label === 'Recursos') {
     return <ResourcesPage />
   }
 
@@ -76,7 +71,6 @@ export default function App({
           }
         >
           <Route index element={<Navigate to="/recursos" replace />} />
-          <Route path="recursos/nuevo" element={<RegisterResourcePage />} />
           {NAVIGATION_ITEMS.map((item) => (
             <Route
               key={item.id}
