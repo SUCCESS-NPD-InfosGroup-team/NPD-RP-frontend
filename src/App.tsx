@@ -6,9 +6,8 @@ import {
 } from './components/layout/roleNavigation'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
-import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
-import { ResourcesPage } from './pages/Recursos/RecursosPage'
-import { RegisterResourcePage } from './pages/Recursos/RegistrarRecursoPage'
+// 1. Importamos tu página (¡Ojo con la "s"!)
+import { ResourcesPage } from './pages/Recursos/ResourcesPage'
 
 export interface AppProps {
   onSearchResources?: (query: string) => void
@@ -33,11 +32,8 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
     )
   }
 
-  if (item.id === 'projects') {
-    return <ProjectsPage />
-  }
-
-  if (item.id === 'resources') {
+  // 2. LA MAGIA: Si la sección es "Recursos", renderizamos tu tabla
+  if (item.label === 'Recursos') {
     return <ResourcesPage />
   }
 
@@ -76,7 +72,6 @@ export default function App({
           }
         >
           <Route index element={<Navigate to="/recursos" replace />} />
-          <Route path="recursos/nuevo" element={<RegisterResourcePage />} />
           {NAVIGATION_ITEMS.map((item) => (
             <Route
               key={item.id}

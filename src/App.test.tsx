@@ -3,6 +3,17 @@ import userEvent from '@testing-library/user-event'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { fakeKeycloak } from './test/keycloakMock'
+import { vi } from 'vitest'
+
+// 1. Mock del Gantt para que no falle en JSDOM
+vi.mock('./components/recursos/RecursosGantt', () => ({
+  RecursosGantt: () => 'Mock Gantt'
+}))
+
+// 2. Mock de ResourcesPage (devuelve solo el título para no romper los tests de enrutamiento)
+vi.mock('./pages/Recursos/ResourcesPage', () => ({
+  ResourcesPage: () => <h1>Recursos</h1>
+}))
 
 vi.mock('./auth/keycloak', async () => (await import('./test/keycloakMock')).fakeAuthModule)
 

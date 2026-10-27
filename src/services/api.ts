@@ -1,5 +1,6 @@
 // src/services/api.ts
 import { keycloak, updateTokenOrLogout } from '../auth/keycloak';
+import type { Filters } from '../types';
 
 /**
  * Backend modules. Every endpoint lives under one of them: /api/v1/{module}/{resource}.
@@ -24,3 +25,25 @@ export async function apiFetch(module: ApiModule, path: string, init: RequestIni
   }
   return response;
 }
+
+// Tu función para la HU-03 (Búsqueda y filtros)
+export const searchRecursos = async (filters: Filters, page: number = 1, limit: number = 25) => {
+  const cleanFilters = Object.fromEntries(
+    Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
+  );
+
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...cleanFilters,
+  }).toString();
+
+  // Usamos apiFetch que ya incluye el token de Keycloak
+  const response = await apiFetch('planner', `/resources?${queryParams}`);
+  
+  if (!response.ok) {
+    throw new Error('Error al buscar recursos');
+  }
+  
+  return response.json(); 
+};

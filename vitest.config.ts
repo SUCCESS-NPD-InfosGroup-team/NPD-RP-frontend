@@ -12,7 +12,7 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         reporter: ['text', 'html', 'lcov'],
-        reportsDirectory: './coverage',
+        reportsDirectory: './coverage', // <-- Asegúrate de que esta carpeta se genere
         include: ['src/**/*.{ts,tsx}'],
         exclude: [
           'src/main.tsx',
