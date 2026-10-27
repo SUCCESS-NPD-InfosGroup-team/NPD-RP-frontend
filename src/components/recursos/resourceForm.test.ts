@@ -98,7 +98,7 @@ describe('toResourceRequest', () => {
       genderId: 1,
       talentReviewId: null,
       hireDate: '2026-10-20',
-      inProbation: true,
+      onProbation: true,
       status: 'ACTIVO',
       termination: null,
       assignment: {
@@ -129,9 +129,9 @@ describe('probationInfo', () => {
   it('follows the calculation until the user marks or unmarks it', () => {
     expect(probationInfo(valid, TODAY)).toEqual({ endDate: '2027-01-18', vacationMonth: 9, checked: true })
     expect(probationInfo(valid, '2027-01-19').checked).toBe(false)
-    expect(probationInfo({ ...valid, inProbation: false }, TODAY).checked).toBe(false)
-    expect(probationInfo({ ...valid, inProbation: true }, '2027-06-01').checked).toBe(true)
-    expect(toResourceRequest({ ...valid, inProbation: false }, TODAY).inProbation).toBe(false)
+    expect(probationInfo({ ...valid, onProbation: false }, TODAY).checked).toBe(false)
+    expect(probationInfo({ ...valid, onProbation: true }, '2027-06-01').checked).toBe(true)
+    expect(toResourceRequest({ ...valid, onProbation: false }, TODAY).onProbation).toBe(false)
   })
 
   it('places the vacation month 11 months after the hire date', () => {

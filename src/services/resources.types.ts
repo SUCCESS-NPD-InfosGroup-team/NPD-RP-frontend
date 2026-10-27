@@ -50,7 +50,7 @@ export interface ResourceRequest {
   talentReviewId: number | null
   hireDate: string
   /** Marked by the user; defaults to today being within the 90 days after hireDate */
-  inProbation: boolean
+  onProbation: boolean
   status: ResourceStatusCode
   termination: { date: string; reasonId: number } | null
   assignment: AssignmentRequest | null

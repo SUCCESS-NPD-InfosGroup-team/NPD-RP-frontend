@@ -101,7 +101,7 @@ describe('RegisterResourceForm', () => {
       employeeNumber: '1102',
       level: 3,
       hireDate: '2026-10-20',
-      inProbation: true,
+      onProbation: true,
       assignment: expect.objectContaining({ projectId: 41, leaderId: 755, indefinite: true, endDate: null }),
     }))
     expect(createResource.mock.calls[0][0].assignment).not.toHaveProperty('clientId')
@@ -115,7 +115,7 @@ describe('RegisterResourceForm', () => {
     fireEvent.click(screen.getByLabelText(/En periodo de prueba/))
     expect(screen.getByLabelText(/En periodo de prueba/)).not.toBeChecked()
     fireEvent.click(screen.getByRole('button', { name: 'Registrar recurso' }))
-    await waitFor(() => expect(createResource).toHaveBeenCalledWith(expect.objectContaining({ assignment: null, inProbation: false })))
+    await waitFor(() => expect(createResource).toHaveBeenCalledWith(expect.objectContaining({ assignment: null, onProbation: false })))
   })
 
   it('asks for reason and termination date with Estado = Baja', async () => {

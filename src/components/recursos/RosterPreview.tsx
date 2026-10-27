@@ -9,7 +9,7 @@ export interface RosterPreviewProps {
   today: string
   hireDate?: string
   probationEnd?: string
-  inProbation: boolean
+  onProbation: boolean
   /** Undefined when the person is registered without a project */
   project?: { name?: string; endDate?: string; indefinite: boolean }
 }
@@ -30,7 +30,7 @@ function previewWindow(hireDate: string, today: string): { start: number; end: n
   return { start, end: Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + WINDOW_MONTHS, 1) }
 }
 
-export function RosterPreview({ today, hireDate, probationEnd, inProbation, project }: Readonly<RosterPreviewProps>) {
+export function RosterPreview({ today, hireDate, probationEnd, onProbation, project }: Readonly<RosterPreviewProps>) {
   if (!hireDate) {
     return (
       <aside className="roster-preview" aria-labelledby="roster-preview-title">
@@ -66,7 +66,7 @@ export function RosterPreview({ today, hireDate, probationEnd, inProbation, proj
         <div className="roster-preview__track">
           <span className="roster-preview__line" style={{ left: `${hireLeft}%` }} />
           {visible(hireDate) && <span className="roster-preview__start" style={at(hireDate)} title={`Inicio de contrato ${shortDate(hireDate, true)}`} />}
-          {inProbation && visible(probationEnd) && (
+          {onProbation && visible(probationEnd) && (
             <span className="roster-preview__probation" style={at(probationEnd)} title={`Fin de periodo de prueba ${shortDate(probationEnd, true)}`} />
           )}
           {visible(today) && <span className="roster-preview__today" style={at(today)} />}
@@ -98,7 +98,7 @@ export function RosterPreview({ today, hireDate, probationEnd, inProbation, proj
       <ul className="roster-preview__legend">
         <li>
           <span className="roster-preview__chip">Probatoria</span>
-          {inProbation && probationEnd
+          {onProbation && probationEnd
             ? `Día 90 el ${shortDate(probationEnd, true)}, desde el contrato`
             : 'No está en periodo de prueba'}
         </li>

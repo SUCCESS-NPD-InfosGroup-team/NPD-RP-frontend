@@ -19,7 +19,7 @@ const request: ResourceRequest = {
   genderId: 1,
   talentReviewId: null,
   hireDate: '2026-08-03',
-  inProbation: true,
+  onProbation: true,
   status: 'ACTIVO',
   termination: null,
   assignment: null,

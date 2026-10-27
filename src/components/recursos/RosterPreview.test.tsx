@@ -9,7 +9,7 @@ describe('RosterPreview', () => {
         today="2026-10-07"
         hireDate="2026-08-03"
         probationEnd="2026-11-01"
-        inProbation
+        onProbation
         project={{ name: 'Programa de automatización (DEYEL)', endDate: '2026-10-31', indefinite: false }}
       />,
     )
@@ -24,7 +24,7 @@ describe('RosterPreview', () => {
 
   it('keeps today visible when the hire date is old and leaves the bar open when indefinite', () => {
     const { container } = render(
-      <RosterPreview today="2026-10-26" hireDate="2020-01-15" probationEnd="2020-04-14" inProbation={false} project={{ indefinite: true }} />,
+      <RosterPreview today="2026-10-26" hireDate="2020-01-15" probationEnd="2020-04-14" onProbation={false} project={{ indefinite: true }} />,
     )
     expect(container.querySelector('.roster-preview__months span:nth-child(2)')).toHaveTextContent('jul')
     expect(container.querySelector('.roster-preview__bar')).toHaveClass('is-open')
@@ -33,7 +33,7 @@ describe('RosterPreview', () => {
   })
 
   it('shows a person without project', () => {
-    render(<RosterPreview today="2026-10-26" hireDate="2026-10-20" probationEnd="2027-01-18" inProbation />)
+    render(<RosterPreview today="2026-10-26" hireDate="2026-10-20" probationEnd="2027-01-18" onProbation />)
     expect(screen.getByText('Sin proyecto')).toBeInTheDocument()
     expect(screen.queryByText('Avisos fin')).not.toBeInTheDocument()
     expect(formatShortDate('2027-01-18', true)).toBe('18 ene 2027')

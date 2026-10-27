@@ -123,7 +123,7 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
   function changeHireDate(hireDate: string): void {
     update('hireDate', hireDate)
     // A new hire date brings back the calculated probation until the user marks it again
-    update('inProbation', null)
+    update('onProbation', null)
   }
 
   function changeClient(clientId: string): void {
@@ -293,7 +293,7 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
                     type="checkbox"
                     checked={probation.checked}
                     disabled={!probation.endDate}
-                    onChange={(event) => update('inProbation', event.target.checked)}
+                    onChange={(event) => update('onProbation', event.target.checked)}
                   />
                   <span>
                     <strong>En periodo de prueba</strong>
@@ -392,7 +392,7 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
           today={today}
           hireDate={toIsoDate(values.hireDate)}
           probationEnd={probation.endDate}
-          inProbation={probation.checked}
+          onProbation={probation.checked}
           project={!terminated && values.withProject
             ? { name: selectedProject?.name, endDate: toIsoDate(values.endDate), indefinite: values.indefinite }
             : undefined}

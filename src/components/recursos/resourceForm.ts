@@ -20,7 +20,7 @@ export interface ResourceFormValues {
   talentReviewId: string
   hireDate: string
   /** null = follow the calculation from the hire date until the user marks or unmarks it */
-  inProbation: boolean | null
+  onProbation: boolean | null
   status: ResourceStatusCode | ''
   terminationDate: string
   terminationReasonId: string
@@ -48,7 +48,7 @@ export const EMPTY_RESOURCE_FORM: ResourceFormValues = {
   genderId: '',
   talentReviewId: '',
   hireDate: '',
-  inProbation: null,
+  onProbation: null,
   status: 'ACTIVO',
   terminationDate: '',
   terminationReasonId: '',
@@ -159,12 +159,12 @@ export interface ProbationInfo {
 
 export function probationInfo(values: ResourceFormValues, today: string): ProbationInfo {
   const hireDate = toIsoDate(values.hireDate)
-  if (!hireDate) return { checked: values.inProbation ?? false }
+  if (!hireDate) return { checked: values.onProbation ?? false }
   const endDate = addDaysIso(hireDate, PROBATION_DAYS)
   return {
     endDate,
     vacationMonth: ((Number(hireDate.slice(5, 7)) + 10) % 12) + 1,
-    checked: values.inProbation ?? today <= endDate,
+    checked: values.onProbation ?? today <= endDate,
   }
 }
 
@@ -185,7 +185,7 @@ export function toResourceRequest(values: ResourceFormValues, today = todayIso()
     genderId: Number(values.genderId),
     talentReviewId: optionalId(values.talentReviewId),
     hireDate: toIsoDate(values.hireDate) ?? '',
-    inProbation: probationInfo(values, today).checked,
+    onProbation: probationInfo(values, today).checked,
     status: values.status || 'ACTIVO',
     termination: terminated
       ? { date: toIsoDate(values.terminationDate) ?? '', reasonId: Number(values.terminationReasonId) }
