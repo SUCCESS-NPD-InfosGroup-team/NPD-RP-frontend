@@ -2,6 +2,7 @@ import { apiFetch } from './api'
 import type {
   ApiError,
   Client,
+  ClientProject,
   CreateProjectInput,
   Page,
   Project,
@@ -55,7 +56,7 @@ function mapProject(project: ApiProject): Project {
   }
 }
 
-async function read<T>(response: Response): Promise<T> {
+export async function read<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
   const body = await response.json().catch(() => ({})) as Partial<ApiError>
   throw new ApiRequestError({
@@ -67,6 +68,8 @@ async function read<T>(response: Response): Promise<T> {
     field: body.field,
     existingProjectId: body.existingProjectId,
     existingProjectName: body.existingProjectName,
+    existingResourceId: body.existingResourceId,
+    existingResourceName: body.existingResourceName,
   } satisfies ApiError)
 }
 
@@ -93,6 +96,10 @@ export const projectsApi = {
       }),
     }))
     return mapProject(response)
+  },
+  async listClientProjects(clientId: string): Promise<ClientProject[]> {
+    const response = await read<{ items: Array<Omit<ClientProject, 'id'> & { id: number }> }>(await apiFetch(`/clients/${encodeURIComponent(clientId)}/projects`))
+    return response.items.map((project) => ({ ...project, id: String(project.id) }))
   },
   async listClients(): Promise<Client[]> {
     const response = await read<{ items: Array<Omit<Client, 'id'> & { id: number }> }>(await apiFetch('/clients?active=true'))

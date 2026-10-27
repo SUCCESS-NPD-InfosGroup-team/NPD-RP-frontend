@@ -5,32 +5,13 @@ import { Field } from '../ui/Field'
 import { UserPlusIcon } from '../icons'
 import { getProjectsApi } from '../../services/projects'
 import type { Client, Project } from '../../services/projects.types'
+import { formatDateInput, toIsoDate } from '../../utils/dates'
 
 interface NewProjectModalProps {
   open: boolean
   clients: Client[]
   onCreated: (project: Project, options?: { addMembers?: boolean }) => void
   onClose: () => void
-}
-
-function formatDateInput(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 8)
-  if (digits.length > 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
-  if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  return digits
-}
-
-function toIsoDate(value: string): string | undefined {
-  if (!value) return undefined
-  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
-  if (!match) return undefined
-  const [, day, month, year] = match
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
-  return date.getUTCFullYear() === Number(year)
-    && date.getUTCMonth() === Number(month) - 1
-    && date.getUTCDate() === Number(day)
-    ? `${year}-${month}-${day}`
-    : undefined
 }
 
 function getValidationError(clientId: string, name: string, contractEnd: string, isoContractEnd?: string): string {

@@ -24,6 +24,14 @@ export interface Project {
   active: boolean
 }
 
+/** Light project row for the "Proyecto asignado" selector: only active projects of one client */
+export interface ClientProject {
+  id: string
+  name: string
+  teamSize: number
+  contractEndDate: string | null
+}
+
 export interface ProjectFilters {
   search?: string
   clientId?: string
@@ -60,10 +68,19 @@ export interface ApiError {
   code: string
   detail: string
   title?: string
-  errors?: Array<{ field: string; code: string; message: string }>
+  errors?: Array<{
+    field: string
+    code: string
+    message: string
+    /** Only on an EMPLOYEE_NUMBER_TAKEN error that comes with other errors inside a 400 */
+    existingResourceId?: number
+    existingResourceName?: string
+  }>
   field?: string
   existingProjectId?: number
   existingProjectName?: string
+  existingResourceId?: number
+  existingResourceName?: string
 }
 
 export class ApiRequestError extends Error implements ApiError {
@@ -73,6 +90,9 @@ export class ApiRequestError extends Error implements ApiError {
   readonly field?: string
   readonly existingProjectId?: number
   readonly existingProjectName?: string
+  readonly errors?: ApiError['errors']
+  readonly existingResourceId?: number
+  readonly existingResourceName?: string
 
   constructor(error: ApiError) {
     super(error.detail)
@@ -83,5 +103,8 @@ export class ApiRequestError extends Error implements ApiError {
     this.field = error.field
     this.existingProjectId = error.existingProjectId
     this.existingProjectName = error.existingProjectName
+    this.errors = error.errors
+    this.existingResourceId = error.existingResourceId
+    this.existingResourceName = error.existingResourceName
   }
 }
