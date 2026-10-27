@@ -15,7 +15,7 @@ describe('projectsApi', () => {
       page: { number: 1, size: 25, totalElements: 0, totalPages: 0 },
     })))
     await projectsApi.listProjects({ search: 'Atlas', contractEnd: 'none' }, 2)
-    expect(mockedApiFetch).toHaveBeenCalledWith('/projects?page=1&size=25')
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/projects?page=1&size=25')
   })
 
   it('translates duplicate errors into ApiError', async () => {
