@@ -1,20 +1,20 @@
-## Tipo de tarea
-<!-- Marca una -->
-- [ ] Feature (funcionalidad nueva)
-- [ ] Fix (corrección de error)
-- [ ] Refactor (sin cambio de comportamiento)
-- [ ] Docs (documentación)
-- [ ] Chore (configuración, dependencias, CI)
+## Type of change
+<!-- Check one -->
+- [ ] Feature (new functionality)
+- [ ] Fix (bug fix)
+- [ ] Refactor (no behavior change)
+- [ ] Docs (documentation)
+- [ ] Chore (configuration, dependencies, CI)
 - [ ] Test
 
-## Tarea de Jira
-<!-- Ej: SCRUM-17. Escribe "N/A" si no aplica -->
+## Jira task
+<!-- E.g. SCRUM-17. Write "N/A" if there is none -->
 
-## Descripción
-<!-- Qué se hizo y por qué, en pocas líneas -->
+## Description
+<!-- What was done and why, in a few lines -->
 
-## Uso de IA (OBLIGATORIO)
-- [ ] No se usó IA
-- [ ] Sí se usó IA
+## AI usage (REQUIRED)
+- [ ] No AI was used
+- [ ] AI was used
 
-Modelo(s) usado(s): <!-- Ej: Claude Opus 5.5 vía Claude Code. Escribe "N/A" si no se usó -->
+Model(s) used: <!-- E.g. Claude Opus 5.5 via Claude Code. Write "N/A" if none was used -->

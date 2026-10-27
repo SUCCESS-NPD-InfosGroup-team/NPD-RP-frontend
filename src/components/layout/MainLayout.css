@@ -7,6 +7,10 @@
 }
 
 .app-header {
+  position: fixed;
+  z-index: 10;
+  inset-block-start: 0;
+  inset-inline: 0;
   display: flex;
   height: var(--topbar-h);
   min-height: var(--topbar-h);
@@ -50,6 +54,7 @@
 .header-navigation {
   min-width: 0;
   flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .navigation-list {
@@ -57,9 +62,15 @@
   height: var(--topbar-h);
   align-items: stretch;
   gap: var(--navigation-gap);
+  overflow-x: auto;
   margin: 0;
   padding: 0;
   list-style: none;
+  scrollbar-width: none;
+}
+
+.navigation-list::-webkit-scrollbar {
+  display: none;
 }
 
 .navigation-link {
@@ -109,6 +120,9 @@
 .header-actions {
   flex: 0 0 auto;
   gap: var(--header-actions-gap);
+  position: relative;
+  z-index: 1;
+  background: var(--brand-orange);
 }
 
 .resource-search {
@@ -224,7 +238,7 @@
   width: 100%;
   min-width: 0;
   flex: 1;
-  padding: var(--space-5);
+  padding: calc(var(--space-5) + var(--topbar-h)) var(--space-5) calc(var(--space-5) + var(--opsbar-h));
 }
 
 .page-heading {
@@ -234,6 +248,10 @@
 }
 
 .operations-bar {
+  position: fixed;
+  z-index: 10;
+  inset-inline: 0;
+  inset-block-end: 0;
   display: flex;
   height: var(--opsbar-h);
   min-height: var(--opsbar-h);
