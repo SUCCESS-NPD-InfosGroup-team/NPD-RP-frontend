@@ -1,6 +1,7 @@
 // TEMPORAL SCRUM-122: eliminar al conectar la API real (SCRUM-121)
 import type {
   Client,
+  ClientProject,
   CreateProjectInput,
   Page,
   Project,
@@ -101,6 +102,11 @@ export const projectsMock = {
     }
     projects.push(project)
     return project
+  },
+  async listClientProjects(clientId: string): Promise<ClientProject[]> {
+    return projects
+      .filter((project) => project.active && project.client.id === clientId)
+      .map((project) => ({ id: project.id, name: project.name, teamSize: project.teamSize, contractEndDate: project.contractEnd?.slice(0, 10) ?? null }))
   },
   async listClients(): Promise<Client[]> { return clients },
   async createClient(input: { name: string; isInternal: boolean }): Promise<Client> {

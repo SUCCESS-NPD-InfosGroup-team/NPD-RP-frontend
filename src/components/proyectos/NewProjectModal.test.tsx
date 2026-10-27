@@ -14,6 +14,7 @@ describe('NewProjectModal', () => {
       listProjects: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
+      listClientProjects: vi.fn(),
     })
     const onCreated = vi.fn()
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={onCreated} onClose={vi.fn()} />)
@@ -32,6 +33,7 @@ describe('NewProjectModal', () => {
       listProjects: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
+      listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
@@ -48,6 +50,7 @@ describe('NewProjectModal', () => {
       listProjects: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
+      listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
@@ -72,6 +75,7 @@ describe('NewProjectModal', () => {
       listProjects: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
+      listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
@@ -91,6 +95,7 @@ describe('NewProjectModal', () => {
       listProjects: vi.fn(),
       listClients: vi.fn(),
       createClient: vi.fn(),
+      listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[]} onCreated={onCreated} onClose={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: '__new__' } })
