@@ -3,10 +3,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '../../context/AuthContext'
 import { fakeKeycloak } from '../../test/keycloakMock'
-// CORRECCIÓN 1: Usamos el nombre en inglés
 import { RegisterResourcePage } from './RegistrarRecursoPage'
 
-// Mockeamos el Gantt para que no falle en JSDOM
+// Mockeamos el Gantt y la API
 vi.mock('../../components/recursos/RecursosGantt', () => ({
   RecursosGantt: () => 'Mock Gantt'
 }))
@@ -28,7 +27,6 @@ function renderPage(role: string = 'operations-administrator') {
     <AuthProvider>
       <MemoryRouter initialEntries={['/recursos/nuevo']}>
         <Routes>
-          {/* CORRECCIÓN 2: Usamos el nombre en inglés en el element */}
           <Route path="/recursos/nuevo" element={<RegisterResourcePage />} />
         </Routes>
       </MemoryRouter>
@@ -41,7 +39,8 @@ describe('RegisterResourcePage', () => {
     renderPage('operations-administrator')
     
     await waitFor(() => {
-      expect(screen.getByText(/Registrar recurso/i)).toBeInTheDocument()
+      // CORRECCIÓN 1: Usamos getByRole('heading') para ser específicos y evitar los múltiples textos
+      expect(screen.getByRole('heading', { name: /Registrar recurso/i })).toBeInTheDocument()
     })
   })
 
@@ -49,15 +48,19 @@ describe('RegisterResourcePage', () => {
     renderPage('guest')
     
     await waitFor(() => {
-      expect(screen.queryByText(/Registrar recurso/i)).not.toBeInTheDocument()
+      // CORRECCIÓN 2: Verificamos que salga el mensaje de "No tienes acceso" en lugar de buscar que no exista el texto
+      expect(screen.getByRole('heading', { name: /No tienes acceso a esta pantalla/i })).toBeInTheDocument()
+      expect(screen.getByText(/Solo Operations administrator puede registrar recursos/i)).toBeInTheDocument()
     })
   })
 
   it('confirms the new record on the resources screen', async () => {
     renderPage('operations-administrator')
 
+    // Buscamos los campos del formulario
     const nombreInput = screen.getByLabelText(/Nombre de empleado/i)
     const nEmpleadoInput = screen.getByLabelText(/N° de empleado/i)
+    // Usamos getByRole('button') para encontrar el botón de guardar
     const submitButton = screen.getByRole('button', { name: /Registrar recurso/i })
 
     fireEvent.change(nombreInput, { target: { value: 'Test User' } })
