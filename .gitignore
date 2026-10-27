@@ -26,3 +26,6 @@ dist-ssr
 # Project uses npm; package-lock.json is the only lockfile
 pnpm-lock.yaml
 yarn.lock
+
+start_env.bat
+coverage

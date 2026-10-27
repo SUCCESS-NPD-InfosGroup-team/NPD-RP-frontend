@@ -34,7 +34,7 @@ describe('resourcesApi', () => {
   it('posts the resource request', async () => {
     mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({ id: 1102, name: 'Ana Torres' }), { status: 201 }))
     await expect(resourcesApi.createResource(request)).resolves.toMatchObject({ id: 1102 })
-    expect(mockedApiFetch).toHaveBeenCalledWith('/resources', expect.objectContaining({
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/resources', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify(request),
     }))
@@ -67,24 +67,24 @@ describe('resourcesApi', () => {
   })
 
   it('requests one endpoint per list in parallel and joins them', async () => {
-    mockedApiFetch.mockImplementation(async (path: string) => new Response(JSON.stringify({ items: [{ id: 1, name: path }] })))
+    mockedApiFetch.mockImplementation(async (_module: string, path: string) => new Response(JSON.stringify({ items: [{ id: 1, name: path }] })))
     const catalogs = await resourcesApi.getCatalogs()
     expect(mockedApiFetch).toHaveBeenCalledTimes(11)
     expect(catalogs.workModes).toEqual([{ id: 1, name: '/catalogs/work-modes' }])
     expect(catalogs.terminationReasons).toEqual([{ id: 1, name: '/catalogs/termination-reasons' }])
     expect(catalogs.npdLeads).toEqual([{ id: 1, name: '/resources/npd-leads' }])
-    expect(mockedApiFetch).toHaveBeenCalledWith('/catalogs/statuses')
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/catalogs/statuses')
   })
 
   it('caches each list and only retries the ones that failed', async () => {
-    mockedApiFetch.mockImplementation(async (path: string) => (path === '/catalogs/genders'
+    mockedApiFetch.mockImplementation(async (_module: string, path: string) => (path === '/catalogs/genders'
       ? new Response('{}', { status: 503 })
       : new Response(JSON.stringify({ items: [] }))))
     await expect(resourcesApi.getCatalogs()).rejects.toMatchObject({ status: 503 })
     mockedApiFetch.mockClear()
     mockedApiFetch.mockImplementation(async () => new Response(JSON.stringify({ items: [] })))
     await resourcesApi.getCatalogs()
-    expect(mockedApiFetch).toHaveBeenCalledExactlyOnceWith('/catalogs/genders')
+    expect(mockedApiFetch).toHaveBeenCalledExactlyOnceWith('planner', '/catalogs/genders')
     await resourcesApi.getCatalogs()
     expect(mockedApiFetch).toHaveBeenCalledOnce()
   })
@@ -92,6 +92,6 @@ describe('resourcesApi', () => {
   it('reads one resource', async () => {
     mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({ id: 7 })))
     await expect(resourcesApi.getResource(7)).resolves.toEqual({ id: 7 })
-    expect(mockedApiFetch).toHaveBeenCalledWith('/resources/7')
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/resources/7')
   })
 })

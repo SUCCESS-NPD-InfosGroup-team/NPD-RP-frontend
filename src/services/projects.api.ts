@@ -75,7 +75,7 @@ export async function read<T>(response: Response): Promise<T> {
 
 export const projectsApi = {
   async listProjects(filters: ProjectFilters = {}, page = 1): Promise<Page<Project>> {
-    const response = await read<ApiPage<ApiProject>>(await apiFetch(`/projects?${query(filters, page)}`))
+    const response = await read<ApiPage<ApiProject>>(await apiFetch('planner', `/projects?${query(filters, page)}`))
     return {
       items: response.items.map(mapProject),
       page: response.page.number + 1,
@@ -85,7 +85,7 @@ export const projectsApi = {
     }
   },
   async createProject(input: CreateProjectInput): Promise<Project> {
-    const response = await read<ApiProject>(await apiFetch('/projects', {
+    const response = await read<ApiProject>(await apiFetch('planner', '/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -98,15 +98,15 @@ export const projectsApi = {
     return mapProject(response)
   },
   async listClientProjects(clientId: string): Promise<ClientProject[]> {
-    const response = await read<{ items: Array<Omit<ClientProject, 'id'> & { id: number }> }>(await apiFetch(`/clients/${encodeURIComponent(clientId)}/projects`))
+    const response = await read<{ items: Array<Omit<ClientProject, 'id'> & { id: number }> }>(await apiFetch('planner', `/clients/${encodeURIComponent(clientId)}/projects`))
     return response.items.map((project) => ({ ...project, id: String(project.id) }))
   },
   async listClients(): Promise<Client[]> {
-    const response = await read<{ items: Array<Omit<Client, 'id'> & { id: number }> }>(await apiFetch('/clients?active=true'))
+    const response = await read<{ items: Array<Omit<Client, 'id'> & { id: number }> }>(await apiFetch('planner', '/clients?active=true'))
     return response.items.map((client) => ({ ...client, id: String(client.id), active: true }))
   },
   async createClient(input: { name: string; isInternal: boolean }): Promise<Client> {
-    return read<Client>(await apiFetch('/clients', {
+    return read<Client>(await apiFetch('planner', '/clients', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
