@@ -6,7 +6,9 @@ import {
 } from './components/layout/roleNavigation'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
+// 1. Importamos tu página (¡Ojo con la "s"!)
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
+
 export interface AppProps {
   onSearchResources?: (query: string) => void
   onRegisterResource?: () => void
@@ -30,7 +32,7 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
     )
   }
 
-  // SOLUCIÓN: Comparamos por el label visible para evitar el error de TypeScript
+  // 2. LA MAGIA: Si la sección es "Recursos", renderizamos tu tabla
   if (item.label === 'Recursos') {
     return <ResourcesPage />
   }
