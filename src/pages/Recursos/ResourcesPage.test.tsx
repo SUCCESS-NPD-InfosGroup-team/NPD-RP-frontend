@@ -1,16 +1,17 @@
-// src/pages/Recursos/RecursosPage.test.tsx
+// src/pages/Recursos/ResourcesPage.test.tsx
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { RecursosPage } from './RecursosPage';
+// 1. Corregido: Importamos con el nombre en inglés
+import { ResourcesPage } from './ResourcesPage';
 
-// 1. Mockeamos el AuthContext (simulando ser Administrador)
+// 2. Mockeamos el AuthContext (simulando ser Administrador)
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
     hasRole: (role: string) => role === 'operations-administrator',
   })
 }));
 
-// 2. Mockeamos la API con los datos en línea (evita el error de hoisting)
+// 3. Mockeamos la API con los datos en línea (evita el error de hoisting)
 vi.mock('../../services/api', () => ({
   searchRecursos: vi.fn().mockResolvedValue({ 
     data: [
@@ -21,16 +22,17 @@ vi.mock('../../services/api', () => ({
   })
 }));
 
-// 3. Mockeamos el Gantt para que no intente dibujar SVG
+// 4. Mockeamos el Gantt para que no intente dibujar SVG
 vi.mock('../../components/recursos/RecursosGantt', () => ({
   RecursosGantt: () => 'Mock Gantt'
 }));
 
 const renderPage = async () => {
-  await act(async () => { render(<RecursosPage />); });
+  // 5. Corregido: Renderizamos "ResourcesPage"
+  await act(async () => { render(<ResourcesPage />); });
 };
 
-describe('RecursosPage (HU-03)', () => {
+describe('ResourcesPage (HU-03)', () => {
   it('debe renderizar el título y los filtros', async () => {
     await renderPage();
     expect(screen.getByText('Recursos')).toBeTruthy();

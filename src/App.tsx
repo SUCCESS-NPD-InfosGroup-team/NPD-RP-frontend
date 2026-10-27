@@ -7,7 +7,7 @@ import {
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
-import { ResourcesPage } from './pages/Recursos/RecursosPage'
+import { ResourcesPage } from './pages/Recursos/ResourcesPage'
 import { RegisterResourcePage } from './pages/Recursos/RegistrarRecursoPage'
 
 export interface AppProps {

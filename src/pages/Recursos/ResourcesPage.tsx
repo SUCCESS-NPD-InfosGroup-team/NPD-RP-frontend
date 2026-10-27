@@ -1,4 +1,4 @@
-// src/pages/Recursos/RecursosPage.tsx
+// src/pages/Recursos/ResourcesPage.tsx
 
 import { useState, useEffect } from 'react';
 import { RecursosGantt } from '../../components/recursos/RecursosGantt';
@@ -18,7 +18,7 @@ const normalizeText = (text: string) => {
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
-export const RecursosPage = () => {
+export const ResourcesPage = () => {
   // CA-05: Usamos el hook de Keycloak para ver si es administrador
   const { hasRole } = useAuth();
   const isAdmin = hasRole('operations-administrator');
@@ -57,7 +57,8 @@ export const RecursosPage = () => {
         setLoading(false);
       }
     };
-    fetchData();
+    // Arreglo SonarCloud: Agregamos 'void' para evitar la promesa no manejada
+    void fetchData();
   }, [filters, currentPage]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -112,6 +113,58 @@ export const RecursosPage = () => {
     setRecursosApi(prev => prev.map(r => r.id === recursoActualizado.id ? recursoActualizado : r));
     setRecursoAEditar(null);
   };
+
+  // Arreglo SonarCloud: Separamos el ternario anidado en variables independientes
+  let content;
+  if (loading) {
+    content = <p>Cargando recursos...</p>;
+  } else if (recursosFiltrados.length === 0) {
+    content = (
+      <div style={{ textAlign: 'center', padding: '40px', border: '2px dashed #ddd', borderRadius: '8px' }}>
+        <h3>¡Ningún recurso coincide con tu búsqueda!</h3>
+        <button onClick={clearAllFilters} style={{ marginTop: '10px', padding: '8px 16px', background: '#E85D04', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Limpiar búsqueda</button>
+      </div>
+    );
+  } else {
+    content = (
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+        <thead>
+          <tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}>
+            <th style={{ padding: '10px' }}>N° EMP.</th>
+            <th style={{ padding: '10px' }}>Colaborador</th>
+            <th style={{ padding: '10px' }}>Cliente - Proyecto</th>
+            <th style={{ padding: '10px' }}>Líder NPD</th>
+            <th style={{ padding: '10px' }}>Nivel</th>
+            <th style={{ padding: '10px' }}>Estado</th>
+            <th style={{ padding: '10px' }}>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recursosFiltrados.map((rec) => (
+            <tr key={rec.id} style={{ borderBottom: '1px solid #eee' }}>
+              <td style={{ padding: '10px' }}>{rec.nEmpleado}</td>
+              <td style={{ padding: '10px' }}>
+                <strong>{rec.nombre}</strong><br />
+                <span style={{ fontSize: '12px', color: '#666' }}>{rec.rol}</span>
+              </td>
+              <td style={{ padding: '10px' }}>{rec.cliente} — {rec.proyecto}</td>
+              <td style={{ padding: '10px' }}>{rec.liderNPD}</td>
+              <td style={{ padding: '10px' }}>{rec.nivel}</td>
+              <td style={{ padding: '10px' }}>
+                <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>{rec.estado}</span>
+              </td>
+              <td style={{ padding: '10px' }}>
+                {/* CA-05: Solo los administradores ven el lápiz */}
+                {isAdmin && (
+                  <button onClick={() => handleEditClick(rec)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }} title="Editar recurso">✏️</button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
 
   return (
     <div style={{ padding: '20px' }}>
@@ -182,53 +235,7 @@ export const RecursosPage = () => {
       ) : (
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
           <h3 style={{ marginBottom: '15px' }}>Listado de Recursos</h3>
-          
-          {loading ? (
-             <p>Cargando recursos...</p>
-          ) : recursosFiltrados.length === 0 ? (
-             <div style={{ textAlign: 'center', padding: '40px', border: '2px dashed #ddd', borderRadius: '8px' }}>
-                <h3>¡Ningún recurso coincide con tu búsqueda!</h3>
-                <button onClick={clearAllFilters} style={{ marginTop: '10px', padding: '8px 16px', background: '#E85D04', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Limpiar búsqueda</button>
-             </div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}>
-                  <th style={{ padding: '10px' }}>N° EMP.</th>
-                  <th style={{ padding: '10px' }}>Colaborador</th>
-                  <th style={{ padding: '10px' }}>Cliente - Proyecto</th>
-                  <th style={{ padding: '10px' }}>Líder NPD</th>
-                  <th style={{ padding: '10px' }}>Nivel</th>
-                  <th style={{ padding: '10px' }}>Estado</th>
-                  <th style={{ padding: '10px' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recursosFiltrados.map((rec) => (
-                  <tr key={rec.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '10px' }}>{rec.nEmpleado}</td>
-                    <td style={{ padding: '10px' }}>
-                      <strong>{rec.nombre}</strong><br />
-                      <span style={{ fontSize: '12px', color: '#666' }}>{rec.rol}</span>
-                    </td>
-                    <td style={{ padding: '10px' }}>{rec.cliente} — {rec.proyecto}</td>
-                    <td style={{ padding: '10px' }}>{rec.liderNPD}</td>
-                    <td style={{ padding: '10px' }}>{rec.nivel}</td>
-                    <td style={{ padding: '10px' }}>
-                      <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>{rec.estado}</span>
-                    </td>
-                    <td style={{ padding: '10px' }}>
-                      {/* CA-05: Solo los administradores ven el lápiz */}
-                      {isAdmin && (
-                        <button onClick={() => handleEditClick(rec)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }} title="Editar recurso">✏️</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
+          {content}
           {!loading && recursosFiltrados.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
               <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} style={{ padding: '6px 12px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}>Anterior</button>
