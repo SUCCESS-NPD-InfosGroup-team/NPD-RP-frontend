@@ -2,7 +2,7 @@ import { apiFetch } from './api'
 import { read } from './projects.api'
 import type { CatalogItem, Catalogs, ResourceRequest, ResourceResponse } from './resources.types'
 
-/** Each form list has its own endpoint; all of them answer { items: [...] } */
+/** Each form list has its own endpoint in the planner module; all of them answer { items: [...] } */
 const CATALOG_PATHS = {
   jobTitles: '/catalogs/job-titles',
   positions: '/catalogs/positions',
@@ -23,7 +23,7 @@ const listCache = new Map<string, Promise<unknown[]>>()
 function listItems<T>(path: string): Promise<T[]> {
   let request = listCache.get(path)
   if (!request) {
-    request = apiFetch(path)
+    request = apiFetch('planner', path)
       .then((response) => read<{ items: unknown[] }>(response))
       .then((body) => body.items)
       .catch((cause: unknown) => {
@@ -43,14 +43,14 @@ export const resourcesApi = {
     return Object.fromEntries(keys.map((key, index) => [key, lists[index]])) as unknown as Catalogs
   },
   async createResource(input: ResourceRequest): Promise<ResourceResponse> {
-    return read<ResourceResponse>(await apiFetch('/resources', {
+    return read<ResourceResponse>(await apiFetch('planner', '/resources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     }))
   },
   async getResource(id: number | string): Promise<ResourceResponse> {
-    return read<ResourceResponse>(await apiFetch(`/resources/${encodeURIComponent(String(id))}`))
+    return read<ResourceResponse>(await apiFetch('planner', `/resources/${encodeURIComponent(String(id))}`))
   },
 }
 
