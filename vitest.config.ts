@@ -9,6 +9,27 @@ export default mergeConfig(
       globals: true,
       setupFiles: ['./src/test/setup.ts'],
       css: false,
+      environmentOptions: {
+        jsdom: {
+          // Polyfill inyectado directamente en la configuración global
+          // Corregido: Le decimos a TypeScript que "window" es de tipo any
+          beforeParse(window: any) {
+            if (window.SVGSVGElement) {
+              window.SVGSVGElement.prototype.createSVGPoint = function () {
+                return {
+                  x: 0,
+                  y: 0,
+                  matrixTransform() {
+                    return { x: 0, y: 0 };
+                  },
+                } // Corregido: Quitamos el "as unknown as DOMPoint"
+              };
+              window.SVGSVGElement.prototype.getScreenCTM = () =>
+                ({ inverse: () => ({}) }) // Corregido: Quitamos el "as unknown as DOMMatrix"
+            }
+          },
+        },
+      },
       coverage: {
         provider: 'v8',
         reporter: ['text', 'html', 'lcov'],
