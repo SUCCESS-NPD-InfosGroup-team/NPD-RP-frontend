@@ -4,7 +4,7 @@ import { useProjects } from '../../hooks/useProjects'
 import { Button } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
 import { Paginador } from '../../components/ui/Paginador'
-import { DownloadIcon, PlusIcon } from '../../components/icons'
+import { PlusIcon } from '../../components/icons'
 import { ProjectsTable } from '../../components/proyectos/ProjectsTable'
 import { NewProjectModal } from '../../components/proyectos/NewProjectModal'
 import type { Client } from '../../services/projects.types'
@@ -57,7 +57,7 @@ export function ProjectsPage() {
           <p className="projects-page__subtitle">Gestiona los proyectos y sus equipos desde un solo lugar.</p>
         </div>
         <div className="projects-page__actions">
-          <Button variant="secondary" icon={<DownloadIcon />}>Exportar</Button>
+          {/* TODO SCRUM-158: restore when the export endpoint exists. */}
           {canEdit && <Button icon={<PlusIcon />} onClick={() => setNewProjectOpen(true)}>Nuevo proyecto</Button>}
         </div>
       </header>
