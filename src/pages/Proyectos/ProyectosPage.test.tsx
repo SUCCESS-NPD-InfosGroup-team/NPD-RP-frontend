@@ -48,4 +48,10 @@ describe('ProjectsPage', () => {
 
     expect(screen.queryByRole('button', { name: 'Exportar' })).not.toBeInTheDocument()
   })
+
+  it('hides the unsupported text search field', () => {
+    render(<ProjectsPage />)
+
+    expect(screen.queryByLabelText('Buscar')).not.toBeInTheDocument()
+  })
 })
