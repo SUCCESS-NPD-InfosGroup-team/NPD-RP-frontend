@@ -20,6 +20,7 @@ export interface Project {
   leadIds?: number[]
   startDate: string
   contractEnd: string | null
+  daysToContractEnd?: number | null
   pendingCount: number
   active: boolean
 }

@@ -50,10 +50,9 @@ export function ProjectsPage() {
         </div>
       </header>
       <div className="projects-page__kpis">
-        <Kpi label="PROYECTOS ACTIVOS" value={summary?.activeProjects} note={summary ? `de ${summary.activeClients} clientes` : '—'} />
+        <Kpi label="PROYECTOS ACTIVOS" value={summary?.activeProjects} note="total de proyectos activos" />
         <Kpi label="FIN DE CONTRATO ≤ 30 DÍAS" value={summary?.contractEndingSoon} note="aviso a Sales a 30 y 15 días" danger />
-        <Kpi label="SIN EQUIPO" value={summary?.withoutTeam} note="proyectos creados sin colaboradores" />
-        <Kpi label="COLABORADORES SIN PROYECTO" value={summary?.unassignedPeople} note="disponibles para asignar" />
+        {/* TODO SCRUM-157: restore unsupported team and unassigned-resource KPIs. */}
       </div>
       <div className="projects-page__filters">
         {/* TODO SCRUM-162: restore when the projects API supports text search. */}

@@ -60,4 +60,12 @@ describe('ProjectsPage', () => {
 
     expect(screen.queryByRole('option', { name: 'Sin fecha' })).not.toBeInTheDocument()
   })
+
+  it('hides KPIs that the projects API cannot calculate', () => {
+    render(<ProjectsPage />)
+
+    expect(screen.queryByText('SIN EQUIPO')).not.toBeInTheDocument()
+    expect(screen.queryByText('COLABORADORES SIN PROYECTO')).not.toBeInTheDocument()
+    expect(screen.queryByText('de 0 clientes')).not.toBeInTheDocument()
+  })
 })
