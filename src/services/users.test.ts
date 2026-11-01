@@ -67,15 +67,18 @@ describe('users mock API', () => {
     })
 
     it.each([
-      [403, 'No tienes permiso para crear usuarios.'],
+      [400, 'Los datos enviados no son válidos. Revisa el formulario.', 400],
+      [401, 'Tu sesión expiró. Inicia sesión nuevamente.', 401],
+      [403, 'No tienes permiso para consultar usuarios.', 403],
       [409, 'Ya existe una cuenta con este correo.'],
       [502, 'El proveedor de identidad no está disponible. Intenta nuevamente.'],
       [503, 'El proveedor de identidad no está disponible. Intenta nuevamente.'],
-      [418, 'El proveedor de identidad no está disponible. Intenta nuevamente.'],
-    ])('maps HTTP status %s to a typed error', async (status, message) => {
+      [500, 'No se pudo completar la solicitud. Intenta nuevamente.', 500],
+      [418, 'No se pudo completar la solicitud. Intenta nuevamente.', 500],
+    ])('maps HTTP status %s to a typed error', async (status, message, expectedStatus = status) => {
       mockedApiFetch.mockResolvedValueOnce(new Response(null, { status }))
       await expect(httpUsersApi.listUsers()).rejects.toMatchObject({
-        status: status === 418 ? 503 : status,
+        status: expectedStatus,
         message,
       })
     })

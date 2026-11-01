@@ -59,14 +59,16 @@ describe('UsuariosPage', () => {
     expect(screen.getByText('No tienes acceso a esta pantalla')).toBeInTheDocument()
   })
 
-  it('shows loading and load error states', async () => {
+  it('shows the loading state', async () => {
     let resolveList: (value: User[]) => void = () => undefined
     mockedApi.listUsers.mockReturnValueOnce(new Promise<User[]>((resolve) => { resolveList = resolve }))
     render(<UsuariosPage />)
     expect(screen.getByText('Cargando usuarios…')).toBeInTheDocument()
     resolveList(users)
     await waitFor(() => expect(screen.getByText('2 usuarios · 1 activos')).toBeInTheDocument())
+  })
 
+  it('shows the load error state', async () => {
     mockedApi.listUsers.mockRejectedValueOnce(new Error('network'))
     render(<UsuariosPage />)
     await waitFor(() => expect(screen.getByText('No se pudieron cargar los usuarios. Intenta nuevamente.')).toBeInTheDocument())
@@ -108,6 +110,8 @@ describe('UsuariosPage', () => {
 
   it.each([
     [409, 'Ya existe una cuenta con este correo.', 'field'],
+    [400, 'Los datos enviados no son válidos. Revisa el formulario.', 'banner'],
+    [401, 'Tu sesión expiró. Inicia sesión nuevamente.', 'banner'],
     [403, 'No tienes permiso para crear usuarios.', 'banner'],
     [503, 'El proveedor de identidad no está disponible. Intenta nuevamente.', 'banner'],
   ])('shows the expected error for status %s', async (status, message, kind) => {
@@ -136,11 +140,42 @@ describe('UsuariosPage', () => {
     fireEvent.click(openButton)
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(openButton).toHaveFocus()
+    await waitFor(() => expect(openButton).toHaveFocus())
 
     fireEvent.click(openButton)
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(openButton).toHaveFocus()
+    await waitFor(() => expect(openButton).toHaveFocus())
+  })
+
+  it('returns focus after successful creation', async () => {
+    render(<UsuariosPage />)
+    await screen.findByText('2 usuarios · 1 activos')
+    const openButton = screen.getByRole('button', { name: 'Crear usuario' })
+    fireEvent.click(openButton)
+    fireEvent.change(screen.getByLabelText('Nombre completo *'), { target: { value: 'Nueva persona' } })
+    fireEvent.change(screen.getByLabelText('Correo corporativo *'), { target: { value: 'nueva@infosgroup.com' } })
+    fireEvent.click(screen.getByRole('radio', { name: /Guest/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await waitFor(() => expect(openButton).toHaveFocus())
+  })
+
+  it('cycles focus within the drawer with Tab and Shift+Tab', async () => {
+    render(<UsuariosPage />)
+    await screen.findByText('2 usuarios · 1 activos')
+    fireEvent.click(screen.getByRole('button', { name: 'Crear usuario' }))
+    const drawer = screen.getByRole('dialog')
+    const first = screen.getByRole('button', { name: 'Cerrar' })
+    const last = screen.getByRole('button', { name: 'Crear cuenta' })
+
+    last.focus()
+    fireEvent.keyDown(drawer, { key: 'Tab' })
+    expect(first).toHaveFocus()
+
+    first.focus()
+    fireEvent.keyDown(drawer, { key: 'Tab', shiftKey: true })
+    expect(last).toHaveFocus()
   })
 })
