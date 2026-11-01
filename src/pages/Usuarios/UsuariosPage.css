@@ -4,6 +4,7 @@
 .users-page__subtitle { margin: 4px 0 0; color: var(--text-secondary); }
 .users-page__tabs { display: flex; gap: 24px; border-bottom: var(--border-width) solid var(--border-default); margin-bottom: var(--space-3); }
 .users-page__tab { border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 10px 8px; color: var(--text-secondary); font-weight: 600; }
+.users-page__tab:disabled { cursor: not-allowed; opacity: .55; }
 .users-page__tab--active { border-bottom-color: var(--brand-orange); color: var(--text-primary); }
 .users-page__table-wrap { background: var(--surface-card); border: var(--border-width) solid var(--border-default); overflow-x: auto; }
 .users-page__summary { padding: 10px; color: var(--text-secondary); font-size: var(--fs-tag); }

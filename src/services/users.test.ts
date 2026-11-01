@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { createMockUsersApi } from './users'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { apiFetch } from './api'
+import { createMockUsersApi, httpUsersApi } from './users'
+
+vi.mock('./api', () => ({ apiFetch: vi.fn() }))
+
+const mockedApiFetch = vi.mocked(apiFetch)
 
 describe('users mock API', () => {
   it('lists the Figma users and creates an active account', async () => {
@@ -32,6 +37,47 @@ describe('users mock API', () => {
     })).rejects.toMatchObject({
       status: 409,
       message: 'Ya existe una cuenta con este correo.',
+    })
+  })
+
+  describe('users HTTP API', () => {
+    beforeEach(() => mockedApiFetch.mockReset())
+
+    it('lists and creates users through the access module', async () => {
+      const user = {
+        id: '1',
+        fullName: 'Nueva persona',
+        email: 'nueva@infosgroup.com',
+        role: 'Guest' as const,
+        status: 'active' as const,
+        lastAccess: 'Nunca',
+      }
+      mockedApiFetch
+        .mockResolvedValueOnce(new Response(JSON.stringify([user])))
+        .mockResolvedValueOnce(new Response(JSON.stringify(user)))
+
+      await expect(httpUsersApi.listUsers()).resolves.toEqual([user])
+      await expect(httpUsersApi.createUser({
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      })).resolves.toEqual(user)
+      expect(mockedApiFetch).toHaveBeenNthCalledWith(1, 'access', '/users')
+      expect(mockedApiFetch).toHaveBeenNthCalledWith(2, 'access', '/users', expect.objectContaining({ method: 'POST' }))
+    })
+
+    it.each([
+      [403, 'No tienes permiso para crear usuarios.'],
+      [409, 'Ya existe una cuenta con este correo.'],
+      [502, 'El proveedor de identidad no está disponible. Intenta nuevamente.'],
+      [503, 'El proveedor de identidad no está disponible. Intenta nuevamente.'],
+      [418, 'El proveedor de identidad no está disponible. Intenta nuevamente.'],
+    ])('maps HTTP status %s to a typed error', async (status, message) => {
+      mockedApiFetch.mockResolvedValueOnce(new Response(null, { status }))
+      await expect(httpUsersApi.listUsers()).rejects.toMatchObject({
+        status: status === 418 ? 503 : status,
+        message,
+      })
     })
   })
 

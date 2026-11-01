@@ -40,8 +40,22 @@ export function UsuariosPage() {
   }
 
   useEffect(() => {
-    const timerId = window.setTimeout(() => { void loadUsers() }, 0)
-    return () => window.clearTimeout(timerId)
+    let cancelled = false
+    async function loadInitialUsers() {
+      setLoading(true)
+      setLoadError(false)
+      try {
+        const nextUsers = await usersApi.listUsers()
+        if (!cancelled) setUsers(nextUsers)
+      } catch {
+        if (!cancelled) setLoadError(true)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void loadInitialUsers()
+    return () => { cancelled = true }
   }, [])
 
   const canCreate = roles.includes('operations-administrator')
@@ -66,7 +80,7 @@ export function UsuariosPage() {
       {notice && <div className="users-page__banner" role="status">{notice}</div>}
       <div className="users-page__tabs" role="tablist" aria-label="Secciones de usuarios">
         <button className="users-page__tab users-page__tab--active" type="button" role="tab" aria-selected="true">Usuarios {users.length}</button>
-        <button className="users-page__tab" type="button" role="tab" aria-selected="false" onClick={() => undefined}>Matriz de permisos</button>
+        <button className="users-page__tab" type="button" role="tab" aria-selected="false" disabled>Matriz de permisos</button>
       </div>
       <div className="users-page__workspace">
         <div className="users-page__list">
@@ -86,7 +100,10 @@ export function UsuariosPage() {
         </div>
         {drawerOpen && (
           <CreateUserDrawer
-            onClose={() => setDrawerOpen(false)}
+            onClose={() => {
+              setDrawerOpen(false)
+              document.querySelector<HTMLButtonElement>('.users-page__header .ui-button')?.focus()
+            }}
             onCreated={async () => { await loadUsers(); setDrawerOpen(false); setNotice('La cuenta se creó correctamente.') }}
           />
         )}
@@ -114,7 +131,7 @@ function UsersTable({ users, currentUserEmail }: Readonly<UsersTableProps>) {
               <td><Chip tone={item.role === 'Operations administrator' ? 'orange' : 'neutral'}>{item.role}</Chip></td>
               <td><Chip tone={item.status === 'active' ? 'ok' : 'neutral'}>{item.status === 'active' ? 'Activo' : 'Desactivado'}</Chip></td>
               <td>{item.lastAccess}</td>
-              <td><Button variant="secondary" onClick={() => undefined}>{item.status === 'disabled' ? 'Reactivar' : 'Editar'}</Button></td>
+              <td><Button variant="secondary" disabled>{item.status === 'disabled' ? 'Reactivar' : 'Editar'}</Button></td>
             </tr>
           ))}</tbody>
         </table>}
@@ -128,13 +145,13 @@ interface CreateUserDrawerProps {
 }
 
 function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps>) {
-  const drawerRef = useRef<HTMLDivElement>(null)
   const firstInputRef = useRef<HTMLInputElement>(null)
-  const [form, setForm] = useState<CreateUserRequest>({ fullName: '', email: '', role: 'Operations administrator' })
+  const [form, setForm] = useState<Omit<CreateUserRequest, 'role'>>({ fullName: '', email: '' })
   const [roleSelected, setRoleSelected] = useState<UserRole | ''>('')
   const [errors, setErrors] = useState<Partial<Record<'fullName' | 'email' | 'role', string>>>({})
   const [submitting, setSubmitting] = useState(false)
   const [apiError, setApiError] = useState('')
+  const [apiErrorStatus, setApiErrorStatus] = useState<CreateUserError['status'] | null>(null)
 
   useEffect(() => {
     firstInputRef.current?.focus()
@@ -158,6 +175,7 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
     if (!validate()) return
     setSubmitting(true)
     setApiError('')
+    setApiErrorStatus(null)
     try {
       await usersApi.createUser({ ...form, role: roleSelected as UserRole })
       await onCreated()
@@ -166,6 +184,7 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
         ? error
         : { status: 503, message: 'No se pudo crear la cuenta.' }
       setApiError(apiErrorValue.message || 'No se pudo crear la cuenta.')
+      setApiErrorStatus(apiErrorValue.status)
       if (apiErrorValue.status === 409) setErrors((previous) => ({ ...previous, email: apiErrorValue.message }))
     } finally {
       setSubmitting(false)
@@ -173,14 +192,14 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
   }
 
   return (
-    <aside className="users-drawer" ref={drawerRef} role="dialog" aria-labelledby="create-user-title">
+    <aside className="users-drawer" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
         <header className="users-drawer__header">
           <div><h2 className="users-drawer__title" id="create-user-title">Crear usuario</h2><p className="users-drawer__subtitle">La cuenta queda activa con los permisos del rol.</p></div>
           <button className="users-drawer__close" type="button" aria-label="Cerrar" onClick={onClose}><XIcon /></button>
         </header>
         <form className="users-drawer__form" onSubmit={(event) => void handleSubmit(event)}>
           <div className="users-drawer__body">
-            {apiError && apiError.includes('proveedor') && <div className="users-page__banner users-page__banner--error" role="alert">{apiError}</div>}
+            {apiError && apiErrorStatus !== 409 && <div className="users-page__banner users-page__banner--error" role="alert">{apiError}</div>}
             <UserInput ref={firstInputRef} id="user-full-name" label="Nombre completo *" value={form.fullName} error={errors.fullName} onChange={(value) => setForm((previous) => ({ ...previous, fullName: value }))} />
             <UserInput id="user-email" label="Correo corporativo *" type="email" value={form.email} error={errors.email} onChange={(value) => setForm((previous) => ({ ...previous, email: value }))} />
             <fieldset className="users-drawer__roles" aria-describedby={errors.role ? 'user-role-error' : undefined}>

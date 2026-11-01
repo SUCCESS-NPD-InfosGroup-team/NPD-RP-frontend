@@ -74,7 +74,7 @@ export function createMockUsersApi(
   }
 }
 
-async function getError(response: Response): Promise<CreateUserError> {
+function getError(response: Response): CreateUserError {
   const message = response.status === 409
     ? 'Ya existe una cuenta con este correo.'
     : response.status === 403
@@ -90,7 +90,7 @@ async function getError(response: Response): Promise<CreateUserError> {
 export const httpUsersApi: UsersApi = {
   async listUsers() {
     const response = await apiFetch('access', '/users')
-    if (!response.ok) throw await getError(response)
+    if (!response.ok) throw getError(response)
     return await response.json() as User[]
   },
   async createUser(request) {
@@ -99,10 +99,10 @@ export const httpUsersApi: UsersApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     })
-    if (!response.ok) throw await getError(response)
+    if (!response.ok) throw getError(response)
     return await response.json() as User
   },
 }
 
 export const usersApi: UsersApi =
-  import.meta.env.VITE_USERS_API_MODE === 'http' ? httpUsersApi : createMockUsersApi()
+  import.meta.env.VITE_USE_MOCK_API === 'true' ? createMockUsersApi() : httpUsersApi

@@ -16,6 +16,8 @@ La suite comprueba:
 
 ## Prueba manual con mock
 
+Configura `VITE_USE_MOCK_API=true` antes de iniciar Vite.
+
 1. Ejecuta `npm run dev`.
 2. Inicia sesión con un usuario que tenga `operations-administrator`.
 3. Abre `/usuarios`.
@@ -29,7 +31,7 @@ La suite comprueba:
 
 ## Prueba manual contra API
 
-1. Configura `VITE_USERS_API_MODE=http`.
+1. Configura `VITE_USE_MOCK_API=false` o elimina la variable.
 2. Inicia el backend con los endpoints del módulo `access`.
 3. Ejecuta el mismo flujo manual.
 4. Comprueba en la red del navegador que las solicitudes sean:

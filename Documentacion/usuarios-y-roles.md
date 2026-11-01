@@ -21,11 +21,12 @@ frontend; el backend debe validar los permisos de cada endpoint.
 
 ## Integración API
 
-La pantalla usa `usersApi`. Por defecto utiliza datos mock para desarrollo.
-Para probar el cliente HTTP se debe configurar:
+La pantalla usa `usersApi`. Por defecto utiliza el cliente HTTP para evitar
+mostrar datos falsos en producción. Para usar datos mock en desarrollo se debe
+configurar:
 
 ```text
-VITE_USERS_API_MODE=http
+VITE_USE_MOCK_API=true
 ```
 
 Los endpoints esperados pertenecen al módulo `access`:
