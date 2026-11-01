@@ -76,6 +76,15 @@ describe('resourcesApi', () => {
     expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/catalogs/statuses')
   })
 
+  it('loads NPD leads from its dedicated endpoint', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      items: [{ id: 1, name: 'Noel Vega' }],
+    })))
+
+    await expect(resourcesApi.getNpdLeads()).resolves.toEqual([{ id: 1, name: 'Noel Vega' }])
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/resources/npd-leads')
+  })
+
   it('caches each list and only retries the ones that failed', async () => {
     mockedApiFetch.mockImplementation(async (_module: string, path: string) => (path === '/catalogs/genders'
       ? new Response('{}', { status: 503 })
