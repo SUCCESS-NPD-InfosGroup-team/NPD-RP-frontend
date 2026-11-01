@@ -27,6 +27,7 @@ describe('ProjectsTable', () => {
     const onAddMembers = vi.fn()
     render(<ProjectsTable projects={[{ ...projects[0], teamSize: 2, members: [{ id: 'member-1', initials: 'AB' }], leads: ['Noel'] }]} canEdit onAddMembers={onAddMembers} />)
     expect(screen.getByRole('button', { name: /agregar colaboradores/i })).toBeInTheDocument()
+    expect(screen.queryByText('AB')).not.toBeInTheDocument()
     await screen.getByRole('button', { name: /agregar colaboradores/i }).click()
     expect(onAddMembers).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-1' }))
   })
