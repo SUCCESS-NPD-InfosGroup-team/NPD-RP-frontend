@@ -8,6 +8,8 @@ import { PlusIcon } from '../../components/icons'
 import { ProjectsTable } from '../../components/proyectos/ProjectsTable'
 import { NewProjectModal } from '../../components/proyectos/NewProjectModal'
 import type { Client } from '../../services/projects.types'
+import { getResourcesApi } from '../../services/resources'
+import type { CatalogItem } from '../../services/resources.types'
 import { canCreateProjects } from '../../components/layout/roleNavigation'
 import '../../components/proyectos/ProjectsPage.css'
 
@@ -20,6 +22,9 @@ export function ProjectsPage() {
   const [page, setPage] = useState(1)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
+  const [npdLeads, setNpdLeads] = useState<CatalogItem[]>([])
+  const [npdLeadsLoading, setNpdLeadsLoading] = useState(true)
+  const [npdLeadsError, setNpdLeadsError] = useState(false)
   const filters = useMemo(() => ({
     clientId: clientId || undefined,
     leadId: leadId || undefined,
@@ -36,6 +41,24 @@ export function ProjectsPage() {
   useEffect(() => {
     if (api) void api.listClients().then(setClients).catch(() => setClients([]))
   }, [api])
+  useEffect(() => {
+    let active = true
+    void getResourcesApi()
+      .then((resourcesApi) => resourcesApi.getNpdLeads())
+      .then((leads) => {
+        if (active) setNpdLeads(leads)
+      })
+      .catch(() => {
+        if (active) {
+          setNpdLeads([])
+          setNpdLeadsError(true)
+        }
+      })
+      .finally(() => {
+        if (active) setNpdLeadsLoading(false)
+      })
+    return () => { active = false }
+  }, [])
 
   return (
     <section className="screen projects-page">
@@ -57,7 +80,7 @@ export function ProjectsPage() {
       <div className="projects-page__filters">
         {/* TODO SCRUM-162: restore when the projects API supports text search. */}
         <Field id="project-client" label="Cliente" type="select" value={clientId} onChange={(event) => setClientId(event.target.value)} options={[{ value: '', label: 'Todos los clientes' }, ...clients.map((client) => ({ value: client.id, label: client.name }))]} />
-        <Field id="project-lead" label="Líder NPD" type="select" value={leadId} onChange={(event) => setLeadId(event.target.value)} options={[{ value: '', label: 'Todos los líderes' }, ...Array.from(new Map((data?.items ?? []).flatMap((project) => project.leads.map((name, index) => [String(project.leadIds?.[index] ?? ''), name] as const))).entries()).filter(([id]) => id).map(([value, label]) => ({ value, label }))]} />
+        <Field id="project-lead" label="Líder NPD" type="select" value={leadId} onChange={(event) => setLeadId(event.target.value)} options={[{ value: '', label: npdLeadsLoading ? 'Cargando líderes…' : 'Todos los líderes' }, ...npdLeads.map((lead) => ({ value: String(lead.id), label: lead.name }))]} state={npdLeadsError ? 'error' : 'default'} disabled={npdLeadsLoading || npdLeadsError} error={npdLeadsError ? 'No se pudieron cargar los líderes NPD.' : undefined} />
         {/* TODO SCRUM-163: restore when the API supports filtering projects without a contract end date. */}
         <Field id="project-contract" label="Fin de contrato" type="select" value={contractEnd} onChange={(event) => setContractEnd(event.target.value as typeof contractEnd)} options={[{ value: 'any', label: 'Cualquier fecha' }, { value: 'next30', label: 'Próximos 30 días' }]} />
         <label className="projects-page__checkbox">
