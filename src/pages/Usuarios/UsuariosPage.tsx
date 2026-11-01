@@ -26,6 +26,20 @@ export function UsuariosPage() {
   const [loadError, setLoadError] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [notice, setNotice] = useState('')
+  const createUserButtonRef = useRef<HTMLButtonElement>(null)
+  const restoreFocusRef = useRef(false)
+
+  useEffect(() => {
+    if (!drawerOpen && restoreFocusRef.current) {
+      createUserButtonRef.current?.focus()
+      restoreFocusRef.current = false
+    }
+  }, [drawerOpen])
+
+  function closeDrawer() {
+    restoreFocusRef.current = true
+    setDrawerOpen(false)
+  }
 
   async function loadUsers() {
     setLoading(true)
@@ -75,7 +89,7 @@ export function UsuariosPage() {
           <h1 className="page-heading" aria-label="Usuarios">Usuarios y roles</h1>
           <p className="users-page__subtitle">Cuentas de la plataforma, su rol y su acceso.</p>
         </div>
-        <Button icon={<PlusIcon />} onClick={() => { setNotice(''); setDrawerOpen(true) }}>Crear usuario</Button>
+        <Button ref={createUserButtonRef} icon={<PlusIcon />} onClick={() => { setNotice(''); setDrawerOpen(true) }}>Crear usuario</Button>
       </header>
       {notice && <div className="users-page__banner" role="status">{notice}</div>}
       <div className="users-page__tabs" role="tablist" aria-label="Secciones de usuarios">
@@ -100,11 +114,13 @@ export function UsuariosPage() {
         </div>
         {drawerOpen && (
           <CreateUserDrawer
-            onClose={() => {
+            onClose={closeDrawer}
+            onCreated={async () => {
+              await loadUsers()
+              restoreFocusRef.current = true
               setDrawerOpen(false)
-              document.querySelector<HTMLButtonElement>('.users-page__header .ui-button')?.focus()
+              setNotice('La cuenta se creó correctamente.')
             }}
-            onCreated={async () => { await loadUsers(); setDrawerOpen(false); setNotice('La cuenta se creó correctamente.') }}
           />
         )}
       </div>
@@ -145,6 +161,7 @@ interface CreateUserDrawerProps {
 }
 
 function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps>) {
+  const drawerRef = useRef<HTMLElement>(null)
   const firstInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<Omit<CreateUserRequest, 'role'>>({ fullName: '', email: '' })
   const [roleSelected, setRoleSelected] = useState<UserRole | ''>('')
@@ -155,7 +172,28 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
 
   useEffect(() => {
     firstInputRef.current?.focus()
-    const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab' || !drawerRef.current) return
+
+      const focusableElements = Array.from(drawerRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]',
+      ))
+      if (focusableElements.length === 0) return
+
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault()
+        lastElement.focus()
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault()
+        firstElement.focus()
+      }
+    }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
@@ -192,7 +230,7 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
   }
 
   return (
-    <aside className="users-drawer" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
+    <aside className="users-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="create-user-title">
         <header className="users-drawer__header">
           <div><h2 className="users-drawer__title" id="create-user-title">Crear usuario</h2><p className="users-drawer__subtitle">La cuenta queda activa con los permisos del rol.</p></div>
           <button className="users-drawer__close" type="button" aria-label="Cerrar" onClick={onClose}><XIcon /></button>

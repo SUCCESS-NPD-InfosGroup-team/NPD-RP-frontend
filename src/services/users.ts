@@ -74,23 +74,33 @@ export function createMockUsersApi(
   }
 }
 
-function getError(response: Response): CreateUserError {
-  const message = response.status === 409
-    ? 'Ya existe una cuenta con este correo.'
-    : response.status === 403
-      ? 'No tienes permiso para crear usuarios.'
-      : 'El proveedor de identidad no está disponible. Intenta nuevamente.'
+function getError(response: Response, operation: 'list' | 'create'): CreateUserError {
   const status: CreateUserError['status'] =
-    response.status === 403 || response.status === 409 || response.status === 502 || response.status === 503
+    response.status === 400 || response.status === 401 || response.status === 403
+      || response.status === 409 || response.status === 500 || response.status === 502
+      || response.status === 503
       ? response.status
-      : 503
+      : 500
+  const message = status === 400
+    ? 'Los datos enviados no son válidos. Revisa el formulario.'
+    : status === 401
+      ? 'Tu sesión expiró. Inicia sesión nuevamente.'
+      : status === 403
+        ? operation === 'list'
+          ? 'No tienes permiso para consultar usuarios.'
+          : 'No tienes permiso para crear usuarios.'
+        : status === 409
+          ? 'Ya existe una cuenta con este correo.'
+          : status === 502 || status === 503
+            ? 'El proveedor de identidad no está disponible. Intenta nuevamente.'
+            : 'No se pudo completar la solicitud. Intenta nuevamente.'
   return { status, message }
 }
 
 export const httpUsersApi: UsersApi = {
   async listUsers() {
     const response = await apiFetch('access', '/users')
-    if (!response.ok) throw getError(response)
+    if (!response.ok) throw getError(response, 'list')
     return await response.json() as User[]
   },
   async createUser(request) {
@@ -99,7 +109,7 @@ export const httpUsersApi: UsersApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     })
-    if (!response.ok) throw getError(response)
+    if (!response.ok) throw getError(response, 'create')
     return await response.json() as User
   },
 }

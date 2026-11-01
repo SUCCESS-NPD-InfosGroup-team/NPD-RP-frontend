@@ -22,7 +22,7 @@ export interface CreateUserRequest {
 }
 
 export interface CreateUserError {
-  status: 403 | 409 | 502 | 503
+  status: 400 | 401 | 403 | 409 | 500 | 502 | 503
   message: string
 }
 

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react'
 import './Button.css'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'feature' | 'danger' | 'ghost'
@@ -6,12 +6,14 @@ export type ButtonVariant = 'primary' | 'secondary' | 'feature' | 'danger' | 'gh
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
   icon?: ReactNode
+  ref?: Ref<HTMLButtonElement>
 }
 
 export function Button({
   children,
   className = '',
   icon,
+  ref,
   type = 'button',
   variant = 'primary',
   ...props
@@ -19,6 +21,7 @@ export function Button({
   return (
     <button
       className={`ui-button ui-button--${variant}${className ? ` ${className}` : ''}`}
+      ref={ref}
       type={type}
       {...props}
     >
