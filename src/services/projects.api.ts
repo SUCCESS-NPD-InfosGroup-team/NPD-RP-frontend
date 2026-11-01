@@ -51,6 +51,7 @@ function mapProject(project: ApiProject): Project {
     leadIds: project.leads.map((lead) => lead.id),
     startDate: project.startDate,
     contractEnd: project.contractEndDate,
+    daysToContractEnd: project.daysToContractEnd,
     pendingCount: project.pendingConfirmation,
     active: project.active,
   }

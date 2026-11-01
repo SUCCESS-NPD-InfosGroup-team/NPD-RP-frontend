@@ -29,7 +29,12 @@ export function ProjectsTable({ projects, canEdit, onAddMembers }: Readonly<Proj
             return (
               <div className="projects-page__row" key={project.id}>
                 <strong>{project.name}</strong>
-                <span>{project.teamSize ? `${project.teamSize} ` : ''}{project.teamSize ? <span className="projects-page__members">{project.members.map(({ initials }) => initials).join(' ')}</span> : <Chip tone="warn">Sin equipo</Chip>}</span>
+                <span>
+                  {project.teamSize
+                    ? project.teamSize
+                    : <Chip tone="warn">Sin equipo</Chip>}
+                  {/* TODO SCRUM-169: restore member initials when the API provides them. */}
+                </span>
                 <span>{project.leads.length ? project.leads.join(', ') : '—'}</span>
                 <span>{formatProjectDate(project.startDate)}</span>
                 <span>{remaining !== null && remaining <= 30 && remaining >= 0 ? <Chip tone="solid-danger">{`D-${remaining}`}</Chip> : formatProjectDate(project.contractEnd)}</span>
