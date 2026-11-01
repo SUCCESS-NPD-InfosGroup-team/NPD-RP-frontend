@@ -54,4 +54,10 @@ describe('ProjectsPage', () => {
 
     expect(screen.queryByLabelText('Buscar')).not.toBeInTheDocument()
   })
+
+  it('hides the unsupported no-contract-end option', () => {
+    render(<ProjectsPage />)
+
+    expect(screen.queryByRole('option', { name: 'Sin fecha' })).not.toBeInTheDocument()
+  })
 })

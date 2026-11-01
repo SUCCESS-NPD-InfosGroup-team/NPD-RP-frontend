@@ -15,7 +15,7 @@ export function ProjectsPage() {
   const { roles } = useAuth()
   const [clientId, setClientId] = useState('')
   const [leadId, setLeadId] = useState('')
-  const [contractEnd, setContractEnd] = useState<'any' | 'none' | 'next30'>('any')
+  const [contractEnd, setContractEnd] = useState<'any' | 'next30'>('any')
   const [includeInactive, setIncludeInactive] = useState(false)
   const [page, setPage] = useState(1)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
@@ -59,7 +59,8 @@ export function ProjectsPage() {
         {/* TODO SCRUM-162: restore when the projects API supports text search. */}
         <Field id="project-client" label="Cliente" type="select" value={clientId} onChange={(event) => setClientId(event.target.value)} options={[{ value: '', label: 'Todos los clientes' }, ...clients.map((client) => ({ value: client.id, label: client.name }))]} />
         <Field id="project-lead" label="Líder NPD" type="select" value={leadId} onChange={(event) => setLeadId(event.target.value)} options={[{ value: '', label: 'Todos los líderes' }, ...Array.from(new Map((data?.items ?? []).flatMap((project) => project.leads.map((name, index) => [String(project.leadIds?.[index] ?? ''), name] as const))).entries()).filter(([id]) => id).map(([value, label]) => ({ value, label }))]} />
-        <Field id="project-contract" label="Fin de contrato" type="select" value={contractEnd} onChange={(event) => setContractEnd(event.target.value as typeof contractEnd)} options={[{ value: 'any', label: 'Cualquier fecha' }, { value: 'next30', label: 'Próximos 30 días' }, { value: 'none', label: 'Sin fecha' }]} />
+        {/* TODO SCRUM-163: restore when the API supports filtering projects without a contract end date. */}
+        <Field id="project-contract" label="Fin de contrato" type="select" value={contractEnd} onChange={(event) => setContractEnd(event.target.value as typeof contractEnd)} options={[{ value: 'any', label: 'Cualquier fecha' }, { value: 'next30', label: 'Próximos 30 días' }]} />
         <label className="projects-page__checkbox">
           <input type="checkbox" checked={includeInactive} onChange={(event) => setIncludeInactive(event.target.checked)} />
           Incluir inactivos
