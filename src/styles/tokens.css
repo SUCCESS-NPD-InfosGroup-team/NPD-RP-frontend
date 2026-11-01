@@ -21,6 +21,8 @@
   --surface-card: #ffffff;
   --surface-header: #f0eeec;
   --surface-group: #f7f4f2;
+  --surface-role-selected: #fff7f2;
+  --surface-overlay: rgba(51, 34, 28, 0.18);
   --surface-chip-neutral: #eeecea;
   --surface-error: #fffbfa;
   --border-default: #e4e1de;
@@ -85,9 +87,16 @@
   --opsbar-gap: 22px;
   --fs-page-title: 28px;
   --border-width: 1px;
+  --border-focus-width: 2px;
   --focus-width: 2px;
   --focus-offset: 2px;
   --no-access-height: 320px;
+  --drawer-width: 440px;
+  --drawer-shadow: -16px 0 40px -20px rgba(51, 34, 28, 0.3);
+  --table-avatar-size: 22px;
+  --table-avatar-font-size: 10px;
+  --drawer-title-size: 22px;
+  --input-height: 36px;
 }
 
 body {

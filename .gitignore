@@ -29,3 +29,6 @@ yarn.lock
 
 start_env.bat
 coverage
+
+# Local Keycloak realm and theme files
+keycloak-local/
