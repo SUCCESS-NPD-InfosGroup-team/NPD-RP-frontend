@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiFetch } from './api'
 import { projectsApi } from './projects.api'
 
@@ -8,6 +8,7 @@ const mockedApiFetch = vi.mocked(apiFetch)
 
 describe('projectsApi', () => {
   beforeEach(() => mockedApiFetch.mockReset())
+  afterEach(() => vi.useRealTimers())
 
   it('serializes filters and pagination', async () => {
     mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
@@ -46,5 +47,21 @@ describe('projectsApi', () => {
       total: 0,
       totalPages: 0,
     })
+  })
+
+  it('formats the next-30-days boundary using the local calendar date', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-01T20:00:00-05:00'))
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      items: [],
+      page: { number: 0, size: 25, totalElements: 0, totalPages: 0 },
+    })))
+
+    await projectsApi.listProjects({ contractEnd: 'next30' })
+
+    expect(mockedApiFetch).toHaveBeenCalledWith(
+      'planner',
+      '/projects?page=0&size=25&contractEndBefore=2026-12-01',
+    )
   })
 })
