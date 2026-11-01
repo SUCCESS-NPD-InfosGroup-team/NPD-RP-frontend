@@ -20,7 +20,7 @@
 .users-page__banner { margin-bottom: var(--space-3); padding: 10px 12px; border: var(--border-width) solid currentColor; background: var(--surface-error); }
 .users-page__workspace { min-width: 0; }
 .users-page__list { min-width: 0; }
-.users-drawer { position: fixed; z-index: 4; top: var(--topbar-h); right: 0; bottom: var(--opsbar-h); width: var(--drawer-width); display: flex; flex-direction: column; background: var(--surface-card); border-left: var(--border-width) solid var(--border-default); box-shadow: var(--drawer-shadow); }
+.users-drawer { position: fixed; z-index: 4; top: var(--topbar-h); right: 0; bottom: var(--opsbar-h); width: var(--drawer-width); display: flex; flex-direction: column; margin: 0; border: 0; padding: 0; background: var(--surface-card); border-left: var(--border-width) solid var(--border-default); box-shadow: var(--drawer-shadow); }
 .users-drawer__header { display: flex; justify-content: space-between; padding: 16px 18px 12px; border-bottom: var(--border-width) solid var(--border-default); }
 .users-drawer__title { margin: 0; font: 700 var(--drawer-title-size)/1 var(--font-display); }
 .users-drawer__subtitle { margin: 4px 0 0; color: var(--text-secondary); }

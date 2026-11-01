@@ -41,60 +41,84 @@ export interface MockUsersApiOptions {
   createErrorStatus?: 403 | 502 | 503
 }
 
+class UsersApiError extends Error {
+  readonly status: CreateUserError['status']
+
+  constructor(
+    status: CreateUserError['status'],
+    message: string,
+  ) {
+    super(message)
+    this.status = status
+    this.name = 'UsersApiError'
+  }
+}
+
 export function createMockUsersApi(
   initialUsers: readonly User[] = MOCK_USERS,
   options: MockUsersApiOptions = {},
 ): UsersApi {
   let users = initialUsers.map((user) => ({ ...user }))
   return {
-    async listUsers() {
-      return users.map((user) => ({ ...user }))
+    listUsers() {
+      return Promise.resolve(users.map((user) => ({ ...user })))
     },
-    async createUser(request) {
-      if (options.createErrorStatus) {
-        throw {
-          status: options.createErrorStatus,
-          message: options.createErrorStatus === 403
-            ? 'No tienes permiso para crear usuarios.'
-            : 'El proveedor de identidad no está disponible. Intenta nuevamente.',
-        } satisfies CreateUserError
-      }
-      if (users.some((user) => user.email.toLowerCase() === request.email.toLowerCase())) {
-        throw { status: 409, message: 'Ya existe una cuenta con este correo.' } satisfies CreateUserError
-      }
-      const user: User = {
-        id: `mock-${users.length + 1}`,
-        ...request,
-        status: 'active',
-        lastAccess: 'Nunca',
-      }
-      users = [...users, user]
-      return { ...user }
+    createUser(request) {
+      return Promise.resolve().then(() => {
+        if (options.createErrorStatus) {
+          throw new UsersApiError(
+            options.createErrorStatus,
+            options.createErrorStatus === 403
+              ? 'No tienes permiso para crear usuarios.'
+              : 'El proveedor de identidad no está disponible. Intenta nuevamente.',
+          )
+        }
+        if (users.some((user) => user.email.toLowerCase() === request.email.toLowerCase())) {
+          throw new UsersApiError(409, 'Ya existe una cuenta con este correo.')
+        }
+        const user: User = {
+          id: `mock-${users.length + 1}`,
+          ...request,
+          status: 'active',
+          lastAccess: 'Nunca',
+        }
+        users = [...users, user]
+        return { ...user }
+      })
     },
   }
 }
 
+function getSupportedStatus(status: number): CreateUserError['status'] {
+  const supportedStatuses: CreateUserError['status'][] = [400, 401, 403, 409, 500, 502, 503]
+  return supportedStatuses.includes(status as CreateUserError['status'])
+    ? status as CreateUserError['status']
+    : 500
+}
+
+function getErrorMessage(status: CreateUserError['status'], operation: 'list' | 'create'): string {
+  switch (status) {
+    case 400:
+      return 'Los datos enviados no son válidos. Revisa el formulario.'
+    case 401:
+      return 'Tu sesión expiró. Inicia sesión nuevamente.'
+    case 403:
+      return operation === 'list'
+        ? 'No tienes permiso para consultar usuarios.'
+        : 'No tienes permiso para crear usuarios.'
+    case 409:
+      return 'Ya existe una cuenta con este correo.'
+    case 502:
+    case 503:
+      return 'El proveedor de identidad no está disponible. Intenta nuevamente.'
+    default:
+      return 'No se pudo completar la solicitud. Intenta nuevamente.'
+  }
+}
+
 function getError(response: Response, operation: 'list' | 'create'): CreateUserError {
-  const status: CreateUserError['status'] =
-    response.status === 400 || response.status === 401 || response.status === 403
-      || response.status === 409 || response.status === 500 || response.status === 502
-      || response.status === 503
-      ? response.status
-      : 500
-  const message = status === 400
-    ? 'Los datos enviados no son válidos. Revisa el formulario.'
-    : status === 401
-      ? 'Tu sesión expiró. Inicia sesión nuevamente.'
-      : status === 403
-        ? operation === 'list'
-          ? 'No tienes permiso para consultar usuarios.'
-          : 'No tienes permiso para crear usuarios.'
-        : status === 409
-          ? 'Ya existe una cuenta con este correo.'
-          : status === 502 || status === 503
-            ? 'El proveedor de identidad no está disponible. Intenta nuevamente.'
-            : 'No se pudo completar la solicitud. Intenta nuevamente.'
-  return { status, message }
+  const status = getSupportedStatus(response.status)
+  return new UsersApiError(status, getErrorMessage(status, operation))
 }
 
 export const httpUsersApi: UsersApi = {

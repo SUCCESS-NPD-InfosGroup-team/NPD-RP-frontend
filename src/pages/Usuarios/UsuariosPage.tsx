@@ -82,6 +82,13 @@ export function UsuariosPage() {
     )
   }
 
+  let userListContent = <UsersTable users={users} currentUserEmail={currentUser.email} />
+  if (loading) {
+    userListContent = <div className="users-page__empty">Cargando usuarios…</div>
+  } else if (loadError) {
+    userListContent = <div className="users-page__empty users-page__empty--error" role="alert">No se pudieron cargar los usuarios. Intenta nuevamente.</div>
+  }
+
   return (
     <section className={`screen users-page${drawerOpen ? ' users-page--drawer-open' : ''}`}>
       <header className="users-page__header">
@@ -91,18 +98,14 @@ export function UsuariosPage() {
         </div>
         <Button ref={createUserButtonRef} icon={<PlusIcon />} onClick={() => { setNotice(''); setDrawerOpen(true) }}>Crear usuario</Button>
       </header>
-      {notice && <div className="users-page__banner" role="status">{notice}</div>}
+      {notice && <output className="users-page__banner">{notice}</output>}
       <div className="users-page__tabs" role="tablist" aria-label="Secciones de usuarios">
         <button className="users-page__tab users-page__tab--active" type="button" role="tab" aria-selected="true">Usuarios {users.length}</button>
         <button className="users-page__tab" type="button" role="tab" aria-selected="false" disabled>Matriz de permisos</button>
       </div>
       <div className="users-page__workspace">
         <div className="users-page__list">
-          {loading
-            ? <div className="users-page__empty">Cargando usuarios…</div>
-            : loadError
-              ? <div className="users-page__empty users-page__empty--error" role="alert">No se pudieron cargar los usuarios. Intenta nuevamente.</div>
-              : <UsersTable users={users} currentUserEmail={currentUser.email} />}
+          {userListContent}
           {!loading && !loadError && users.length > 0 && (
             <Paginador
               range={`1–${Math.min(PAGE_SIZE, users.length)} de ${users.length}`}
@@ -161,7 +164,7 @@ interface CreateUserDrawerProps {
 }
 
 function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps>) {
-  const drawerRef = useRef<HTMLElement>(null)
+  const drawerRef = useRef<HTMLDialogElement>(null)
   const firstInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<Omit<CreateUserRequest, 'role'>>({ fullName: '', email: '' })
   const [roleSelected, setRoleSelected] = useState<UserRole | ''>('')
@@ -185,7 +188,8 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
       if (focusableElements.length === 0) return
 
       const firstElement = focusableElements[0]
-      const lastElement = focusableElements[focusableElements.length - 1]
+      const lastElement = focusableElements.at(-1)
+      if (!lastElement) return
       if (event.shiftKey && document.activeElement === firstElement) {
         event.preventDefault()
         lastElement.focus()
@@ -202,7 +206,7 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
     const nextErrors: typeof errors = {}
     if (!form.fullName.trim()) nextErrors.fullName = 'El nombre completo es obligatorio.'
     if (!form.email.trim()) nextErrors.email = 'El correo corporativo es obligatorio.'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) nextErrors.email = 'Ingresa un correo corporativo válido.'
+    else if (!isValidEmail(form.email)) nextErrors.email = 'Ingresa un correo corporativo válido.'
     if (!roleSelected) nextErrors.role = 'Selecciona un rol.'
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
@@ -230,7 +234,7 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
   }
 
   return (
-    <aside className="users-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="create-user-title">
+    <dialog open className="users-drawer" ref={drawerRef} aria-modal="true" aria-labelledby="create-user-title">
         <header className="users-drawer__header">
           <div><h2 className="users-drawer__title" id="create-user-title">Crear usuario</h2><p className="users-drawer__subtitle">La cuenta queda activa con los permisos del rol.</p></div>
           <button className="users-drawer__close" type="button" aria-label="Cerrar" onClick={onClose}><XIcon /></button>
@@ -242,13 +246,16 @@ function CreateUserDrawer({ onClose, onCreated }: Readonly<CreateUserDrawerProps
             <UserInput id="user-email" label="Correo corporativo *" type="email" value={form.email} error={errors.email} onChange={(value) => setForm((previous) => ({ ...previous, email: value }))} />
             <fieldset className="users-drawer__roles" aria-describedby={errors.role ? 'user-role-error' : undefined}>
               <legend className="users-drawer__role-label">Rol *</legend>
-              {USER_ROLES.map((role) => <label className={`users-drawer__role${roleSelected === role ? ' users-drawer__role--selected' : ''}`} key={role}><input type="radio" name="user-role" value={role} checked={roleSelected === role} onChange={() => { setRoleSelected(role); setErrors((previous) => ({ ...previous, role: undefined })) }} /><span><span className="users-drawer__role-name">{role}</span><span className="users-drawer__role-description">{ROLE_DESCRIPTIONS[role]}</span></span></label>)}
+              {USER_ROLES.map((role) => {
+                const roleId = `user-role-${role.toLowerCase().replaceAll(' ', '-')}`
+                return <label className={`users-drawer__role${roleSelected === role ? ' users-drawer__role--selected' : ''}`} htmlFor={roleId} key={role}><input id={roleId} type="radio" name="user-role" value={role} checked={roleSelected === role} onChange={() => { setRoleSelected(role); setErrors((previous) => ({ ...previous, role: undefined })) }} /><span><span className="users-drawer__role-name">{role}</span><span className="users-drawer__role-description">{ROLE_DESCRIPTIONS[role]}</span></span></label>
+              })}
             </fieldset>
             {errors.role && <p className="users-drawer__error" id="user-role-error"><AlertIcon />{errors.role}</p>}
           </div>
           <footer className="users-drawer__footer"><Button variant="secondary" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={submitting}>{submitting ? 'Creando…' : 'Crear cuenta'}</Button></footer>
         </form>
-    </aside>
+    </dialog>
   )
 }
 
@@ -271,6 +278,15 @@ function isCreateUserError(error: unknown): error is CreateUserError {
     && 'status' in error
     && 'message' in error
     && typeof error.message === 'string'
+}
+
+function isValidEmail(email: string): boolean {
+  if (/\s/.test(email)) return false
+  const atIndex = email.indexOf('@')
+  if (atIndex <= 0 || atIndex !== email.lastIndexOf('@')) return false
+  const domain = email.slice(atIndex + 1)
+  const dotIndex = domain.indexOf('.')
+  return dotIndex > 0 && dotIndex < domain.length - 1
 }
 
 function getInitials(name: string): string {
