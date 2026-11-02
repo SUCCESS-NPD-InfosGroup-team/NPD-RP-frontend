@@ -29,7 +29,6 @@ describe('useProjects', () => {
       }),
       listClients: vi.fn(),
       createProject: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
 

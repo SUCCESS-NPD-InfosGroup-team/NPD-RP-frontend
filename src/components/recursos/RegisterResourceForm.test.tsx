@@ -29,7 +29,6 @@ function setup(createResource = vi.fn().mockResolvedValue({ id: 1102, name: 'Lau
   vi.mocked(getProjectsApi).mockResolvedValue({
     listProjects: vi.fn(),
     createProject: vi.fn(),
-    createClient: vi.fn(),
     listClients: vi.fn().mockResolvedValue([{ id: '3', name: 'BANESCO', isInternal: false, active: true }]),
     listClientProjects,
   } as unknown as ProjectsApi)

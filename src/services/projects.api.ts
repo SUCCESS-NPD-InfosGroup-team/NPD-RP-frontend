@@ -113,13 +113,6 @@ export const projectsApi = {
     const response = await read<{ items: Array<Omit<Client, 'id'> & { id: number }> }>(await apiFetch('planner', '/clients?active=true'))
     return response.items.map((client) => ({ ...client, id: String(client.id), active: true }))
   },
-  async createClient(input: { name: string; isInternal: boolean }): Promise<Client> {
-    return read<Client>(await apiFetch('planner', '/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    }))
-  },
 }
 
 export type ProjectsApi = typeof projectsApi

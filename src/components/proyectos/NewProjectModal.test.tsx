@@ -13,7 +13,6 @@ describe('NewProjectModal', () => {
       createProject,
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     const onCreated = vi.fn()
@@ -32,7 +31,6 @@ describe('NewProjectModal', () => {
       createProject: vi.fn().mockRejectedValue({ status: 403, message: 'Forbidden' }),
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={vi.fn()} />)
@@ -49,7 +47,6 @@ describe('NewProjectModal', () => {
       createProject,
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={vi.fn()} />)
@@ -74,7 +71,6 @@ describe('NewProjectModal', () => {
       }),
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
@@ -94,7 +90,6 @@ describe('NewProjectModal', () => {
       createProject,
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[]} onCreated={onCreated} onClose={vi.fn()} />)
