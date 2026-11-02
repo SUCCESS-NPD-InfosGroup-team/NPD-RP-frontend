@@ -48,6 +48,19 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
   const [saving, setSaving] = useState(false)
   const [duplicateProject, setDuplicateProject] = useState<{ name: string; id?: string }>()
 
+  function handleClose(): void {
+    setClientId('')
+    setNewClient(false)
+    setNewClientName('')
+    setNewClientInternal(false)
+    setName('')
+    setContractEnd('')
+    setError('')
+    setSaving(false)
+    setDuplicateProject(undefined)
+    onClose()
+  }
+
   function handleDateChange(value: string): void {
     setContractEnd(formatDateInput(value))
   }
@@ -78,7 +91,7 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
         contractEnd: isoContractEnd,
       })
       onCreated(project, { addMembers })
-      onClose()
+      handleClose()
     } catch (cause) {
       setDuplicateProject(getDuplicateProject(cause, trimmedName))
       setError(getApiErrorMessage(cause))
@@ -88,7 +101,7 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
   }
 
   return (
-    <Modal open={open} title="Nuevo proyecto" onClose={onClose}>
+    <Modal open={open} title="Nuevo proyecto" onClose={handleClose}>
       <p className="new-project-modal__intro">Créalo aunque todavía no tenga equipo. Lo podrás llenar ahora o después.</p>
       {error && <p className="new-project-modal__banner" role="alert">⚠ No se creó el proyecto. Corrige el campo marcado.</p>}
       {shouldShowErrorDetail && <p className="new-project-modal__error-detail">{error}</p>}
@@ -111,7 +124,7 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
       <Field id="new-project-contract" label="Fin de contrato con el cliente" placeholder="dd/mm/aaaa" value={contractEnd} onChange={(event) => handleDateChange(event.target.value)} state={invalidContractEnd ? 'error' : 'default'} error={invalidContractEnd ? error : undefined} />
       <p className="new-project-modal__help">Opcional. Con esta fecha se avisa a Sales a 30 y 15 días. El inicio del proyecto es el día en que lo creas.</p>
       <div className="ui-modal__actions">
-        <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+        <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
         <div className="new-project-modal__action-group">
           <Button onClick={() => void submit()} disabled={saving}>{saving ? 'Creando…' : 'Crear proyecto'}</Button>
           <Button variant="feature" icon={<UserPlusIcon />} onClick={() => void submit(true)} disabled={saving}>Crear y agregar colaboradores</Button>

@@ -106,4 +106,22 @@ describe('NewProjectModal', () => {
     }))
     expect(onCreated).toHaveBeenCalledWith({ id: 'project-4' }, { addMembers: true })
   })
+
+  it('resets the form when closed and reopened', () => {
+    const onClose = vi.fn()
+    const view = render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
+
+    fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Proyecto temporal' } })
+    fireEvent.change(screen.getByLabelText('Fin de contrato con el cliente'), { target: { value: '31122026' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(onClose).toHaveBeenCalledOnce()
+
+    view.rerender(<NewProjectModal open={false} clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
+    view.rerender(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
+
+    expect(screen.getByLabelText('Cliente *')).toHaveValue('')
+    expect(screen.getByLabelText('Nombre del proyecto *')).toHaveValue('')
+    expect(screen.getByLabelText('Fin de contrato con el cliente')).toHaveValue('')
+  })
 })
