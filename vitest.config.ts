@@ -24,7 +24,7 @@ export default mergeConfig(
           'src/**/*.test.{ts,tsx}',
           '*.config.{ts,js}',
         ],
-        thresholds: { lines: 70 },
+        thresholds: { lines: 80 },
       },
     },
   }),
