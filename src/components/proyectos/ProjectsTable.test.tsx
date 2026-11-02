@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProjectsTable } from './ProjectsTable'
 
 const projects = [{
@@ -15,6 +16,15 @@ const projects = [{
 }]
 
 describe('ProjectsTable', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 10, 1, 20, 0, 0))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('renders the no-team state and hides write actions for read-only users', () => {
     render(<ProjectsTable projects={projects} canEdit={false} onAddMembers={vi.fn()} />)
     expect(screen.getByText('EQUIPO')).toBeInTheDocument()
@@ -30,5 +40,15 @@ describe('ProjectsTable', () => {
     expect(screen.queryByText('AB')).not.toBeInTheDocument()
     await screen.getByRole('button', { name: /agregar colaboradores/i }).click()
     expect(onAddMembers).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-1' }))
+  })
+
+  it('uses the API day count for current and expired contract badges', () => {
+    render(<ProjectsTable projects={[
+      { ...projects[0], id: 'today', name: 'Today', contractEnd: '2026-11-01', daysToContractEnd: 0 },
+      { ...projects[0], id: 'expired', name: 'Expired', contractEnd: '2026-10-31', daysToContractEnd: -1 },
+    ]} canEdit={false} onAddMembers={vi.fn()} />)
+
+    expect(screen.getByText('D-0')).toBeInTheDocument()
+    expect(screen.getByText('Vencido')).toBeInTheDocument()
   })
 })

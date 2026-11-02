@@ -2,7 +2,7 @@ import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import { UserPlusIcon } from '../icons'
 import type { Project } from '../../services/projects.types'
-import { daysUntil, formatProjectDate, groupProjectsByClient } from './projectsView'
+import { formatProjectDate, groupProjectsByClient } from './projectsView'
 
 interface ProjectsTableProps {
   projects: Project[]
@@ -25,7 +25,7 @@ export function ProjectsTable({ projects, canEdit, onAddMembers }: Readonly<Proj
             <span className="projects-page__group-meta">{clientProjects.length} proyectos · {clientProjects.reduce((sum, project) => sum + project.teamSize, 0)} colaboradores</span>
           </div>
           {clientProjects.map((project) => {
-            const remaining = daysUntil(project.contractEnd)
+            const remaining = project.daysToContractEnd
             return (
               <div className="projects-page__row" key={project.id}>
                 <strong>{project.name}</strong>
@@ -37,7 +37,11 @@ export function ProjectsTable({ projects, canEdit, onAddMembers }: Readonly<Proj
                 </span>
                 <span>{project.leads.length ? project.leads.join(', ') : '—'}</span>
                 <span>{formatProjectDate(project.startDate)}</span>
-                <span>{remaining !== null && remaining <= 30 && remaining >= 0 ? <Chip tone="solid-danger">{`D-${remaining}`}</Chip> : formatProjectDate(project.contractEnd)}</span>
+                <span>{remaining !== null && remaining !== undefined && remaining < 0
+                  ? <Chip tone="solid-danger">Vencido</Chip>
+                  : remaining !== null && remaining !== undefined && remaining <= 30
+                    ? <Chip tone="solid-danger">{`D-${remaining}`}</Chip>
+                    : formatProjectDate(project.contractEnd)}</span>
                 <span>{project.pendingCount || '—'}</span>
                 <span>{canEdit && <Button variant="ghost" icon={<UserPlusIcon />} onClick={() => onAddMembers(project)}>Agregar colaboradores</Button>}</span>
               </div>
