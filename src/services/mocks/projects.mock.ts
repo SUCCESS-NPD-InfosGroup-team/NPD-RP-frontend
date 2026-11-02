@@ -85,7 +85,7 @@ export const projectsMock = {
     if (input.newClient && !client) clients.push(targetClient)
     const duplicate = projects.find((project) => project.client.id === targetClient.id && project.name.toLowerCase() === input.name.toLowerCase())
     if (duplicate) {
-      throw { status: 409, code: 'PROJECT_NAME_TAKEN', detail: 'El nombre ya existe.', field: 'name', existingProjectId: Number(duplicate.id.replace('project-', '')), existingProjectName: duplicate.name }
+      throw { status: 409, code: 'PROJECT_NAME_TAKEN', detail: 'El nombre ya existe.', field: 'name', existingProjectId: Number(duplicate.id.replace('project-', '')) }
     }
     const project: Project = {
       id: `project-${projects.length + 1}`,

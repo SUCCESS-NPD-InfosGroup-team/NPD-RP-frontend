@@ -1,16 +1,13 @@
-import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
-import { UserPlusIcon } from '../icons'
 import type { Project } from '../../services/projects.types'
 import { formatProjectDate, groupProjectsByClient } from './projectsView'
 
 interface ProjectsTableProps {
   projects: Project[]
-  canEdit: boolean
-  onAddMembers: (project: Project) => void
+  highlightedProjectId?: string
 }
 
-export function ProjectsTable({ projects, canEdit, onAddMembers }: Readonly<ProjectsTableProps>) {
+export function ProjectsTable({ projects, highlightedProjectId }: Readonly<ProjectsTableProps>) {
   return (
     <div className="projects-page__table">
       <div className="projects-page__row projects-page__row--head">
@@ -27,7 +24,7 @@ export function ProjectsTable({ projects, canEdit, onAddMembers }: Readonly<Proj
           {clientProjects.map((project) => {
             const remaining = project.daysToContractEnd
             return (
-              <div className="projects-page__row" key={project.id}>
+              <div className={`projects-page__row${project.id === highlightedProjectId ? ' projects-page__row--highlighted' : ''}`} key={project.id}>
                 <strong>{project.name}</strong>
                 <span>
                   {project.teamSize
@@ -43,7 +40,7 @@ export function ProjectsTable({ projects, canEdit, onAddMembers }: Readonly<Proj
                     ? <Chip tone="solid-danger">{`D-${remaining}`}</Chip>
                     : formatProjectDate(project.contractEnd)}</span>
                 <span>{project.pendingCount || '—'}</span>
-                <span>{canEdit && <Button variant="ghost" icon={<UserPlusIcon />} onClick={() => onAddMembers(project)}>Agregar colaboradores</Button>}</span>
+                <span>{/* TODO SCRUM-165: restore add-members action when the registration route exists. */}</span>
               </div>
             )
           })}

@@ -21,6 +21,7 @@ export function ProjectsPage() {
   const [includeInactive, setIncludeInactive] = useState(false)
   const [page, setPage] = useState(1)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
+  const [highlightedProjectId, setHighlightedProjectId] = useState<string>()
   const [clients, setClients] = useState<Client[]>([])
   const [npdLeads, setNpdLeads] = useState<CatalogItem[]>([])
   const [npdLeadsLoading, setNpdLeadsLoading] = useState(true)
@@ -92,9 +93,9 @@ export function ProjectsPage() {
         ? <div className="projects-page__empty">Cargando proyectos…</div>
         : error
           ? <div className="projects-page__empty projects-page__empty--error" role="alert">No se pudieron cargar los proyectos. Intenta nuevamente.</div>
-          : <ProjectsTable projects={data?.items ?? []} canEdit={canEdit} onAddMembers={() => undefined} />}
+          : <ProjectsTable projects={data?.items ?? []} highlightedProjectId={highlightedProjectId} />}
       {data && data.total > 0 && <Paginador range={`${(page - 1) * 25 + 1}–${Math.min(page * 25, data.total)} de ${data.total}`} page={page} totalPages={data.totalPages ?? Math.ceil(data.total / 25)} onPageChange={(nextPage) => { setPage(nextPage); updatePage(nextPage) }} />}
-      <NewProjectModal open={newProjectOpen} clients={clients} onCreated={() => void refetch()} onClose={() => setNewProjectOpen(false)} />
+      <NewProjectModal open={newProjectOpen} clients={clients} onCreated={() => void refetch()} onDuplicateProject={setHighlightedProjectId} onClose={() => setNewProjectOpen(false)} />
     </section>
   )
 }
