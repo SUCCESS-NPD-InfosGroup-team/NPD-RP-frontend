@@ -18,7 +18,7 @@ const projects = [{
 describe('ProjectsTable', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-11-01T20:00:00-05:00'))
+    vi.setSystemTime(new Date(2026, 10, 1, 20, 0, 0))
   })
 
   afterEach(() => {
