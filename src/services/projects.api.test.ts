@@ -25,7 +25,6 @@ describe('projectsApi', () => {
       detail: 'El nombre ya existe.',
       field: 'name',
       existingProjectId: 1,
-      existingProjectName: 'Atlas',
     }), { status: 409 }))
     await expect(projectsApi.createProject({ name: 'Atlas' })).rejects.toMatchObject({
       status: 409,

@@ -75,7 +75,6 @@ export async function read<T>(response: Response): Promise<T> {
     errors: body.errors,
     field: body.field,
     existingProjectId: body.existingProjectId,
-    existingProjectName: body.existingProjectName,
     existingResourceId: body.existingResourceId,
     existingResourceName: body.existingResourceName,
   } satisfies ApiError)
