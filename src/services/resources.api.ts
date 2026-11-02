@@ -36,6 +36,9 @@ function listItems<T>(path: string): Promise<T[]> {
 }
 
 export const resourcesApi = {
+  async getNpdLeads(): Promise<CatalogItem[]> {
+    return listItems<CatalogItem>(CATALOG_PATHS.npdLeads)
+  },
   /** Requests every form list in parallel */
   async getCatalogs(): Promise<Catalogs> {
     const keys = Object.keys(CATALOG_PATHS) as (keyof Catalogs)[]

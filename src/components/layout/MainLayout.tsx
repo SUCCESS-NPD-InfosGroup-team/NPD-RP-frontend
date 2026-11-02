@@ -11,7 +11,6 @@ import {
   LogoutIcon,
   PlusIcon,
   PlaneIcon,
-  SearchIcon,
   ShieldIcon,
   SunIcon,
   SyncIcon,
@@ -26,7 +25,6 @@ import type { OperationsStatus } from '../../types'
 import './MainLayout.css'
 
 interface MainLayoutProps {
-  onSearchResources?: (query: string) => void
   onRegisterResource?: () => void
   onLogout?: () => void | Promise<void>
   unreadNotificationCount?: number
@@ -46,7 +44,6 @@ const iconById: Record<NavigationItemId, ComponentType> = {
 }
 
 export function MainLayout({
-  onSearchResources,
   onRegisterResource,
   onLogout,
   unreadNotificationCount,
@@ -110,32 +107,7 @@ export function MainLayout({
           </ul>
         </nav>
         <div className="header-actions">
-          {navigationItems.length > 0 && (
-            <form
-              className="resource-search"
-              role="search"
-              onSubmit={(event) => {
-                event.preventDefault()
-                const formData = new FormData(event.currentTarget)
-                const query = formData.get('query')
-
-                if (typeof query === 'string' && onSearchResources) {
-                  onSearchResources(query.trim())
-                }
-              }}
-            >
-              <label className="visually-hidden" htmlFor="resource-search">
-                Buscar recurso o N° empleado
-              </label>
-              <SearchIcon />
-              <input
-                id="resource-search"
-                name="query"
-                type="search"
-                placeholder="Buscar recurso o N° empleado"
-              />
-            </form>
-          )}
+          {/* TODO SCRUM-161: restore global search when resource API search is available. */}
           {canRegister && (
             <button
               className="register-resource"

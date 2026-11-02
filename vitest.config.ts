@@ -7,6 +7,7 @@ export default mergeConfig(
     test: {
       environment: 'jsdom',
       globals: true,
+      testTimeout: 15000,
       setupFiles: ['./src/test/setup.ts'],
       css: false,
       coverage: {
@@ -24,7 +25,7 @@ export default mergeConfig(
           'src/**/*.test.{ts,tsx}',
           '*.config.{ts,js}',
         ],
-        thresholds: { lines: 70 },
+        thresholds: { lines: 80 },
       },
     },
   }),

@@ -10,13 +10,20 @@ import type {
 } from './projects.types'
 import { ApiRequestError } from './projects.types'
 
+function formatLocalDateAfterDays(days: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
 function query(filters: ProjectFilters, page: number): string {
   const params = new URLSearchParams({ page: String(Math.max(page - 1, 0)), size: '25' })
   if (filters.clientId && /^\d+$/.test(filters.clientId)) params.set('clientId', filters.clientId)
   if (filters.leadId && /^\d+$/.test(filters.leadId)) params.set('leaderId', filters.leadId)
   if (filters.contractEnd === 'next30') {
-    const date = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10)
-    params.set('contractEndBefore', date)
+    params.set('contractEndBefore', formatLocalDateAfterDays(30))
   }
   if (filters.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive))
   return params.toString()
@@ -51,6 +58,7 @@ function mapProject(project: ApiProject): Project {
     leadIds: project.leads.map((lead) => lead.id),
     startDate: project.startDate,
     contractEnd: project.contractEndDate,
+    daysToContractEnd: project.daysToContractEnd,
     pendingCount: project.pendingConfirmation,
     active: project.active,
   }
@@ -67,7 +75,6 @@ export async function read<T>(response: Response): Promise<T> {
     errors: body.errors,
     field: body.field,
     existingProjectId: body.existingProjectId,
-    existingProjectName: body.existingProjectName,
     existingResourceId: body.existingResourceId,
     existingResourceName: body.existingResourceName,
   } satisfies ApiError)
@@ -104,13 +111,6 @@ export const projectsApi = {
   async listClients(): Promise<Client[]> {
     const response = await read<{ items: Array<Omit<Client, 'id'> & { id: number }> }>(await apiFetch('planner', '/clients?active=true'))
     return response.items.map((client) => ({ ...client, id: String(client.id), active: true }))
-  },
-  async createClient(input: { name: string; isInternal: boolean }): Promise<Client> {
-    return read<Client>(await apiFetch('planner', '/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    }))
   },
 }
 

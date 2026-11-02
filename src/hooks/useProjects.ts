@@ -21,7 +21,11 @@ export function useProjects(filters: ProjectFilters = {}) {
       setSummary({
         activeProjects: projectsPage.total,
         activeClients: new Set(projectsPage.items.map((project) => project.client.id)).size,
-        contractEndingSoon: projectsPage.items.filter((project) => project.contractEnd !== null).length,
+        contractEndingSoon: projectsPage.items.filter((project) => (
+          typeof project.daysToContractEnd === 'number'
+          && project.daysToContractEnd >= 0
+          && project.daysToContractEnd <= 30
+        )).length,
         withoutTeam: projectsPage.items.filter((project) => project.teamSize === 0).length,
         unassignedPeople: 0,
       })

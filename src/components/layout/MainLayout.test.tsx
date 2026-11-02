@@ -35,7 +35,6 @@ const roleCases: Array<[Role, string[]]> = [
 ]
 
 interface AppOptions {
-  onSearchResources?: (query: string) => void
   onRegisterResource?: () => void
   onLogout?: () => void | Promise<void>
   unreadNotificationCount?: number
@@ -134,38 +133,10 @@ describe('role-based navigation', () => {
     expect(onRegister).toHaveBeenCalledOnce()
   })
 
-  it('submits resource search to the supplied search handler', async () => {
-    const user = userEvent.setup()
-    const onSearch = vi.fn()
-    renderForRole('guest', '/recursos', { onSearchResources: onSearch })
-
-    await user.type(
-      screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' }),
-      '  Ana Pérez  ',
-    )
-    await user.keyboard('{Enter}')
-
-    expect(onSearch).toHaveBeenCalledWith('Ana Pérez')
-  })
-
-  it.each(roleCases)('shows search for every role with navigation access: %s', (role) => {
+  it.each(roleCases)('hides global search until resource API search is available: %s', (role) => {
     renderForRole(role)
 
-    expect(screen.getByRole('search')).toBeInTheDocument()
-    expect(screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' }))
-      .toHaveAttribute('placeholder', 'Buscar recurso o N° empleado')
-  })
-
-  it('does nothing when search is submitted without a handler', async () => {
-    const user = userEvent.setup()
-    renderForRole('guest')
-    const search = screen.getByRole('searchbox', { name: 'Buscar recurso o N° empleado' })
-
-    await user.type(search, 'Ana Pérez')
-    await user.keyboard('{Enter}')
-
-    expect(screen.getByRole('search')).toBeInTheDocument()
-    expect(search).toHaveValue('Ana Pérez')
+    expect(screen.queryByRole('search')).not.toBeInTheDocument()
   })
 
   it('shows resource registration for Operations administrator without a handler', () => {
