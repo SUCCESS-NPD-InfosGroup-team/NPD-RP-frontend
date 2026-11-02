@@ -109,11 +109,6 @@ export const projectsMock = {
       .map((project) => ({ id: project.id, name: project.name, teamSize: project.teamSize, contractEndDate: project.contractEnd?.slice(0, 10) ?? null }))
   },
   async listClients(): Promise<Client[]> { return clients },
-  async createClient(input: { name: string; isInternal: boolean }): Promise<Client> {
-    const client = { id: `client-${clients.length + 1}`, ...input, active: true }
-    clients.push(client)
-    return client
-  },
 }
 
 export type ProjectsMockApi = typeof projectsMock
