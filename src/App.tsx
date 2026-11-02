@@ -11,7 +11,6 @@ import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
 
 export interface AppProps {
-  onSearchResources?: (query: string) => void
   onRegisterResource?: () => void
   onLogout?: () => void | Promise<void>
   unreadNotificationCount?: number
@@ -51,7 +50,6 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
 }
 
 export default function App({
-  onSearchResources,
   onRegisterResource,
   onLogout,
   unreadNotificationCount,
@@ -69,7 +67,6 @@ export default function App({
         <Route
           element={
             <MainLayout
-              onSearchResources={onSearchResources}
               onRegisterResource={onRegisterResource}
               onLogout={onLogout}
               unreadNotificationCount={unreadNotificationCount}
