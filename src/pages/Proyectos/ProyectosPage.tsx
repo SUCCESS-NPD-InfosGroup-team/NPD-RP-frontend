@@ -93,7 +93,7 @@ export function ProjectsPage() {
         : error
           ? <div className="projects-page__empty projects-page__empty--error" role="alert">No se pudieron cargar los proyectos. Intenta nuevamente.</div>
           : <ProjectsTable projects={data?.items ?? []} canEdit={canEdit} onAddMembers={() => undefined} />}
-      {data && <Paginador range={`${(page - 1) * 25 + 1}–${Math.min(page * 25, data.total)} de ${data.total}`} page={page} totalPages={data.totalPages ?? Math.ceil(data.total / 25)} onPageChange={(nextPage) => { setPage(nextPage); updatePage(nextPage) }} />}
+      {data && data.total > 0 && <Paginador range={`${(page - 1) * 25 + 1}–${Math.min(page * 25, data.total)} de ${data.total}`} page={page} totalPages={data.totalPages ?? Math.ceil(data.total / 25)} onPageChange={(nextPage) => { setPage(nextPage); updatePage(nextPage) }} />}
       <NewProjectModal open={newProjectOpen} clients={clients} onCreated={() => void refetch()} onClose={() => setNewProjectOpen(false)} />
     </section>
   )

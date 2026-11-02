@@ -81,6 +81,54 @@ describe('ProjectsPage', () => {
     expect(screen.queryByText('de 0 clientes')).not.toBeInTheDocument()
   })
 
+  it('hides the paginator when there are no projects', () => {
+    render(<ProjectsPage />)
+
+    expect(screen.queryByRole('navigation', { name: 'Paginación' })).not.toBeInTheDocument()
+  })
+
+  it('shows the paginator when projects exist', () => {
+    mockedUseProjects.mockReturnValue({
+      data: {
+        items: [{
+          id: 'project-1',
+          name: 'Atlas',
+          client: { id: 'client-1', name: 'Aurora', isInternal: false },
+          teamSize: 1,
+          members: [],
+          leads: [],
+          leadIds: [],
+          startDate: '2026-01-01',
+          contractEnd: null,
+          pendingCount: 0,
+          active: true,
+        }],
+        page: 1,
+        pageSize: 25,
+        total: 1,
+        totalPages: 1,
+      },
+      summary: {
+        activeProjects: 1,
+        activeClients: 1,
+        contractEndingSoon: 0,
+        withoutTeam: 0,
+        unassignedPeople: 0,
+      },
+      loading: false,
+      error: undefined,
+      filters: {},
+      page: 1,
+      setPage: vi.fn(),
+      refetch: vi.fn(),
+      api: undefined,
+    })
+
+    render(<ProjectsPage />)
+
+    expect(screen.getByRole('navigation', { name: 'Paginación' })).toBeInTheDocument()
+  })
+
   it('loads all NPD leads from the API instead of the current project page', async () => {
     let page = 1
     mockedUseProjects.mockImplementation(() => ({
