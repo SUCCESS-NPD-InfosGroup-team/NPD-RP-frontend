@@ -1,32 +1,66 @@
-export type UserRole =
-  | 'Operations administrator'
-  | 'NPD Lead'
-  | 'Customer Success'
-  | 'Guest'
+// Contrato del módulo `access` del backend (FRONTEND-INTEGRATION.md, HU-02)
 
-export type UserStatus = 'active' | 'disabled'
+export type RoleCode = 'operations-administrator' | 'npd-leader' | 'customer-success' | 'guest'
+export type UserState = 'PENDING' | 'ACTIVE' | 'DISABLED'
 
-export interface User {
-  id: string
-  fullName: string
-  email: string
-  role: UserRole
-  status: UserStatus
-  lastAccess: string
+export interface Role {
+  code: RoleCode
+  name: string
+  description: string
+}
+
+export interface RolesResponse {
+  items: Role[]
 }
 
 export interface CreateUserRequest {
   fullName: string
   email: string
-  role: UserRole
+  role: RoleCode
 }
 
-export interface CreateUserError {
-  status: 400 | 401 | 403 | 409 | 500 | 502 | 503
+export interface User {
+  id: number
+  fullName: string
+  email: string
+  role: RoleCode
+  state: UserState
+  /** ISO-8601 UTC; null hasta su primer acceso */
+  lastAccessAt: string | null
+}
+
+export interface PageInfo {
+  number: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+export interface Page<T> {
+  items: T[]
+  page: PageInfo
+}
+
+export type CreateUserField = keyof CreateUserRequest
+
+export interface FieldError {
+  field: string
+  code: string
   message: string
 }
 
+/** Cuerpo ProblemDetails (RFC 9457) de los errores del backend */
+export interface Problem {
+  status: number
+  code: string
+  title: string
+  detail: string
+  errors?: FieldError[]
+}
+
 export interface UsersApi {
-  listUsers(): Promise<User[]>
+  listRoles(): Promise<Role[]>
+  /** `page` empieza en 0 */
+  listUsers(page: number, size: number): Promise<Page<User>>
   createUser(request: CreateUserRequest): Promise<User>
 }
