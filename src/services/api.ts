@@ -1,42 +1,58 @@
 // src/services/api.ts
-import type { Filters, Recurso } from '../types';
+import type { Recurso } from '../types';
 
-// TODO: Reemplaza esto con la URL real de Francisco cuando te la dé.
-// Por ahora asumimos que es localhost:8080/api
-const API_BASE_URL = 'http://localhost:8080/api'; 
+const API_BASE_URL = 'http://localhost:8080/api/v1'; // Ajustado según el contrato del backend
+
+// Tipado estricto según el contrato OpenAPI (BUG-01 y BUG-07)
+export interface SearchRecursosParams {
+  q?: string;
+  clientId?: string;
+  projectId?: string;
+  leaderId?: string;
+  clientRoleId?: string;
+  level?: string;
+  status?: string;
+}
+
+export interface ResourceSearchResponse {
+  items: Recurso[];
+  groups: unknown[];
+  page: number;
+  totalPages?: number; // A veces viene, a veces no.
+}
 
 export const searchRecursos = async (
-  filters: Filters, 
-  page: number = 1, 
-  limit: number = 25
-): Promise<{ data: Recurso[], totalPages: number }> => {
+  filters: SearchRecursosParams, 
+  page: number = 0, // 0-based según el backend
+  size: number = 25
+): Promise<ResourceSearchResponse> => {
   
-  // Limpiamos los filtros que estén vacíos para no enviar basura en la URL
+  // Limpiamos los filtros que estén vacíos o undefined
   const cleanFilters = Object.fromEntries(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Object.entries(filters).filter(([_, v]) => v !== undefined && v !== '')
+    Object.entries(filters).filter((entry) => entry[1] !== undefined && entry[1] !== '' && entry[1] !== 'Todos')
   );
 
+  // Mapeamos page y size correctamente
   const queryParams = new URLSearchParams({
     page: page.toString(),
-    limit: limit.toString(),
+    size: size.toString(),
     ...cleanFilters,
   }).toString();
 
-  // Hacemos la petición al endpoint (asumimos que es /resources)
-  const response = await fetch(`${API_BASE_URL}/resources?${queryParams}`);
+  // Endpoint correcto según el ticket
+  const response = await fetch(`${API_BASE_URL}/planner/resources?${queryParams}`);
 
   if (!response.ok) {
     throw new Error('Error al buscar recursos');
   }
 
-  // NOTA: Asegúrate de cómo devuelve los datos Francisco. 
-  // A veces el backend devuelve { content: [...], totalPages: 5 }
-  // Si es así, tendrás que ajustar esta parte.
+  // Retornamos la estructura real { items, groups, page }
   const json = await response.json();
   
   return {
-    data: json.data || json, // Asume que devuelve un array directo o dentro de 'data'
-    totalPages: json.totalPages || 1,
+    items: json.items || [],
+    groups: json.groups || [],
+    page: json.page || 0,
+    totalPages: json.totalPages || json.page || 1
   };
 };
