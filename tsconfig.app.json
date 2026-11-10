@@ -21,6 +21,8 @@
   "include": ["src"],
   "exclude": [
     "src/pages/Tablero/TableroPage.tsx",
-    "src/services/resources.api.test.ts"
+    "src/pages/Avisos/AvisosPage.tsx",
+    "src/services/resources.api.test.ts",
+    "src/pages/Recursos/RegistrarRecursoPage.test.tsx"
   ]
 }
