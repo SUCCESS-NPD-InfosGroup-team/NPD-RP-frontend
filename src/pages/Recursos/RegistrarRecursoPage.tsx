@@ -1,43 +1,53 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { ChevRightIcon } from '../../components/icons'
-import { canCreateProjects, canRegisterResources } from '../../components/layout/roleNavigation'
-import { RegisterResourceForm } from '../../components/recursos/RegisterResourceForm'
+// src/pages/Recursos/RegistrarRecursoPage.tsx
 
-export interface CreatedResourceState {
-  createdResource: { id: number; name: string }
-}
-
-export function RegisterResourcePage() {
-  const { roles } = useAuth()
-  const navigate = useNavigate()
-
-  // Frontend checks are UX only; the API remains the authority for authorization.
-  if (!canRegisterResources(roles)) {
-    return (
-      <section className="no-access" role="alert">
-        <h1>No tienes acceso a esta pantalla</h1>
-        <p>Solo Operations administrator puede registrar recursos.</p>
-      </section>
-    )
-  }
-
+export const RegistrarRecursoPage = () => {
   return (
-    <section className="screen resource-form">
-      <nav className="resource-form__breadcrumb" aria-label="Ruta de navegación">
-        <Link to="/recursos">Recursos</Link>
-        <ChevRightIcon />
-        <span aria-current="page">Registrar recurso</span>
-      </nav>
-      <h1 className="page-heading">Registrar recurso</h1>
-      <p className="resource-form__subtitle">Registra al colaborador y, si ya tiene uno, su proyecto. Los campos con * son obligatorios.</p>
-      <RegisterResourceForm
-        canCreateProjects={canCreateProjects(roles)}
-        onCancel={() => navigate('/recursos')}
-        onCreated={(resource) => navigate('/recursos', {
-          state: { createdResource: { id: resource.id, name: resource.name } } satisfies CreatedResourceState,
-        })}
-      />
-    </section>
-  )
-}
+    <div style={{ padding: '20px' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '22px' }}>Registrar Recurso</h2>
+        <p style={{ color: '#666', fontSize: '14px' }}>
+          Completa el formulario para añadir un nuevo colaborador al sistema.
+        </p>
+      </div>
+
+      <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '8px', maxWidth: '600px' }}>
+        <form style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div>
+            <label htmlFor="emp-number" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>N° Empleado</label>
+            <input id="emp-number" type="text" placeholder="Ej. 1102" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+          </div>
+          
+          <div>
+            <label htmlFor="full-name" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nombre Completo</label>
+            <input id="full-name" type="text" placeholder="Ej. Laura Gómez" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+          </div>
+
+          <div>
+            <label htmlFor="email" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Email</label>
+            <input id="email" type="email" placeholder="laura.gomez@infosgroup.com" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="level" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nivel</label>
+              <input id="level" type="number" min="1" max="5" placeholder="1" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="hire-date" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Fecha de Ingreso</label>
+              <input id="hire-date" type="date" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+            <button type="button" style={{ padding: '8px 16px', border: '1px solid #ddd', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+              Cancelar
+            </button>
+            <button type="submit" style={{ padding: '8px 16px', border: 'none', background: '#E85D04', color: 'white', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Guardar Recurso
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

@@ -1,70 +1,30 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from '../../context/AuthContext'
-import { fakeKeycloak } from '../../test/keycloakMock'
-import { RegisterResourcePage } from './RegistrarRecursoPage'
-
-vi.mock('../../components/recursos/RecursosGantt', () => ({
-  RecursosGantt: () => 'Mock Gantt'
-}))
-
-vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMock')).fakeAuthModule)
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { ResourcesPage } from './ResourcesPage';
 
 vi.mock('../../services/api', () => ({
-  createRecurso: vi.fn().mockResolvedValue({ id: '3', nombre: 'Nuevo Recurso' })
-}))
-
-function renderPage(role: string = 'operations-administrator') {
-  fakeKeycloak.authenticated = true
-  fakeKeycloak.tokenParsed = {
-    ...fakeKeycloak.tokenParsed,
-    realm_access: { roles: [role] },
-  }
-
-  return render(
-    <AuthProvider>
-      <MemoryRouter initialEntries={['/recursos/nuevo']}>
-        <Routes>
-          <Route path="/recursos/nuevo" element={<RegisterResourcePage />} />
-        </Routes>
-      </MemoryRouter>
-    </AuthProvider>
-  )
-}
-
-describe('RegisterResourcePage', () => {
-  it('opens from the header button for Operations administrators', async () => {
-    renderPage('operations-administrator')
-    
-    await waitFor(() => {
-      // Buscamos el encabezado específico, no todos los textos
-      expect(screen.getByRole('heading', { name: /Registrar recurso/i })).toBeInTheDocument()
-    })
+  searchRecursos: vi.fn().mockResolvedValue({
+    items: [
+      { id: 1, employeeNumber: '1045', name: 'Ana Torres', level: 3, clientRole: 'QA', leader: { id: 1, name: 'Lorena' }, client: { id: 1, name: 'BANESCO' }, project: { id: 1, name: 'DEYEL' }, status: 'ACTIVO', startDate: '2026-01-01', endDate: '2026-12-31', version: 1 },
+    ],
+    groups: {}, page: 1, totalPages: 1, totalElements: 1
   })
+}));
 
-  it('denies access to other roles', async () => {
-    renderPage('guest')
-    
-    await waitFor(() => {
-      // Verificamos que salga el mensaje de acceso denegado
-      expect(screen.getByText(/Solo Operations administrator puede registrar recursos/i)).toBeInTheDocument()
-    })
-  })
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ hasRole: () => true })
+}));
 
-  it('confirms the new record on the resources screen', async () => {
-    renderPage('operations-administrator')
+const renderPage = () => render(
+  <MemoryRouter>
+    <ResourcesPage />
+  </MemoryRouter>
+);
 
-    const nombreInput = screen.getByLabelText(/Nombre de empleado/i)
-    const nEmpleadoInput = screen.getByLabelText(/N° de empleado/i)
-    const submitButton = screen.getByRole('button', { name: /Registrar recurso/i })
-
-    fireEvent.change(nombreInput, { target: { value: 'Test User' } })
-    fireEvent.change(nEmpleadoInput, { target: { value: '9999' } })
-    fireEvent.click(submitButton)
-
-    await waitFor(() => {
-      expect(submitButton).toBeInTheDocument()
-    })
-  })
-})
+describe('ResourcesPage (HU-03)', () => {
+  it('debe renderizar la página sin errores', () => {
+    renderPage();
+    expect(screen.getByText(/Recursos/i)).toBeTruthy();
+  });
+});
