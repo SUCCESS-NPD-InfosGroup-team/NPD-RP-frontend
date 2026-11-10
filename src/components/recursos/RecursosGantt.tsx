@@ -1,15 +1,7 @@
-// src/components/recursos/RecursosGantt.tsx
-
-import { Gantt, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
+import { Gantt, ViewMode } from 'gantt-task-react';
 import type { Recurso } from '../../types';
 
-interface RecursosGanttProps {
-  recursos: Recurso[];
-}
-
-// Definimos nuestro propio tipo local porque la librería
-// gantt-task-react no exporta Task correctamente en React 19.
 interface GanttTask {
   id: string;
   name: string;
@@ -27,16 +19,9 @@ interface GanttTask {
   };
 }
 
-const COLORS = [
-  '#FED7AA',
-  '#BFDBFE',
-  '#FBCFE8',
-  '#BBF7D0',
-  '#DDD6FE',
-  '#FDE68A',
-];
+const COLORS = ['#FED7AA', '#BFDBFE', '#FBCFE8', '#BBF7D0', '#DDD6FE', '#FDE68A'];
 
-export const RecursosGantt = ({ recursos }: RecursosGanttProps) => {
+export const RecursosGantt = ({ recursos }: { recursos: Recurso[] }) => {
   const tasks: GanttTask[] = recursos.map((recurso, index) => ({
     id: recurso.id,
     name: `${recurso.nombre} (${recurso.nEmpleado})`,
@@ -54,36 +39,11 @@ export const RecursosGantt = ({ recursos }: RecursosGanttProps) => {
     },
   }));
 
-  if (tasks.length === 0) {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-        No hay recursos para mostrar en el Gantt
-      </div>
-    );
-  }
+  if (tasks.length === 0) return <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>No hay recursos para mostrar en el Gantt</div>;
 
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        padding: '20px',
-        overflow: 'auto',
-      }}
-    >
-<Gantt
-  tasks={tasks as unknown as never}
-  viewMode={ViewMode.Month}
-  listCellWidth="180px"
-  columnWidth={90}
-  barCornerRadius={3}
-  fontSize="10px"
-  rowHeight={32}
-  headerHeight={45}
-  barFill={60}
-  todayColor="rgba(232, 93, 4, 0.08)"
-  locale="en-US"
-/>
+    <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '20px', overflow: 'auto' }}>
+      <Gantt tasks={tasks as unknown as never} viewMode={ViewMode.Month} listCellWidth="180px" columnWidth={90} barCornerRadius={3} fontSize="10px" rowHeight={32} headerHeight={45} barFill={60} todayColor="rgba(232, 93, 4, 0.08)" locale="en-US" />
     </div>
   );
 };

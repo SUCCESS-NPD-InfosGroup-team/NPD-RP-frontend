@@ -2,17 +2,20 @@
 
 export type Role = 
   | 'Operations administrator' 
+  | 'operations-administrator'
   | 'NPD Lead' 
   | 'Customer Success' 
   | 'Guest';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  avatarInitials: string;
-  status: 'Activo' | 'Desactivado';
+// ==========================================
+// TIPOS DE KEYCLOAK (Traídos de develop)
+// ==========================================
+export type OperationsStatus = 'ACTIVO' | 'INACTIVO' | 'LICENCIA' | 'BAJA';
+
+export interface AuthUser {
+  username: string;
+  fullName: string;
+  email?: string;
 }
 
 // ==========================================
@@ -48,17 +51,17 @@ export interface ResourceSearchResponse {
 
 export interface Recurso {
   id: string;
-  nEmpleado: string;      // Número de empleado (CA-07)
+  nEmpleado: string;
   nombre: string;
   rol: string;
   cliente: string;
   proyecto: string;
-  liderNPD: string;       // Lead
+  liderNPD: string;
   nivel: string;
-  estado: string;         // Activo, Inactivo, etc.
+  estado: string;
   fechaInicio: string;
   fechaFin: string;
-  version?: number;       // Opcional para no romper mocks/componentes antiguos (BUG-03)
+  version?: number;
 }
 
 export interface Vacacion {
@@ -74,7 +77,7 @@ export interface Vacacion {
 
 export interface AuditEntry {
   id: string;
-  fecha: string; // ISO completo con hora: 2026-10-02T10:14:00
+  fecha: string;
   autor: string;
   autorInitials: string;
   accion: 'Alta' | 'Edición' | 'Baja' | 'Descarga';
@@ -85,15 +88,15 @@ export interface AuditEntry {
   recursoNombre?: string;
 }
 
-// --- INTERFAZ PARA LOS FILTROS DE BÚSQUEDA (HU-03) ---
 export interface Filters {
-  search?: string;       // Búsqueda por número de empleado (CA-07)
+  search?: string;
   cliente?: string;
   proyecto?: string;
   liderNPD?: string;
   rol?: string;
   nivel?: string;
   estado?: string;
+  situacion?: string;
 }
 
 export type PermissionLevel =

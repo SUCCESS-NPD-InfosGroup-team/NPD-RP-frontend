@@ -1,92 +1,84 @@
-// src/components/ui/Modal.tsx
-
-import { useEffect, type ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, type ReactNode } from 'react'
+import './Modal.css'
 
 interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
-  width?: string;
+  open: boolean
+  title?: string
+  children: ReactNode
+  onClose: () => void
+  className?: string
 }
 
-export const Modal = ({ isOpen, onClose, title, children, width = '700px' }: ModalProps) => {
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+export function Modal({ open, title, children, onClose, className = '' }: Readonly<ModalProps>) {
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (isOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = 'unset';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+    if (!open) return
 
-  if (!isOpen) return null;
+    const dialogElement = dialogRef.current
+    if (!dialogElement) return
+    const focusableSelector = [
+      'button:not([disabled])',
+      '[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',')
+    const focusable = () => Array.from(dialogElement.querySelectorAll<HTMLElement>(focusableSelector))
+      .filter((element) => !element.classList.contains('ui-modal__close'))
+    const firstFocusable = focusable()[0]
+    firstFocusable?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const elements = focusable()
+      if (elements.length === 0) {
+        event.preventDefault()
+        dialogRef.current?.focus()
+        return
+      }
+      const first = elements[0]
+      const last = elements[elements.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose, open])
+
+  if (!open) return null
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        paddingTop: '60px',
-        zIndex: 1000,
-        overflowY: 'auto',
-      }}
-    >
+    <div className="ui-modal__overlay" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose()
+    }}>
       <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          width: '90%',
-          maxWidth: width,
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-        }}
+        ref={dialogRef}
+        className={`ui-modal${className ? ` ${className}` : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'ui-modal-title' : undefined}
+        tabIndex={-1}
       >
-        <div
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid #eee',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>{title}</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              color: '#666',
-            }}
-            title="Cerrar"
-          >
-            <X size={22} />
-          </button>
-        </div>
-
-        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>{children}</div>
+        {title && (
+          <div className="ui-modal__header">
+            <h2 id="ui-modal-title">{title}</h2>
+            <button className="ui-modal__close" type="button" aria-label="Cerrar" onClick={onClose}>×</button>
+          </div>
+        )}
+        {children}
       </div>
     </div>
-  );
-};
+  )
+}

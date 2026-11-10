@@ -1,0 +1,65 @@
+.ui-button {
+  display: inline-flex;
+  height: var(--control-h);
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding-inline: 14px;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius);
+  font: 600 14px / 1 var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ui-button__icon {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-button__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ui-button--primary {
+  border-color: var(--brand-orange-deep);
+  background: var(--brand-orange-deep);
+  color: var(--text-on-brand);
+}
+
+.ui-button--secondary {
+  border-color: var(--border-strong);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.ui-button--feature {
+  border-color: var(--brand-navy);
+  background: var(--brand-navy);
+  color: var(--text-on-brand);
+}
+
+.ui-button--danger {
+  border-color: var(--state-danger);
+  background: var(--surface-card);
+  color: var(--state-danger);
+}
+
+.ui-button--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--brand-navy);
+}
+
+.ui-button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

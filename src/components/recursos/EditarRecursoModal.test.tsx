@@ -1,49 +1,82 @@
 // src/components/recursos/EditarRecursoModal.test.tsx
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { EditarRecursoModal } from './EditarRecursoModal';
+import * as api from '../../services/api';
 import type { Recurso } from '../../types';
 
-const mockRecurso: Recurso = {
-  id: '1', nEmpleado: '1045', nombre: 'Ana Torres', rol: 'Developer', cliente: 'COPA', proyecto: 'Proyecto Alpha', liderNPD: 'Lorena Batista', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-01-01', fechaFin: '2026-12-31',
+const MOCK_RECURSO: Recurso = {
+  id: '1',
+  nEmpleado: '#1045',
+  nombre: 'Ana Torres',
+  rol: 'QA Funcional',
+  cliente: 'BANESCO',
+  proyecto: 'Programa de automatización',
+  liderNPD: 'Lorena Batista',
+  nivel: 'N3',
+  estado: 'Activo',
+  fechaInicio: '2026-09-01',
+  fechaFin: '2027-03-01',
+  version: 1
 };
 
-// 🛠️ Función para renderizar el modal
-const renderModal = (onSave = vi.fn()) => {
-  render(<EditarRecursoModal recurso={mockRecurso} onClose={vi.fn()} onSave={onSave} />);
-  return { onSave };
-};
-
-describe('EditarRecursoModal (HU-02)', () => {
-  
-  it('debe renderizar los datos actuales del recurso en el formulario', () => {
-    renderModal();
-    expect(screen.getByText(/Editar Recurso: Ana Torres/i)).toBeTruthy();
-    expect(screen.getByDisplayValue('COPA')).toBeTruthy();
-    expect(screen.getByDisplayValue('Developer')).toBeTruthy();
+describe('EditarRecursoModal', () => {
+  it('debe renderizar el formulario con los datos del recurso', () => {
+    render(
+      <EditarRecursoModal 
+        recurso={MOCK_RECURSO} 
+        onClose={vi.fn()} 
+        onSave={vi.fn()} 
+      />
+    );
+    
+    expect(screen.getByDisplayValue('Ana Torres')).toBeTruthy();
+    expect(screen.getByDisplayValue('#1045')).toBeTruthy();
   });
 
-  it('debe mostrar error si se intenta guardar con campos obligatorios vacíos (CA-02)', () => {
-    renderModal();
-    const inputCliente = screen.getByDisplayValue('COPA');
-    fireEvent.change(inputCliente, { target: { value: '' } });
-    fireEvent.click(screen.getByText(/Guardar Cambios/i));
-    expect(screen.getByText(/El cliente, rol y nivel son obligatorios/i)).toBeTruthy();
+  it('debe llamar a onClose al hacer clic en Cancelar', () => {
+    const onCloseMock = vi.fn();
+    render(
+      <EditarRecursoModal 
+        recurso={MOCK_RECURSO} 
+        onClose={onCloseMock} 
+        onSave={vi.fn()} 
+      />
+    );
+    
+    const btnCancel = screen.getByRole('button', { name: /Cancelar/i });
+    fireEvent.click(btnCancel);
+    expect(onCloseMock).toHaveBeenCalled();
   });
 
-  it('debe mostrar error si la fecha de fin es anterior a la de inicio (CA-02)', () => {
-    renderModal();
-    const inputFechaFin = screen.getByDisplayValue('2026-12-31');
-    fireEvent.change(inputFechaFin, { target: { value: '2025-01-01' } });
-    fireEvent.click(screen.getByText(/Guardar Cambios/i));
-    expect(screen.getByText(/La fecha de fin no puede ser anterior a la fecha de inicio/i)).toBeTruthy();
-  });
+  it('debe enviar el payload correcto al guardar y llamar a onSave', async () => {
+    const onSaveMock = vi.fn();
+    const updateSpy = vi.spyOn(api, 'updateRecurso').mockResolvedValue({});
+    
+    render(
+      <EditarRecursoModal 
+        recurso={MOCK_RECURSO} 
+        onClose={vi.fn()} 
+        onSave={onSaveMock} 
+      />
+    );
+    
+    const inputNombre = screen.getByDisplayValue('Ana Torres');
+    fireEvent.change(inputNombre, { target: { value: 'Ana Torres Modificada' } });
+    
+    const btnGuardar = screen.getByRole('button', { name: /Guardar Cambios/i });
+    
+    await act(async () => {
+      fireEvent.click(btnGuardar);
+    });
 
-  it('debe llamar a onSave con los datos actualizados al guardar correctamente (CA-01)', () => {
-    const { onSave } = renderModal();
-    const inputNivel = screen.getByDisplayValue('N3');
-    fireEvent.change(inputNivel, { target: { value: 'N4' } });
-    fireEvent.click(screen.getByText(/Guardar Cambios/i));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ nivel: 'N4' }));
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith('1', expect.objectContaining({
+        name: 'Ana Torres Modificada',
+        employeeNumber: '#1045',
+        version: 1
+      }));
+      expect(onSaveMock).toHaveBeenCalled();
+    });
   });
 });

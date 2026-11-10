@@ -5,6 +5,27 @@ import type { Filters, ResourceSearchResponse } from '../types';
 const API_BASE_URL = 'http://localhost:8080/api/v1'; 
 
 // ==========================================
+// HELPER PARA KEYCLOAK (Traído de develop)
+// ==========================================
+export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: Fallo en la petición a ${endpoint}`);
+  }
+
+  return response.json();
+};
+
+// ==========================================
 // BÚSQUEDA DE RECURSOS (BUG-01 y BUG-02)
 // ==========================================
 export const searchRecursos = async (
@@ -15,11 +36,9 @@ export const searchRecursos = async (
   
   const params = new URLSearchParams();
 
-  // Scalar dice que la paginación es 0-based
   params.append('page', (page - 1).toString());
   params.append('size', size.toString());
 
-  // El parámetro de búsqueda de texto se llama 'q'
   if (filters.search && filters.search.trim() !== '') {
     params.append('q', filters.search.trim());
   }

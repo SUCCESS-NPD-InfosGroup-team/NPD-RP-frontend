@@ -1,78 +1,98 @@
-// src/App.tsx
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
+import {
+  canAccessNavigationItem,
+  NAVIGATION_ITEMS,
+} from './components/layout/roleNavigation'
+import { MainLayout } from './components/layout/MainLayout'
+import type { OperationsStatus } from './types'
+import { ResourcesPage } from './pages/Recursos/ResourcesPage'
+import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
+import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { type ReactNode } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { AuditoriaProvider } from './context/AuditoriaContext';
-import { AvisosProvider } from './context/AvisosContext';
-import { RecursosProvider } from './context/RecursosContext';
-import { VacacionesProvider } from './context/VacacionesContext';
-import { UsuariosProvider } from './context/UsuariosContext';
-import { Header } from './components/layout/Header';
-import { LoginPage } from './pages/Login/LoginPage';
-import { RecursosPage } from './pages/Recursos/RecursosPage';
-import { InfoswebPage } from './pages/Infosweb/InfoswebPage';
-import { TableroPage } from './pages/Tablero/TableroPage';
-import { VacacionesPage } from './pages/Vacaciones/VacacionesPage';
-import { UsuariosPage } from './pages/Usuarios/UsuariosPage';
-import { AvisosPage } from './pages/Avisos/AvisosPage';
-import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage';
-import { AuditoriaPage } from './pages/Auditoria/AuditoriaPage';
-import { RegistrarRecursoPage } from './pages/Recursos/RegistrarRecursoPage';
-
-const ProtectedLayout = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return (
-    <>
-      <Header />
-      {children}
-    </>
-  );
-};
-
-const AppRoutes = () => {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-
-      <Route path="/" element={<ProtectedLayout><Navigate to="/recursos" replace /></ProtectedLayout>} />
-      <Route path="/recursos" element={<ProtectedLayout><RecursosPage /></ProtectedLayout>} />
-      
-      {/* BUG-05: Ruta agregada para el registro de recursos */}
-      <Route path="/recursos/nuevo" element={<ProtectedLayout><RegistrarRecursoPage /></ProtectedLayout>} />
-      
-      <Route path="/tablero" element={<ProtectedLayout><TableroPage /></ProtectedLayout>} />
-      <Route path="/vacaciones" element={<ProtectedLayout><VacacionesPage /></ProtectedLayout>} />
-      <Route path="/infosweb" element={<ProtectedLayout><InfoswebPage /></ProtectedLayout>} />
-      <Route path="/usuarios" element={<ProtectedLayout><UsuariosPage /></ProtectedLayout>} />
-      <Route path="/avisos" element={<ProtectedLayout><AvisosPage /></ProtectedLayout>} />
-      <Route path="/arribos-proximos" element={<ProtectedLayout><ArribosProximosPage /></ProtectedLayout>} />
-      <Route path="/auditoria" element={<ProtectedLayout><AuditoriaPage /></ProtectedLayout>} />
-
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-};
-
-function App() {
-  return (
-    <AuthProvider>
-      <AuditoriaProvider>
-        <AvisosProvider>
-          <RecursosProvider>
-            <VacacionesProvider>
-              <UsuariosProvider>
-                <BrowserRouter>
-                  <AppRoutes />
-                </BrowserRouter>
-              </UsuariosProvider>
-            </VacacionesProvider>
-          </RecursosProvider>
-        </AvisosProvider>
-      </AuditoriaProvider>
-    </AuthProvider>
-  );
+export interface AppProps {
+  onRegisterResource?: () => void
+  onLogout?: () => void | Promise<void>
+  unreadNotificationCount?: number
+  operationsStatus?: OperationsStatus
 }
 
-export default App;
+interface ScreenProps {
+  roles: readonly string[]
+  item: (typeof NAVIGATION_ITEMS)[number]
+}
+
+function Screen({ roles, item }: Readonly<ScreenProps>) {
+  if (!canAccessNavigationItem(roles, item.id)) {
+    return (
+      <section className="no-access" role="alert">
+        <h1>No tienes acceso a esta pantalla</h1>
+        <p>Tu perfil no tiene permiso para consultar esta sección.</p>
+      </section>
+    )
+  }
+
+  if (item.id === 'resources') {
+    return <ResourcesPage />
+  }
+  if (item.id === 'projects') {
+    return <ProjectsPage />
+  }
+  if (item.id === 'users') {
+    return <UsuariosPage />
+  }
+
+  return (
+    <section className="screen">
+      <h1 className="page-heading">{item.label}</h1>
+    </section>
+  )
+}
+
+export default function App({
+  onRegisterResource,
+  onLogout,
+  unreadNotificationCount,
+  operationsStatus,
+}: Readonly<AppProps>) {
+  const { roles, isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return null
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          element={
+            <MainLayout
+              onRegisterResource={onRegisterResource}
+              onLogout={onLogout}
+              unreadNotificationCount={unreadNotificationCount}
+              operationsStatus={operationsStatus}
+            />
+          }
+        >
+          <Route index element={<Navigate to="/recursos" replace />} />
+          {NAVIGATION_ITEMS.map((item) => (
+            <Route
+              key={item.id}
+              path={item.path.slice(1)}
+              element={<Screen roles={roles} item={item} />}
+            />
+          ))}
+          <Route
+            path="*"
+            element={
+              <section className="no-access">
+                <h1>Pantalla no encontrada</h1>
+                <p>La dirección solicitada no corresponde a una pantalla disponible.</p>
+              </section>
+            }
+          />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  )
+}
