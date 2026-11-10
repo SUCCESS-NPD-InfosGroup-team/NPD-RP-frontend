@@ -24,32 +24,29 @@ export const searchRecursos = async (
     params.append('q', filters.search.trim());
   }
 
-  // Nota: Los filtros de cliente, proyecto, líder y rol en Scalar piden IDs numéricos.
-  // Si tu frontend maneja strings ("BANESCO", "Proyecto Alpha"), habrá que mapearlos.
-  // Por ahora, los enviamos solo si no son "Todos".
   if (filters.cliente && filters.cliente !== 'Todos') params.append('clientId', filters.cliente);
   if (filters.proyecto && filters.proyecto !== 'Todos') params.append('projectId', filters.proyecto);
   if (filters.liderNPD && filters.liderNPD !== 'Todos') params.append('leaderId', filters.liderNPD);
   if (filters.rol && filters.rol !== 'Todos') params.append('clientRoleId', filters.rol);
   
-  // El nivel en el backend es un número, así que quitamos la 'N' si viene como "N2"
   if (filters.nivel && filters.nivel !== 'Todos') {
     params.append('level', filters.nivel.replace('N', ''));
   }
 
-  // CA-10: El filtro por defecto es Activo, que incluye ACTIVO y LICENCIA
-  if (filters.estado === 'Activo' || filters.estado === 'Todos' || !filters.estado) {
+  // CA-10: Sanitized status to prevent SSRF warning from SonarCloud
+  const estadoSeguro = (filters.estado || '').toUpperCase();
+  
+  if (estadoSeguro === 'ACTIVO' || estadoSeguro === 'TODOS' || estadoSeguro === '') {
     params.append('status', 'ACTIVO');
     params.append('status', 'LICENCIA');
-  } else {
-    params.append('status', filters.estado.toUpperCase());
+  } else if (estadoSeguro === 'BAJA') {
+    params.append('status', 'BAJA');
   }
 
   const response = await fetch(`${API_BASE_URL}/planner/resources?${params.toString()}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      // Aquí irá el token de Keycloak más adelante
     }
   });
 
@@ -81,7 +78,6 @@ export const updateRecurso = async (id: string, payload: UpdateRecursoPayload) =
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      // Aquí irá el token de Keycloak más adelante
     },
     body: JSON.stringify(payload),
   });
