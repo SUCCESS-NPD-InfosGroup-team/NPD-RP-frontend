@@ -2,18 +2,23 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import './Modal.css'
 
 interface ModalProps {
-  open: boolean
+  open?: boolean;
+  isOpen?: boolean; // Corregido: 'isOpen' con mayúscula, que es como lo envían los otros archivos
   title?: string
+  width?: string;
   children: ReactNode
   onClose: () => void
   className?: string
 }
 
-export function Modal({ open, title, children, onClose, className = '' }: Readonly<ModalProps>) {
+export function Modal({ open, isOpen, title, children, onClose, className = '' }: Readonly<ModalProps>) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  
+  // Unificamos: si 'open' es undefined, usamos 'isOpen'
+  const isModalOpen = open ?? isOpen;
 
   useEffect(() => {
-    if (!open) return
+    if (!isModalOpen) return
 
     const dialogElement = dialogRef.current
     if (!dialogElement) return
@@ -55,9 +60,10 @@ export function Modal({ open, title, children, onClose, className = '' }: Readon
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, open])
+  }, [onClose, isModalOpen])
 
-  if (!open) return null
+  // Usamos la variable unificada
+  if (!isModalOpen) return null
 
   return (
     <div className="ui-modal__overlay" onMouseDown={(event) => {
