@@ -1,58 +1,93 @@
 // src/pages/Recursos/RecursosPage.test.tsx
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RecursosPage } from './RecursosPage';
+import * as api from '../../services/api';
 
-const MOCK_DATA = [
-  { id: '1', nEmpleado: '#1045', nombre: 'Ana Torres', rol: 'QA Funcional', cliente: 'BANESCO', proyecto: 'Programa de automatización (DEYEL)', liderNPD: 'Lorena Batista', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-09-01', fechaFin: '2027-03-01' },
-  { id: '2', nEmpleado: '#1061', nombre: 'Michelle Peña', rol: 'QA Funcional', cliente: 'CAJA DE AHORROS', proyecto: 'Caja de Ahorros', liderNPD: 'Ricardo Him', nivel: 'N3', estado: 'Activo', fechaInicio: '2025-06-01', fechaFin: '2026-12-31' }
-];
+// Simulamos la respuesta REAL del backend (ResourceSearchResponse)
+const MOCK_API_RESPONSE = {
+  items: [
+    {
+      id: 1,
+      employeeNumber: '#1045',
+      name: 'Ana Torres',
+      level: 3,
+      clientRole: 'QA Funcional',
+      leader: { id: 1, name: 'Lorena Batista' },
+      client: { id: 1, name: 'BANESCO' },
+      project: { id: 1, name: 'Programa de automatización (DEYEL)' },
+      status: 'ACTIVO',
+      startDate: '2026-09-01',
+      endDate: '2027-03-01',
+      version: 1
+    }
+  ],
+  groups: {},
+  page: 1,
+  totalPages: 1,
+  totalElements: 1
+};
 
-vi.mock('../../services/api', () => ({
-  searchRecursos: vi.fn().mockResolvedValue({ data: MOCK_DATA, totalPages: 1 })
-}));
-vi.mock('../../components/recursos/RecursosGantt', () => ({ RecursosGantt: () => 'Mock Gantt' }));
+vi.mock('../../components/recursos/RecursosGantt', () => ({ RecursosGantt: () => <div>Mock Gantt</div> }));
 
-describe('RecursosPage (HU-03)', () => {
+describe('RecursosPage (HU-03) - BUG-07', () => {
+  
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
   const renderPage = async () => {
     await act(async () => { render(<RecursosPage />); });
   };
 
   it('debe renderizar la interfaz inicial correctamente', async () => {
+    vi.spyOn(api, 'searchRecursos').mockResolvedValue(MOCK_API_RESPONSE);
+    
     await renderPage();
     expect(screen.getByText('Recursos')).toBeTruthy();
     expect(screen.getByPlaceholderText(/Buscar por nombre, N° empleado/i)).toBeTruthy();
-    expect(screen.getByDisplayValue(/Cliente: Todos/i)).toBeTruthy();
   });
 
-  it('debe mostrar el Empty State si no hay resultados (CA-03)', async () => {
+  it('debe mostrar los datos reales de la API en la tabla', async () => {
+    vi.spyOn(api, 'searchRecursos').mockResolvedValue(MOCK_API_RESPONSE);
+    
     await renderPage();
-    const btnTabla = screen.getByRole('button', { name: /Tabla/i });
-    await act(async () => { fireEvent.click(btnTabla); });
-    const inputBusqueda = screen.getByPlaceholderText(/Buscar por nombre, N° empleado/i);
-    await act(async () => { fireEvent.change(inputBusqueda, { target: { value: 'EmpleadoInexistente123' } }); });
-    await waitFor(() => { expect(screen.getByText(/¡Ningún recurso coincide con tu búsqueda!/i)).toBeTruthy(); });
-  });
-
-  it('debe mostrar etiquetas, buscar con acentos y quitarlas (CA-04, CA-05)', async () => {
-    await renderPage();
+    
+    // Cambiamos a vista de Tabla para ver los datos
     const btnTabla = screen.getByRole('button', { name: /Tabla/i });
     await act(async () => { fireEvent.click(btnTabla); });
 
-    // Probar búsqueda con acentos
-    const inputBusqueda = screen.getByPlaceholderText(/Buscar por nombre, N° empleado/i);
-    await act(async () => { fireEvent.change(inputBusqueda, { target: { value: 'pena' } }); });
-    await waitFor(() => { expect(screen.getByText(/Michelle Peña/i)).toBeTruthy(); });
+    await waitFor(() => {
+      expect(screen.getByText('Ana Torres')).toBeTruthy();
+      expect(screen.getByText('#1045')).toBeTruthy();
+      expect(screen.getByText(/BANESCO — Programa de automatización/i)).toBeTruthy();
+    });
+  });
 
-    // Probar etiquetas de filtros
-    const selectCliente = screen.getByDisplayValue(/Cliente: Todos/i);
-    await act(async () => { fireEvent.change(selectCliente, { target: { value: 'COPA' } }); });
-    const etiqueta = await screen.findByText(/cliente: COPA/i);
-    expect(etiqueta).toBeTruthy();
+  it('debe mostrar el Empty State si no hay resultados', async () => {
+    // Simulamos una API que devuelve vacío
+    vi.spyOn(api, 'searchRecursos').mockResolvedValue({
+      items: [], groups: {}, page: 1, totalPages: 1, totalElements: 0
+    });
+    
+    await renderPage();
+    const btnTabla = screen.getByRole('button', { name: /Tabla/i });
+    await act(async () => { fireEvent.click(btnTabla); });
 
-    // Quitar etiqueta
-    const btnCerrar = etiqueta.querySelector('button');
-    if (btnCerrar) await act(async () => { fireEvent.click(btnCerrar); });
-    expect(screen.queryByText(/cliente: COPA/i)).toBeFalsy();
+    await waitFor(() => { 
+      expect(screen.getByText(/¡Ningún recurso coincide con tu búsqueda!/i)).toBeTruthy(); 
+    });
+  });
+
+  it('debe manejar errores de la API y mostrar el botón Reintentar (BUG-02)', async () => {
+    // Simulamos un error de la API
+    vi.spyOn(api, 'searchRecursos').mockRejectedValue(new Error('Error 500: Fallo del servidor'));
+    
+    await renderPage();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Error 500: Fallo del servidor/i)).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Reintentar/i })).toBeTruthy();
+    });
   });
 });

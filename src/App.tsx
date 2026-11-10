@@ -18,6 +18,7 @@ import { UsuariosPage } from './pages/Usuarios/UsuariosPage';
 import { AvisosPage } from './pages/Avisos/AvisosPage';
 import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage';
 import { AuditoriaPage } from './pages/Auditoria/AuditoriaPage';
+import { RegistrarRecursoPage } from './pages/Recursos/RegistrarRecursoPage';
 
 const ProtectedLayout = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -37,6 +38,10 @@ const AppRoutes = () => {
 
       <Route path="/" element={<ProtectedLayout><Navigate to="/recursos" replace /></ProtectedLayout>} />
       <Route path="/recursos" element={<ProtectedLayout><RecursosPage /></ProtectedLayout>} />
+      
+      {/* BUG-05: Ruta agregada para el registro de recursos */}
+      <Route path="/recursos/nuevo" element={<ProtectedLayout><RegistrarRecursoPage /></ProtectedLayout>} />
+      
       <Route path="/tablero" element={<ProtectedLayout><TableroPage /></ProtectedLayout>} />
       <Route path="/vacaciones" element={<ProtectedLayout><VacacionesPage /></ProtectedLayout>} />
       <Route path="/infosweb" element={<ProtectedLayout><InfoswebPage /></ProtectedLayout>} />

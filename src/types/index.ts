@@ -15,6 +15,37 @@ export interface User {
   status: 'Activo' | 'Desactivado';
 }
 
+// ==========================================
+// TIPOS REALES DE LA API (Basados en Scalar)
+// ==========================================
+
+export interface RecursoApi {
+  id: number;
+  employeeNumber: string;
+  name: string;
+  level: number;
+  clientRole: string | null;
+  leader: { id: number; name: string } | null;
+  client?: { id: number; name: string } | null;
+  project?: { id: number; name: string } | null;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  version: number;
+}
+
+export interface ResourceSearchResponse {
+  items: RecursoApi[];
+  groups: Record<string, { items: RecursoApi[]; total: number }>;
+  page: number;
+  totalPages: number;
+  totalElements: number;
+}
+
+// ==========================================
+// INTERFACES INTERNAS DEL FRONTEND
+// ==========================================
+
 export interface Recurso {
   id: string;
   nEmpleado: string;      // Número de empleado (CA-07)
@@ -27,6 +58,7 @@ export interface Recurso {
   estado: string;         // Activo, Inactivo, etc.
   fechaInicio: string;
   fechaFin: string;
+  version: number;        // Añadido para el PUT de edición (BUG-03)
 }
 
 export interface Vacacion {
@@ -54,7 +86,6 @@ export interface AuditEntry {
 }
 
 // --- INTERFAZ PARA LOS FILTROS DE BÚSQUEDA (HU-03) ---
-// Usamos el signo '?' para indicar que los campos pueden estar vacíos
 export interface Filters {
   search?: string;       // Búsqueda por número de empleado (CA-07)
   cliente?: string;
