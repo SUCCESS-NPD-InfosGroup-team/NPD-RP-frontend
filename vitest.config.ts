@@ -1,3 +1,4 @@
+
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
@@ -6,12 +7,17 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    // Correr solo los tests de Recursos (los tuyos)
+
+    // Cargar los matchers de Testing Library
+    setupFiles: './src/setupTests.ts',
+
+    // Correr solo los tests de Recursos
     include: [
       'src/pages/Recursos/**/*.test.tsx',
       'src/components/recursos/**/*.test.tsx'
     ],
-    // Excluir los tests rotos de otros módulos
+
+    // Excluir los tests de otros módulos
     exclude: [
       'node_modules',
       'src/pages/Tablero/**',
@@ -26,5 +32,5 @@ export default defineConfig({
       'src/services/**',
       'src/App.test.tsx'
     ]
-  },
+  }
 });
