@@ -1,21 +1,47 @@
 // src/types/index.ts
 
+// 1. Roles corregidos: se agregaron las variantes en minúscula que usaba roleNavigation.ts
 export type Role = 
   | 'Operations administrator' 
   | 'operations-administrator'
   | 'NPD Lead' 
+  | 'npd-leader'
   | 'Customer Success' 
-  | 'Guest';
+  | 'customer-success'
+  | 'Guest'
+  | 'guest';
 
 // ==========================================
 // TIPOS DE KEYCLOAK (Traídos de develop)
 // ==========================================
-export type OperationsStatus = 'ACTIVO' | 'INACTIVO' | 'LICENCIA' | 'BAJA';
 
+// 2. OperationsStatus corregido: MainLayout.tsx lo usa como objeto, no como string
+export type OperationsStatus = {
+  activeResources: number;
+  clientCount: number;
+  lastUpdatedAt: Date;
+  lastUpdatedBy: string;
+  nextNotificationAt: Date;
+  sessionExpiresAt: Date;
+};
+
+// 3. AuthUser corregido: se agregaron name y avatarInitials para que RecursosContext no falle
 export interface AuthUser {
   username: string;
+  name?: string;
   fullName: string;
   email?: string;
+  avatarInitials?: string;
+}
+
+// 4. User agregado: varios archivos (CrearUsuarioModal, UsuariosContext, mockData) lo importan
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  avatarInitials: string;
+  status: 'Activo' | 'Desactivado';
 }
 
 // ==========================================

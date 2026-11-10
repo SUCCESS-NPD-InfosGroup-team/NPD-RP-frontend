@@ -7,19 +7,34 @@ const API_BASE_URL = 'http://localhost:8080/api/v1';
 // ==========================================
 // HELPER PARA KEYCLOAK (Traído de develop)
 // ==========================================
-export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
+export const apiFetch = async (
+  moduleOrPath: string, 
+  pathOrOptions?: string | RequestInit, 
+  options: RequestInit = {}
+) => {
+  // Declaramos SIN valor inicial para que ESLint no marque "no-unused-vars"
+  let url: string;
+  let finalOptions: RequestInit;
+
+  // Detectamos si nos pasaron (module, path, options) o solo (path, options)
+  if (typeof pathOrOptions === 'string') {
+    url = `${API_BASE_URL}/${moduleOrPath}${pathOrOptions}`;
+    finalOptions = options;
+  } else {
+    url = `${API_BASE_URL}${moduleOrPath.startsWith('/') ? '' : '/'}${moduleOrPath}`;
+    finalOptions = pathOrOptions || {};
+  }
+
   const response = await fetch(url, {
-    ...options,
+    ...finalOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...finalOptions.headers,
     },
   });
 
   if (!response.ok) {
-    throw new Error(`Error ${response.status}: Fallo en la petición a ${endpoint}`);
+    throw new Error(`Error ${response.status}: Fallo en la petición a ${url}`);
   }
 
   return response.json();

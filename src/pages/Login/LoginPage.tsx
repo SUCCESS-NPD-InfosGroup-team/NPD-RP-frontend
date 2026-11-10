@@ -1,18 +1,15 @@
 // src/pages/Login/LoginPage.tsx
 
-import { useState, type FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import type { Role } from '../../types';
 
 export const LoginPage = () => {
-  const { login } = useAuth();
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState<Role>('Operations administrator');
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
-    login(selectedRole);
+    // Como usamos Keycloak, el login real lo maneja el AuthProvider.
+    // Aquí solo redirigimos a la app (Keycloak interceptará si no hay sesión).
     navigate('/recursos');
   };
 
@@ -86,33 +83,12 @@ export const LoginPage = () => {
             style={{
               width: '100%',
               padding: '10px',
-              marginBottom: '15px',
+              marginBottom: '20px',
               marginTop: '5px',
               border: '1px solid #ddd',
               borderRadius: '4px',
             }}
           />
-
-          <label style={{ fontSize: '12px', color: '#E85D04', fontWeight: 'bold' }}>
-            Simular Rol (solo para pruebas):
-          </label>
-          <select
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value as Role)}
-            style={{
-              width: '100%',
-              padding: '10px',
-              marginBottom: '20px',
-              marginTop: '5px',
-              border: '1px solid #E85D04',
-              borderRadius: '4px',
-            }}
-          >
-            <option value="Operations administrator">Operations administrator</option>
-            <option value="NPD Lead">NPD Lead</option>
-            <option value="Customer Success">Customer Success</option>
-            <option value="Guest">Guest</option>
-          </select>
 
           <button
             type="submit"
@@ -128,7 +104,7 @@ export const LoginPage = () => {
               fontWeight: 'bold',
             }}
           >
-            Iniciar sesión
+            Entrar
           </button>
         </form>
       </div>
