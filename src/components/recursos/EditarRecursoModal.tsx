@@ -1,5 +1,8 @@
+// src/components/recursos/EditarRecursoModal.tsx
+
 import { useState } from 'react';
 import type { Recurso } from '../../types';
+import { updateRecurso } from '../../services/api'; // <-- IMPORTANTE
 
 const MODAL_OVERLAY = { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
 const MODAL_CONTENT = { backgroundColor: 'white', padding: '30px', borderRadius: '8px', width: '500px', maxWidth: '90%' };
@@ -12,19 +15,43 @@ const ERROR_BOX = { backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px
 export const EditarRecursoModal = ({ recurso, onClose, onSave }: { recurso: Recurso, onClose: () => void, onSave: (r: Recurso) => void }) => {
   const [formData, setFormData] = useState<Recurso>({ ...recurso });
   const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!formData.cliente || !formData.rol || !formData.nivel) return setError('El cliente, rol y nivel son obligatorios.');
-    if (formData.fechaInicio && formData.fechaFin && formData.fechaFin < formData.fechaInicio) return setError('La fecha de fin no puede ser anterior a la fecha de inicio.');
     
-    if (JSON.stringify(formData) !== JSON.stringify(recurso)) onSave(formData);
-    else onClose();
+    if (!formData.cliente || !formData.rol || !formData.nivel) {
+      return setError('El cliente, rol y nivel son obligatorios.');
+    }
+    
+    if (formData.fechaInicio && formData.fechaFin && formData.fechaFin < formData.fechaInicio) {
+      return setError('La fecha de fin no puede ser anterior a la fecha de inicio.');
+    }
+
+    setLoading(true);
+    try {
+      // 1. Llamamos a la API real
+      await updateRecurso(recurso.id, {
+        employeeNumber: formData.nEmpleado,
+        name: formData.nombre,
+        level: Number(formData.nivel.replace('N', '')),
+        status: formData.estado === 'Activo' ? 'ACTIVO' : 'INACTIVO',
+        version: recurso.version || 1,
+      });
+      
+      // 2. Notificamos al padre para que recargue la tabla
+      onSave(formData);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar los cambios.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,8 +91,12 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: { recurso: Recu
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-            <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #ccc', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>Cancelar</button>
-            <button type="submit" style={{ padding: '8px 16px', border: 'none', background: '#E85D04', color: 'white', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Guardar Cambios</button>
+            <button type="button" onClick={onClose} disabled={loading} style={{ padding: '8px 16px', border: '1px solid #ccc', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={loading} style={{ padding: '8px 16px', border: 'none', background: '#E85D04', color: 'white', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
           </div>
         </form>
       </div>
