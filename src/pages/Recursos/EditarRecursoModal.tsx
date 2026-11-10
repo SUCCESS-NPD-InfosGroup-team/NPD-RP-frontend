@@ -38,7 +38,7 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
         name: formData.name,
         level: Number(formData.level),
         status: formData.status,
-        version: recurso.version, // IMPORTANTE: Enviar la versión actual para evitar conflictos
+        version: recurso.version || 1, // <-- CORRECCIÓN AQUÍ: Enviar 1 si es undefined
         assignment: {
           endDate: formData.endDate || undefined,
           indefinite: formData.endDate === '',

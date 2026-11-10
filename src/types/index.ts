@@ -58,7 +58,7 @@ export interface Recurso {
   estado: string;         // Activo, Inactivo, etc.
   fechaInicio: string;
   fechaFin: string;
-  version: number;        // Añadido para el PUT de edición (BUG-03)
+  version?: number;       // Opcional para no romper mocks/componentes antiguos (BUG-03)
 }
 
 export interface Vacacion {
