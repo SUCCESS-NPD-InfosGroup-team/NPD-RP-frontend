@@ -13,28 +13,28 @@ export const RegistrarRecursoPage = () => {
       <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '8px', maxWidth: '600px' }}>
         <form style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>N° Empleado</label>
-            <input type="text" placeholder="Ej. 1102" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            <label htmlFor="emp-number" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>N° Empleado</label>
+            <input id="emp-number" type="text" placeholder="Ej. 1102" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
           </div>
           
           <div>
-            <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nombre Completo</label>
-            <input type="text" placeholder="Ej. Laura Gómez" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            <label htmlFor="full-name" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nombre Completo</label>
+            <input id="full-name" type="text" placeholder="Ej. Laura Gómez" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Email</label>
-            <input type="email" placeholder="laura.gomez@infosgroup.com" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            <label htmlFor="email" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Email</label>
+            <input id="email" type="email" placeholder="laura.gomez@infosgroup.com" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nivel</label>
-              <input type="number" min="1" max="5" placeholder="1" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+              <label htmlFor="level" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nivel</label>
+              <input id="level" type="number" min="1" max="5" placeholder="1" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Fecha de Ingreso</label>
-              <input type="date" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+              <label htmlFor="hire-date" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Fecha de Ingreso</label>
+              <input id="hire-date" type="date" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
             </div>
           </div>
 

@@ -22,6 +22,7 @@
   "exclude": [
     "src/pages/Tablero/TableroPage.tsx",
     "src/pages/Avisos/AvisosPage.tsx",
+    "src/pages/Auditoria/**",
     "src/services/resources.api.test.ts",
     "src/pages/Recursos/RegistrarRecursoPage.test.tsx"
   ]

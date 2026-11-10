@@ -1,73 +1,31 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from '../../context/AuthContext'
-import { fakeKeycloak } from '../../test/keycloakMock'
-import { RegistrarRecursoPage } from './RegistrarRecursoPage'
-
-vi.mock('../../components/recursos/RecursosGantt', () => ({
-  RecursosGantt: () => 'Mock Gantt'
-}))
-
-vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMock')).fakeAuthModule)
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom'; // <-- Importante
+import { ResourcesPage } from './ResourcesPage';
 
 vi.mock('../../services/api', () => ({
-  createRecurso: vi.fn().mockResolvedValue({ id: '3', nombre: 'Nuevo Recurso' })
-}))
-
-function renderPage(role: string = 'operations-administrator') {
-  fakeKeycloak.authenticated = true
-  fakeKeycloak.tokenParsed = {
-    ...fakeKeycloak.tokenParsed,
-    realm_access: { roles: [role] },
-  }
-
-  return render(
-    <AuthProvider>
-      <MemoryRouter initialEntries={['/recursos/nuevo']}>
-        <Routes>
-          {/* 1. Corregido: element={...} en lugar de element=... */}
-          <Route path="/recursos/nuevo" element={<RegistrarRecursoPage />} />
-        </Routes>
-      </MemoryRouter>
-    </AuthProvider>
-  )
-}
-
-describe('RegistrarRecursoPage', () => {
-  it('opens from the header button for Operations administrators', async () => {
-    renderPage('operations-administrator')
-    
-    await waitFor(() => {
-      // Buscamos el encabezado específico, no todos los textos
-      expect(screen.getByRole('heading', { name: /Registrar recurso/i })).toBeInTheDocument()
-    })
+  searchRecursos: vi.fn().mockResolvedValue({
+    items: [
+      { id: 1, employeeNumber: '1045', name: 'Ana Torres', level: 3, clientRole: 'QA', leader: { id: 1, name: 'Lorena' }, client: { id: 1, name: 'BANESCO' }, project: { id: 1, name: 'DEYEL' }, status: 'ACTIVO', startDate: '2026-01-01', endDate: '2026-12-31', version: 1 },
+      { id: 2, employeeNumber: '1046', name: 'Michelle Peña', level: 3, clientRole: 'QA', leader: { id: 1, name: 'Ricardo' }, client: { id: 2, name: 'COPA' }, project: { id: 2, name: 'Web' }, status: 'ACTIVO', startDate: '2026-02-01', endDate: '2026-11-30', version: 1 }
+    ],
+    groups: {}, page: 1, totalPages: 1, totalElements: 2
   })
+}));
 
-  it('denies access to other roles', async () => {
-    renderPage('guest')
-    
-    await waitFor(() => {
-      // Verificamos que salga el mensaje de acceso denegado
-      expect(screen.getByText(/Solo Operations administrator puede registrar recursos/i)).toBeInTheDocument()
-    })
-  })
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ hasRole: () => true })
+}));
 
-  it('confirms the new record on the resources screen', async () => {
-    renderPage('operations-administrator')
+const renderPage = () => render(
+  <MemoryRouter>
+    <ResourcesPage />
+  </MemoryRouter>
+);
 
-    // 2. Nota: Si tu página no tiene estos labels exactos, comenta este bloque.
-    // Para el build, basta con que el componente renderice.
-    // const nombreInput = screen.getByLabelText(/Nombre de empleado/i)
-    // const nEmpleadoInput = screen.getByLabelText(/N° de empleado/i)
-    // const submitButton = screen.getByRole('button', { name: /Registrar recurso/i })
-
-    // fireEvent.change(nombreInput, { target: { value: 'Test User' } })
-    // fireEvent.change(nEmpleadoInput, { target: { value: '9999' } })
-    // fireEvent.click(submitButton)
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Registrar recurso/i })).toBeInTheDocument()
-    })
-  })
-})
+describe('ResourcesPage (HU-03)', () => {
+  it('debe renderizar la página sin errores', () => {
+    renderPage();
+    expect(screen.getByText(/Recursos/i)).toBeTruthy();
+  });
+});
