@@ -5,7 +5,7 @@ import type { Filters, Recurso, RecursoApi } from '../../types';
 import { searchRecursos } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
-import { Download, Plus, UserPlus } from 'lucide-react';
+import { ArrowRight, Download, Plus, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 // ==========================================
 // DATOS MOCK (si la API falla por CORS en local)
@@ -26,6 +26,7 @@ const C = {
   bg: '#F7F7F7', surface: '#FFFFFF', border: '#E5E5E5', borderSoft: '#EFEFEF', headRow: '#F1F1F1',
   groupRow: '#F5F1EC', text: '#1F1F1F', muted: '#6B6B6B', faint: '#8A8A8A', primary: '#C8400A',
   primaryHover: '#AF3708', link: '#0B3A7A', danger: '#B91C1C', pillBg: '#FDEBC8', pillText: '#9A5B00',
+  brandBrown: '#4a231c', white: '#ffffff',
 };
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap');
@@ -33,6 +34,8 @@ const GLOBAL_CSS = `
 .rp-root input, .rp-root select, .rp-root button { font-family: ${FONT_BODY}; }
 .rp-btn:hover { filter: brightness(0.97); }
 .rp-btn-primary:hover { background: ${C.primaryHover} !important; }
+.rp-stat-card--clickable:hover, .rp-stat-card--clickable:focus-visible { background: #351914 !important; }
+.rp-stat-card--clickable:focus-visible { outline: 2px solid ${C.brandBrown}; outline-offset: 2px; }
 .rp-row:hover { background: #FBF8F4 !important; }
 .rp-input:focus { outline: 2px solid #F5C9A8; border-color: ${C.primary} !important; }
 `;
@@ -228,7 +231,7 @@ export const ResourcesPage = () => {
 
       {/* TARJETAS DE RESUMEN */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-        <StatCard title="Arribos próximos" value="11" sub="de baja a 30 días" />
+        <StatCard title="Arribos próximos" value="11" sub="Lo que vence en los próximos 30 días" onClick={() => navigate('/arribos-proximos')} />
         <StatCard title="Fin de contrato ≤ 30 días" value="12" sub="avisar a 30 y 15 días" danger />
         <StatCard title="Fin de contrato ≤ 7 días" value="14" sub="1 semana" danger />
         <StatCard title="Colaboradores sin proyecto" value="10" sub="listos para asignar" />
@@ -382,13 +385,22 @@ export const ResourcesPage = () => {
   );
 };
 
-const StatCard = ({ title, value, sub, danger }: { title: string; value: string; sub: string; danger?: boolean }) => (
-  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '12px 12px 14px' }}>
-    <div style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 600, color: C.text, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{title}</div>
-    <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, fontWeight: 700, lineHeight: 1.1, color: danger ? C.danger : C.text, marginTop: 2 }}>{value}</div>
-    <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{sub}</div>
-  </div>
-);
+const StatCard = ({ title, value, sub, danger, onClick }: { title: string; value: string; sub: string; danger?: boolean; onClick?: () => void }) => {
+  const content = (
+    <>
+      <div style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 600, color: onClick ? C.white : C.text, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{title}</div>
+      <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, fontWeight: 700, lineHeight: 1.1, color: onClick ? C.white : danger ? C.danger : C.text, marginTop: 2 }}>{value}</div>
+      <div style={{ fontSize: 12, color: onClick ? C.white : C.muted, marginTop: 2 }}>{sub}</div>
+      {onClick && <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, color: C.white, fontSize: 12, fontWeight: 600 }}>Ver los {value} eventos <ArrowRight size={14} /></div>}
+    </>
+  );
+
+  if (onClick) {
+    return <button type="button" className="rp-stat-card--clickable" onClick={onClick} style={{ width: '100%', background: C.brandBrown, border: `1px solid ${C.brandBrown}`, borderRadius: 6, padding: '12px 12px 14px', textAlign: 'left', cursor: 'pointer' }}>{content}</button>;
+  }
+
+  return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '12px 12px 14px' }}>{content}</div>;
+};
 
 export const RowAction = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
