@@ -7,6 +7,7 @@ import {
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
+import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
 
@@ -37,6 +38,9 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
   }
   if (item.id === 'projects') {
     return <ProjectsPage />
+  }
+  if (item.id === 'arrivals') {
+    return <ArribosProximosPage />
   }
   if (item.id === 'users') {
     return <UsuariosPage />

@@ -1,0 +1,58 @@
+.arrivals-page { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.arrivals-page__crumbs { display: flex; align-items: center; gap: var(--space-1); color: var(--text-secondary); font-size: 13px; }
+.arrivals-page__crumbs a { color: inherit; text-decoration: underline; }
+.arrivals-page__crumbs svg { width: 14px; height: 14px; }
+.arrivals-page__header { display: flex; align-items: flex-start; justify-content: space-between; }
+.arrivals-page__subtitle { margin: 2px 0 0; color: var(--text-secondary); }
+
+/* Type cards (CA-03) */
+.arrivals-page__cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
+.arrivals-page__card {
+  display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--border-default); border-radius: var(--radius);
+  background: var(--surface-card); color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.arrivals-page__card:hover { border-color: var(--border-strong); }
+.arrivals-page__card:focus-visible { outline: var(--border-focus-width) solid var(--brand-navy); outline-offset: 1px; }
+.arrivals-page__card--selected { border-color: var(--brand-navy); background: var(--brand-navy-tint); }
+.arrivals-page__card-count { font: 700 40px / 1 var(--font-display); }
+.arrivals-page__card-body { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.arrivals-page__card-note { color: var(--text-secondary); font-size: 12.5px; }
+
+/* Filters and list */
+.arrivals-page__panel { overflow: hidden; background: var(--surface-card); border: var(--border-width) solid var(--border-default); border-radius: var(--radius); }
+.arrivals-page__filters { display: flex; gap: var(--space-3); padding: var(--space-4); }
+.arrivals-page__filters .ui-field { min-width: 200px; }
+.arrivals-page__applied { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-block: var(--border-width) solid var(--border-default); color: var(--text-secondary); font-size: 13px; }
+.arrivals-page__bar { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2) var(--space-4); color: var(--text-secondary); font-size: 13px; }
+.arrivals-page__bar strong { color: var(--text-primary); }
+
+.arrivals-page__table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.arrivals-page__table thead th {
+  padding: 10px var(--space-3); background: var(--surface-header); border-block: var(--border-width) solid var(--border-default);
+  color: var(--text-primary); font: 700 12px var(--font-display); letter-spacing: .06em; text-align: left;
+}
+.arrivals-page__table th:nth-child(1) { width: 80px; }
+.arrivals-page__table th:nth-child(2) { width: 120px; }
+.arrivals-page__table th:nth-child(3) { width: 170px; }
+.arrivals-page__table th:nth-child(4) { width: 22%; }
+.arrivals-page__table th:nth-child(6) { width: 160px; }
+.arrivals-page__table th:nth-child(7) { width: 200px; }
+.arrivals-page__table th:nth-child(8) { width: 125px; }
+.arrivals-page__group th { padding: 8px var(--space-3); background: var(--surface-group); border-bottom: var(--border-width) solid var(--border-default); font-weight: 400; text-align: left; }
+.arrivals-page__group strong { margin-right: var(--space-2); font: 700 13px var(--font-display); letter-spacing: .06em; }
+.arrivals-page__group span { color: var(--text-secondary); font-size: 12.5px; }
+.arrivals-page__row td { padding: 10px var(--space-3); border-bottom: var(--border-width) solid var(--border-default); vertical-align: middle; }
+.arrivals-page__row strong { display: block; font-weight: 600; }
+.arrivals-page__row small { display: block; color: var(--text-secondary); font-size: 12px; }
+.arrivals-page__remaining { font: 700 22px / 1 var(--font-display); }
+.arrivals-page__remaining--urgent { color: var(--state-danger); }
+.arrivals-page__notice { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 13px; }
+.arrivals-page__notice svg { width: 14px; height: 14px; margin-top: 2px; flex: none; }
+.arrivals-page__notice--sent { color: var(--state-ok); font-weight: 600; }
+.arrivals-page__notice--scheduled, .arrivals-page__notice--none { color: var(--text-secondary); }
+
+.arrivals-page__empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-5); color: var(--text-secondary); text-align: center; }
+.arrivals-page__empty p { margin: 0; }
+.arrivals-page__empty--error { color: var(--state-danger); }

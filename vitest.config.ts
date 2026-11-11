@@ -11,10 +11,17 @@ export default defineConfig({
     // Cargar los matchers de Testing Library
     setupFiles: './src/setupTests.ts',
 
-    // Correr solo los tests de Recursos
     include: [
       'src/pages/Recursos/**/*.test.tsx',
-      'src/components/recursos/**/*.test.tsx'
+      'src/components/recursos/**/*.test.tsx',
+      'src/components/arribos/**/*.test.ts',
+      'src/components/arribos/**/*.test.tsx',
+      'src/hooks/**/*.test.ts',
+      'src/hooks/**/*.test.tsx',
+      'src/services/**/*.test.ts',
+      'src/services/**/*.test.tsx',
+      'src/pages/ArribosProximos/**/*.test.ts',
+      'src/pages/ArribosProximos/**/*.test.tsx',
     ],
 
     // Excluir los tests de otros módulos
@@ -29,7 +36,6 @@ export default defineConfig({
       'src/components/vacaciones/**',
       'src/components/avisos/**',
       'src/context/**',
-      'src/services/**',
       'src/App.test.tsx'
     ]
   }
