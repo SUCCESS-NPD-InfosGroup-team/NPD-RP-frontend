@@ -19,7 +19,7 @@
     "allowArbitraryExtensions": true
   },
   "include": ["src"],
-  "eclude": [
+  "exclude": [
     "src/pages/Tablero/Tableropage.tsx",
     "src/pages/Avisos/AvisosPage.tsx",
     "src/pages/Auditoria/**",
