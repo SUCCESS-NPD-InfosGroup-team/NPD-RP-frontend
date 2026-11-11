@@ -2,20 +2,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { CSSProperties } from 'react';
 import type { Filters, Recurso, RecursoApi } from '../../types';
-import { searchRecursos } from '../../services/api';
+import { searchRecursos, apiFetch } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
 import { ArrowRight, Download, Plus, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-// ==========================================
-// DATOS MOCK (si la API falla por CORS en local)
-// ==========================================
-const MOCK_VISUAL: Recurso[] = [
-  { id: '1', nEmpleado: '#1465', nombre: 'Ana Torres', rol: 'Developer (AI)', cliente: 'BANESCO', proyecto: 'Programa de automatización (DEYEL)', liderNPD: 'Lorena Batista', nivel: 'N2', estado: 'Activo', fechaInicio: '2026-10-19', fechaFin: '2026-12-20', version: 1 },
-  { id: '2', nEmpleado: '#1652', nombre: 'Luis Barria', rol: 'QA Automatizador (Lorena Batista)', cliente: 'BANESCO', proyecto: 'Programa de automatización (DEYEL)', liderNPD: 'Lorena Batista', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-11-02', fechaFin: '2026-12-30', version: 1 },
-  { id: '3', nEmpleado: '#1800', nombre: 'Carlos Ortega', rol: 'Analista Funcional', cliente: 'CAJA DE AHORROS', proyecto: 'Caja de Ahorros', liderNPD: 'Ricardo Him', nivel: 'N2', estado: 'Activo', fechaInicio: '2026-11-16', fechaFin: '2026-11-30', version: 1 },
-  { id: '4', nEmpleado: '#1807', nombre: 'José Samuel', rol: 'QA Automatizador', cliente: 'CAJA DE AHORROS', proyecto: 'Caja de Ahorros', liderNPD: 'Ricardo Him', nivel: 'N3', estado: 'Activo', fechaInicio: '2026-11-02', fechaFin: '2026-12-31', version: 1 },
-];
+
+
 // ==========================================
 // TOKENS DE DISEÑO
 // ==========================================
@@ -91,35 +84,39 @@ export const ResourcesPage = () => {
     const loadCatalogos = async () => {
       try {
         const [resClientes, resLideres] = await Promise.all([
-          fetch('/api/v1/planner/clients').then(r => r.ok ? r.json() : []),
-          fetch('/api/v1/planner/resources/npd-leads').then(r => r.ok ? r.json() : []),
+          apiFetch('planner', '/clients').then(r => r.json()),
+          apiFetch('planner', '/resources/npd-leads').then(r => r.json()),
         ]);
-        setCatalogos(prev => ({ ...prev, clientes: resClientes, lideres: resLideres }));
+        setCatalogos(prev => ({ 
+          ...prev, 
+          clientes: resClientes.items || [],
+          lideres: resLideres.items || [],
+         }));
       } catch {
         // Error silencioso
       }
     };
-    loadCatalogos();
+    void loadCatalogos();
   }, []);
+
   // BUG-01: Cargar proyectos cuando cambia el cliente
   useEffect(() => {
     const loadProyectos = async () => {
-      if (filters.cliente && filters.cliente !== 'Todos') {
+      if (!filters.cliente || filters.cliente === 'Todos') {
+        setCatalogos(prev => ({ ...prev, proyectos: []}));
+        return;
+      }
         try {
-          const res = await fetch(`/api/v1/planner/clients/${filters.cliente}/projects`);
-          if (res.ok) {
-            const data = await res.json();
-            setCatalogos(prev => ({ ...prev, proyectos: data }));
-          }
+          const res = await apiFetch('planner', `/clients/${filters.cliente}/projects`);
+          const data = await res.json();
+            setCatalogos(prev => ({ ...prev, proyectos: data.items || []}));
         } catch {
           // Error silencioso
         }
-      } else {
-        setCatalogos(prev => ({ ...prev, proyectos: [] }));
-      }
     };
-    loadProyectos();
+    void loadProyectos();
   }, [filters.cliente]);
+
   // BUG-01 y BUG-02: API real
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -144,7 +141,7 @@ export const ResourcesPage = () => {
       setSelectedIds(new Set());
     } catch {
       setError('No se pudo conectar con la API');
-      setRecursos(MOCK_VISUAL);
+      setRecursos([]);
     } finally {
       setLoading(false);
     }
