@@ -20,10 +20,10 @@
   },
   "include": ["src"],
   "exclude": [
-    "src/pages/Tablero/TableroPage.tsx",
+    "src/pages/Tablero/Tableropage.tsx",
     "src/pages/Avisos/AvisosPage.tsx",
     "src/pages/Auditoria/**",
-    "src/services/resources.api.test.ts",
-    "src/pages/Recursos/RegistrarRecursoPage.test.tsx"
+    "src/context/RecursosConetext.tsx",
+
   ]
 }

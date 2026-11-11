@@ -7,6 +7,7 @@ import {
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
+import { RegistrarRecursoPage } from './pages/Recursos/RegistrarRecursoPage'
 import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
@@ -86,6 +87,8 @@ export default function App({
               element={<Screen roles={roles} item={item} />}
             />
           ))}
+          {/*Route Register BUG 05*/}
+          <Route path="recursos/nuevo" element={<RegistrarRecursoPage />} />
           <Route
             path="*"
             element={

@@ -1,3 +1,4 @@
+// src/services/api.ts
 import { keycloak, updateTokenOrLogout } from '../auth/keycloak'
 import type { Filters, ResourceSearchResponse } from '../types'
 
@@ -64,6 +65,11 @@ export interface UpdateRecursoPayload {
   level: number
   status: string
   version: number
+  positionId?: number
+  workModeId?: number
+  genderId?: number
+  hireDate?: string
+  onProbation?: boolean
   assignment?: {
     endDate?: string
     indefinite: boolean
