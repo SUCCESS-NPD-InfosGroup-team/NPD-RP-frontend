@@ -81,10 +81,30 @@ export interface ResourceResponse {
     endDate: string | null
     indefinite: boolean
     clientContactEmail: string | null
+    leaderEmployeeNumber?: string | null
+    startDate?: string | null
+    daysToEndDate?: number | null
   } | null
+  vacationMonth?: number | null
   termination: { date: string; reason: CatalogItem } | null
   fieldsToFix: string[]
   version: number
   updatedAt: string
   updatedBy: string
+}
+
+export type LastChangeAction = 'CREATE' | 'UPDATE'
+
+export interface LastChangeField {
+  field: string
+  label: string
+  oldValue: string | null
+  newValue: string | null
+}
+
+export interface ResourceLastChange {
+  action: LastChangeAction
+  actor: string
+  occurredAt: string
+  fields: LastChangeField[]
 }

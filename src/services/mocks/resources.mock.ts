@@ -69,4 +69,5 @@ export const resourcesMock = {
     if (!resource) throw new ApiRequestError({ status: 404, code: 'NOT_FOUND', detail: 'No existe el recurso.' })
     return resource
   },
+  async fetchLastChange() { return null },
 }
