@@ -23,9 +23,46 @@ const resource: Recurso = {
   fechaFin: '2026-12-31',
 }
 
+const detail = {
+  id: 7,
+  employeeNumber: '1045',
+  name: 'Ana Torres',
+  email: 'ana@example.com',
+  jobTitle: { id: 1, name: 'QA' },
+  position: { id: 2, name: 'Analista' },
+  level: 3,
+  businessUnit: null,
+  workMode: null,
+  gender: null,
+  talentReview: null,
+  hireDate: '2026-01-03',
+  probationEndDate: '2026-04-03',
+  status: { code: 'ACTIVO' as const, label: 'Activo' },
+  situation: { code: 'ASIGNADO' as const, label: 'Asignado' },
+  assignment: {
+    client: { id: 1, name: 'BANESCO' },
+    project: { id: 2, name: 'DEYEL', contractEndDate: '2026-12-31' },
+    leader: { id: 3, name: 'Lorena' },
+    leaderEmployeeNumber: '631',
+    clientRole: { id: 4, name: 'QA' },
+    equipment: { id: 5, name: 'Laptop' },
+    endDate: '2026-11-30',
+    startDate: '2026-01-05',
+    daysToEndDate: 15,
+    indefinite: false,
+    clientContactEmail: 'contact@example.com',
+  },
+  vacationMonth: 10,
+  termination: null,
+  fieldsToFix: [],
+  version: 1,
+  updatedAt: '2026-10-01T10:00:00Z',
+  updatedBy: 'maria',
+}
+
 describe('ResourceDetailDrawer', () => {
   beforeEach(() => {
-    mockedUseResourceDetail.mockReturnValue({ loading: false, error: undefined, refetch: vi.fn() })
+    mockedUseResourceDetail.mockReturnValue({ resource: detail, loading: false, error: undefined, refetch: vi.fn() })
     mockedUseAuth.mockReturnValue({ roles: ['guest'] })
   })
 
@@ -68,5 +105,65 @@ describe('ResourceDetailDrawer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(refetch).toHaveBeenCalledOnce()
     expect(screen.queryByRole('button', { name: 'Editar registro' })).not.toBeInTheDocument()
+  })
+
+  it('renders assignment and collaborator blocks, including leader code', () => {
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByRole('heading', { name: 'Estado y situación' })).toBeInTheDocument()
+    expect(screen.getByText('En 15 días')).toBeInTheDocument()
+    expect(screen.getByText('Días restantes')).toBeInTheDocument()
+    expect(screen.getByText('Lorena · cód. 631')).toBeInTheDocument()
+    expect(screen.getByText('Equipo / laptop')).toBeInTheDocument()
+    expect(screen.getAllByRole('term')).toHaveLength(19)
+    expect(screen.getByText('Octubre')).toBeInTheDocument()
+    expect(screen.getByText('Fin de contrato del cliente')).toBeInTheDocument()
+  })
+
+  it('renders the no-project state', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: { ...detail, assignment: null },
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Sin proyecto')).toBeInTheDocument()
+  })
+
+  it('renders indefinite assignment and empty optional values', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: {
+        ...detail,
+        email: null,
+        jobTitle: null,
+        position: null,
+        level: null,
+        probationEndDate: null,
+        vacationMonth: null,
+        assignment: {
+          ...detail.assignment,
+          indefinite: true,
+          endDate: null,
+          daysToEndDate: null,
+          leaderEmployeeNumber: null,
+          clientRole: null,
+          equipment: null,
+          clientContactEmail: null,
+          startDate: null,
+          project: { ...detail.assignment.project, contractEndDate: null },
+        },
+      },
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Sin fecha final')).toBeInTheDocument()
+    expect(screen.getByText('Indefinida')).toBeInTheDocument()
+    expect(screen.getAllByText('No especificado').length).toBeGreaterThan(0)
+    expect(screen.getByText('No aplica')).toBeInTheDocument()
   })
 })

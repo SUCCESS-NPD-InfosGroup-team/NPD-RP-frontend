@@ -47,6 +47,28 @@ describe('useResourceDetail', () => {
     expect(mockedFetchLastChange).not.toHaveBeenCalled()
   })
 
+  it('keeps the resource when last-change fails independently', async () => {
+    mockedGetResource.mockResolvedValue({ id: 7 } as Awaited<ReturnType<typeof resourcesApi.getResource>>)
+    mockedFetchLastChange.mockRejectedValue(new Error('503'))
+
+    const { result } = renderHook(() => useResourceDetail(7))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.resource?.id).toBe(7)
+    expect(result.current.error).toBeUndefined()
+    expect(result.current.lastChangeError).toEqual(new Error('503'))
+  })
+
+  it('ignores an aborted last-change request', async () => {
+    mockedGetResource.mockResolvedValue({ id: 7 } as Awaited<ReturnType<typeof resourcesApi.getResource>>)
+    mockedFetchLastChange.mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+
+    const { result } = renderHook(() => useResourceDetail(7))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.lastChangeError).toBeUndefined()
+  })
+
   it('keeps only the latest resource response', async () => {
     let resolveFirst: ((value: ResourceResponse | PromiseLike<ResourceResponse>) => void) | undefined
     mockedGetResource
