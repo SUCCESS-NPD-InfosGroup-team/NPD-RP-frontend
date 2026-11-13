@@ -75,7 +75,7 @@ export interface ResourceResponse {
   assignment: {
     client: CatalogItem
     project: CatalogItem & { contractEndDate: string | null }
-    leader: CatalogItem
+    leader: CatalogItem | null
     clientRole: CatalogItem | null
     equipment: CatalogItem | null
     endDate: string | null
@@ -86,7 +86,7 @@ export interface ResourceResponse {
     daysToEndDate?: number | null
   } | null
   vacationMonth?: number | null
-  termination: { date: string; reason: CatalogItem } | null
+  termination: { date: string | null; reason: CatalogItem | null } | null
   fieldsToFix: string[]
   version: number
   updatedAt: string

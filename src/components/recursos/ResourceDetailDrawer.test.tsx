@@ -101,6 +101,16 @@ describe('ResourceDetailDrawer', () => {
     expect(onEdit).toHaveBeenCalledWith(resource)
   })
 
+  it('renders the backend status label while the detail request is loading', () => {
+    mockedUseResourceDetail.mockReturnValue({ loading: true, error: undefined, refetch: vi.fn() })
+    const selectedResource = { ...resource }
+    Reflect.set(selectedResource, 'estado', { code: 'ACTIVO', label: 'Activo' })
+
+    render(<ResourceDetailDrawer resource={selectedResource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Activo')).toBeInTheDocument()
+  })
+
   it('shows retry state and no actions for a guest', () => {
     const refetch = vi.fn()
     mockedUseResourceDetail.mockReturnValue({ loading: false, error: new Error('503'), refetch })
@@ -187,6 +197,50 @@ describe('ResourceDetailDrawer', () => {
 
     expect(screen.getByText('Sin proyecto')).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /Asignación/ })).not.toBeInTheDocument()
+  })
+
+  it('renders assigned resources when the backend has no NPD lead for them', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: {
+        ...detail,
+        assignment: { ...detail.assignment, leader: null, leaderEmployeeNumber: null },
+      },
+      lastChange: null,
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Líder NPD').parentElement).toHaveTextContent('No especificado')
+  })
+
+  it('renders imported termination data when either date or reason is missing', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: {
+        ...detail,
+        termination: { date: '2026-10-10', reason: null },
+      },
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    const { rerender } = render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Desvinculación').parentElement).toHaveTextContent('10 oct 2026')
+
+    mockedUseResourceDetail.mockReturnValue({
+      resource: {
+        ...detail,
+        termination: { date: null, reason: { id: 1, name: 'Renuncia' } },
+      },
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    rerender(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Desvinculación').parentElement).toHaveTextContent('Renuncia')
   })
 
   it('renders the last change and formats changed dates', () => {

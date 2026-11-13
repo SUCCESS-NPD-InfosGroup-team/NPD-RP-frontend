@@ -240,14 +240,17 @@
 }
 
 .resource-detail-drawer__rail-bar.is-ok {
+  fill: var(--state-ok-tint);
   stroke: var(--state-ok);
 }
 
 .resource-detail-drawer__rail-bar.is-warn {
+  fill: var(--state-warn-tint);
   stroke: var(--state-warn);
 }
 
 .resource-detail-drawer__rail-bar.is-danger {
+  fill: var(--state-danger-tint);
   stroke: var(--state-danger);
 }
 

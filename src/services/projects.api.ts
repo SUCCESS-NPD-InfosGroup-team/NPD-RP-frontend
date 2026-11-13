@@ -10,22 +10,18 @@ import type {
 } from './projects.types'
 import { ApiRequestError } from './projects.types'
 
-function formatLocalDateAfterDays(days: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() + days)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day}`
+function appendFilters(params: URLSearchParams, filters: ProjectFilters): void {
+  if (filters.clientId && /^\d+$/.test(filters.clientId)) params.set('clientId', filters.clientId)
+  if (filters.leadId && /^\d+$/.test(filters.leadId)) params.set('leaderId', filters.leadId)
+  if (filters.contractEnd === 'next30') params.set('contractEnd', 'NEXT_30_DAYS')
+  if (filters.contractEnd === 'none') params.set('contractEnd', 'NONE')
+  if (filters.search?.trim()) params.set('search', filters.search.trim())
+  if (filters.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive))
 }
 
 function query(filters: ProjectFilters, page: number): string {
   const params = new URLSearchParams({ page: String(Math.max(page - 1, 0)), size: '25' })
-  if (filters.clientId && /^\d+$/.test(filters.clientId)) params.set('clientId', filters.clientId)
-  if (filters.leadId && /^\d+$/.test(filters.leadId)) params.set('leaderId', filters.leadId)
-  if (filters.contractEnd === 'next30') {
-    params.set('contractEndBefore', formatLocalDateAfterDays(30))
-  }
-  if (filters.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive))
+  appendFilters(params, filters)
   return params.toString()
 }
 
@@ -45,6 +41,14 @@ interface ApiProject {
 interface ApiPage<T> {
   items: T[]
   page: { number: number; size: number; totalElements: number; totalPages: number }
+}
+
+interface ApiProjectKpis {
+  projects: number
+  clients: number
+  withoutTeam: number
+  contractEndingSoon: number
+  collaboratorsWithoutProject: number
 }
 
 function mapProject(project: ApiProject): Project {
@@ -89,6 +93,20 @@ export const projectsApi = {
       pageSize: response.page.size,
       total: response.page.totalElements,
       totalPages: response.page.totalPages,
+    }
+  },
+  async getKpis(filters: ProjectFilters = {}): Promise<ProjectsSummary> {
+    const params = new URLSearchParams()
+    appendFilters(params, filters)
+    const response = await read<ApiProjectKpis>(
+      await apiFetch('planner', `/projects/kpis?${params.toString()}`),
+    )
+    return {
+      activeProjects: response.projects,
+      activeClients: response.clients,
+      contractEndingSoon: response.contractEndingSoon,
+      withoutTeam: response.withoutTeam,
+      unassignedPeople: response.collaboratorsWithoutProject,
     }
   },
   async createProject(input: CreateProjectInput): Promise<Project> {

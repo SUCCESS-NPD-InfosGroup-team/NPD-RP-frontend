@@ -49,6 +49,15 @@ const projects: Project[] = projectNames.map((name, index) => {
   }
 })
 
+function calendarDay(value: string): number {
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
+  return Date.UTC(year, month - 1, day)
+}
+
+function daysUntilContractEnd(contractEnd: string): number {
+  return Math.round((calendarDay(contractEnd) - calendarDay(new Date().toISOString())) / 86_400_000)
+}
+
 function filtered(filters: ProjectFilters): Project[] {
   return projects.filter((project) => {
     if (!filters.includeInactive && !project.active) return false
@@ -57,6 +66,10 @@ function filtered(filters: ProjectFilters): Project[] {
     if (filters.clientId && project.client.id !== filters.clientId) return false
     if (filters.leadId && !project.leadIds?.includes(Number(filters.leadId))) return false
     if (filters.contractEnd === 'none' && project.contractEnd !== null) return false
+    if (filters.contractEnd === 'next30') {
+      const daysRemaining = project.contractEnd ? daysUntilContractEnd(project.contractEnd) : null
+      if (daysRemaining === null || daysRemaining < 0 || daysRemaining > 30) return false
+    }
     return true
   })
 }
@@ -66,12 +79,16 @@ export const projectsMock = {
     const items = filtered(filters)
     return { items: items.slice((page - 1) * 25, page * 25), page, pageSize: 25, total: items.length, totalPages: Math.ceil(items.length / 25) }
   },
-  async getSummary(): Promise<ProjectsSummary> {
+  async getKpis(filters: ProjectFilters = {}): Promise<ProjectsSummary> {
+    const matchingProjects = filtered(filters)
     return {
-      activeProjects: projects.filter((project) => project.active).length,
-      activeClients: new Set(projects.filter((project) => project.active).map((project) => project.client.id)).size,
-      contractEndingSoon: 1,
-      withoutTeam: projects.filter((project) => project.teamSize === 0).length,
+      activeProjects: matchingProjects.length,
+      activeClients: new Set(matchingProjects.map((project) => project.client.id)).size,
+      contractEndingSoon: matchingProjects.filter((project) => {
+        const daysRemaining = project.contractEnd ? daysUntilContractEnd(project.contractEnd) : null
+        return daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 30
+      }).length,
+      withoutTeam: matchingProjects.filter((project) => project.teamSize === 0).length,
       unassignedPeople: 2,
     }
   },

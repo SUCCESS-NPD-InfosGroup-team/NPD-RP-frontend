@@ -16,7 +16,10 @@ describe('projectsApi', () => {
       page: { number: 1, size: 25, totalElements: 0, totalPages: 0 },
     })))
     await projectsApi.listProjects({ search: 'Atlas', contractEnd: 'none' }, 2)
-    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/projects?page=1&size=25')
+    expect(mockedApiFetch).toHaveBeenCalledWith(
+      'planner',
+      '/projects?page=1&size=25&contractEnd=NONE&search=Atlas',
+    )
   })
 
   it('translates duplicate errors into ApiError', async () => {
@@ -48,19 +51,117 @@ describe('projectsApi', () => {
     })
   })
 
-  it('formats the next-30-days boundary using the local calendar date', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2026, 10, 1, 20, 0, 0))
+  it('maps project list items from the backend response', async () => {
     mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
-      items: [],
-      page: { number: 0, size: 25, totalElements: 0, totalPages: 0 },
+      items: [{
+        id: 8,
+        name: 'Atlas',
+        client: { id: 3, name: 'Aurora', isInternal: false },
+        active: true,
+        startDate: '2026-01-02',
+        contractEndDate: '2026-12-01',
+        daysToContractEnd: 18,
+        teamSize: 4,
+        pendingConfirmation: 1,
+        leads: [{ id: 12, name: 'Líder de prueba' }],
+      }],
+      page: { number: 0, size: 25, totalElements: 1, totalPages: 1 },
     })))
 
-    await projectsApi.listProjects({ contractEnd: 'next30' })
+    await expect(projectsApi.listProjects()).resolves.toMatchObject({
+      items: [{
+        id: '8',
+        client: { id: '3', name: 'Aurora' },
+        leads: ['Líder de prueba'],
+        leadIds: [12],
+        pendingCount: 1,
+      }],
+    })
+  })
+
+  it('uses the backend next-30-days filter and maps global KPIs', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      projects: 34,
+      clients: 12,
+      withoutTeam: 2,
+      contractEndingSoon: 3,
+      collaboratorsWithoutProject: 5,
+    })))
+
+    await expect(projectsApi.getKpis({
+      clientId: '4',
+      leadId: '3',
+      contractEnd: 'next30',
+      includeInactive: true,
+    })).resolves.toEqual({
+      activeProjects: 34,
+      activeClients: 12,
+      contractEndingSoon: 3,
+      withoutTeam: 2,
+      unassignedPeople: 5,
+    })
 
     expect(mockedApiFetch).toHaveBeenCalledWith(
       'planner',
-      '/projects?page=0&size=25&contractEndBefore=2026-12-01',
+      '/projects/kpis?clientId=4&leaderId=3&contractEnd=NEXT_30_DAYS&includeInactive=true',
     )
+  })
+
+  it('creates projects with the backend request shape', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      id: 8,
+      name: 'Atlas',
+      client: { id: 3, name: 'Aurora', isInternal: false },
+      active: true,
+      startDate: '2026-01-02',
+      contractEndDate: '2026-12-01',
+      daysToContractEnd: 18,
+      teamSize: 0,
+      pendingConfirmation: 0,
+      leads: [],
+    }), { status: 201 }))
+
+    await expect(projectsApi.createProject({
+      clientId: '3',
+      name: 'Atlas',
+      contractEnd: '2026-12-01',
+    })).resolves.toMatchObject({ id: '8', name: 'Atlas' })
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId: 3,
+        newClient: undefined,
+        name: 'Atlas',
+        contractEndDate: '2026-12-01',
+      }),
+    })
+  })
+
+  it('maps clients and a client’s project options', async () => {
+    mockedApiFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        items: [{ id: 3, name: 'Aurora', isInternal: false }],
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        items: [{ id: 8, name: 'Atlas', teamSize: 4, contractEndDate: null }],
+      })))
+
+    await expect(projectsApi.listClients()).resolves.toEqual([
+      { id: '3', name: 'Aurora', isInternal: false, active: true },
+    ])
+    await expect(projectsApi.listClientProjects('3')).resolves.toEqual([
+      { id: '8', name: 'Atlas', teamSize: 4, contractEndDate: null },
+    ])
+  })
+
+  it('preserves status when an error response is not JSON', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(null, { status: 503 }))
+
+    await expect(projectsApi.getKpis()).rejects.toMatchObject({
+      status: 503,
+      code: 'API_ERROR',
+      detail: 'No se pudo completar la operación.',
+    })
   })
 })
