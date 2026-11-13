@@ -10,6 +10,13 @@ export function formatResourceDate(value: string | null | undefined): string {
   return RESOURCE_DATE_FORMATTER.format(new Date(`${value.slice(0, 10)}T00:00:00Z`)).replace('.', '')
 }
 
+export function formatResourceDateTime(value: string): string {
+  return new Intl.DateTimeFormat('es-PA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
 export function formatDaysToEnd(value: number | null | undefined): string {
   if (value === null || value === undefined) return 'Sin fecha final'
   if (value < 0) return `Venció hace ${Math.abs(value)} ${Math.abs(value) === 1 ? 'día' : 'días'}`

@@ -5,8 +5,14 @@ import { useResourceDetail } from '../../hooks/useResourceDetail'
 import type { Recurso } from '../../types'
 import type { ResourceLastChange, ResourceResponse } from '../../services/resources.types'
 import { Button } from '../ui/Button'
+import { Chip } from '../ui/Chip'
 import { canPerformResourceAction } from './resourceDetailPermissions'
-import { formatDaysToEnd, formatResourceDate, formatVacationMonth } from './resourceDetailView'
+import {
+  formatDaysToEnd,
+  formatResourceDate,
+  formatResourceDateTime,
+  formatVacationMonth,
+} from './resourceDetailView'
 import './ResourceDetailDrawer.css'
 
 interface ResourceDetailDrawerProps {
@@ -51,20 +57,40 @@ export function ResourceDetailDrawer({
         aria-labelledby="resource-detail-drawer-title"
       >
         <header className="resource-detail-drawer__header">
-          <div>
-            <p className="resource-detail-drawer__eyebrow">Detalle del recurso</p>
-            <h2 id="resource-detail-drawer-title">{resource.nombre}</h2>
-            <p className="resource-detail-drawer__employee">{resource.nEmpleado}</p>
+          <div className="resource-detail-drawer__identity">
+            <div className="resource-detail-drawer__identity-main">
+              <div className="resource-detail-drawer__avatar" aria-hidden="true">
+                {getInitials(detail?.name ?? resource.nombre)}
+              </div>
+              <div>
+                <h2 id="resource-detail-drawer-title">{detail?.name ?? resource.nombre}</h2>
+                <p className="resource-detail-drawer__employee">
+                  #{detail?.employeeNumber ?? resource.nEmpleado.replace(/^#/, '')}
+                  {' · Nivel '}
+                  {detail?.level ?? resource.nivel.replace(/^N/, '')}
+                  {' · '}
+                  {detail?.workMode?.name ?? 'Modalidad no especificada'}
+                </p>
+              </div>
+            </div>
+            <button
+              ref={closeRef}
+              className="resource-detail-drawer__close"
+              type="button"
+              aria-label="Cerrar detalle del recurso"
+              onClick={onClose}
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
           </div>
-          <button
-            ref={closeRef}
-            className="resource-detail-drawer__close"
-            type="button"
-            aria-label="Cerrar detalle del recurso"
-            onClick={onClose}
-          >
-            <X size={20} aria-hidden="true" />
-          </button>
+          <div className="resource-detail-drawer__chips">
+            <Chip tone="ok" className="resource-detail-drawer__status-chip">
+              {detail?.status.label ?? resource.estado}
+            </Chip>
+            <Chip tone={detail?.situation.code === 'PENDIENTE_CONFIRMACION' ? 'danger' : 'neutral'}>
+              {detail?.situation.label ?? 'Situación no disponible'}
+            </Chip>
+          </div>
         </header>
 
         <div className="resource-detail-drawer__body">
@@ -105,51 +131,50 @@ function ResourceDetailContent({ detail }: Readonly<{ detail: ResourceResponse }
   const assignment = detail.assignment
   return (
     <div className="resource-detail-drawer__content">
-      <section className="resource-detail-drawer__section" aria-labelledby="resource-status-title">
-        <h3 id="resource-status-title">Estado y situación</h3>
-        <dl className="resource-detail-drawer__grid">
-          <DetailItem label="Estado" value={detail.status.label} />
-          <DetailItem label="Situación" value={detail.situation.label} />
-          <DetailItem label="Días restantes" value={formatDaysToEnd(assignment?.daysToEndDate)} />
-          <DetailItem label="Periodo de prueba" value={detail.probationEndDate ? `Hasta ${formatResourceDate(detail.probationEndDate)}` : 'No aplica'} />
-        </dl>
-      </section>
-
-      <section className="resource-detail-drawer__section" aria-labelledby="resource-timeline-title">
-        <h3 id="resource-timeline-title">Asignación</h3>
-        <div className="resource-detail-drawer__lane">
-          <span>{formatResourceDate(assignment?.startDate ?? detail.hireDate)}</span>
-          <span className="resource-detail-drawer__lane-line" aria-hidden="true" />
-          <span>{assignment?.indefinite ? 'Indefinida' : formatResourceDate(assignment?.endDate)}</span>
-        </div>
-      </section>
-
       <section className="resource-detail-drawer__section" aria-labelledby="resource-project-title">
         <h3 id="resource-project-title">Proyecto</h3>
         {assignment ? (
-          <dl className="resource-detail-drawer__grid">
-            <DetailItem label="Cliente" value={assignment.client.name} />
-            <DetailItem label="Proyecto" value={assignment.project.name} />
+          <div className="resource-detail-drawer__project-card">
+            <div className="resource-detail-drawer__project-heading">
+              <div>
+                <strong>{assignment.client.name}</strong>
+                <span>{assignment.project.name}</span>
+              </div>
+              <Chip tone={assignment.daysToEndDate !== null && (assignment.daysToEndDate ?? 0) < 0 ? 'danger' : 'neutral'}>
+                {formatDaysToEnd(assignment.daysToEndDate)}
+              </Chip>
+            </div>
+            <dl className="resource-detail-drawer__grid">
             <DetailItem label="Líder NPD" value={`${assignment.leader.name}${assignment.leaderEmployeeNumber ? ` · cód. ${assignment.leaderEmployeeNumber}` : ''}`} />
-            <DetailItem label="Rol" value={assignment.clientRole?.name ?? 'No especificado'} />
-            <DetailItem label="Contacto" value={assignment.clientContactEmail ?? 'No especificado'} />
-            <DetailItem label="Fecha final" value={formatResourceDate(assignment.endDate)} />
-            <DetailItem label="Fin de contrato del cliente" value={formatResourceDate(assignment.project.contractEndDate)} />
-          </dl>
+              <DetailItem label="Rol actual en cliente" value={assignment.clientRole?.name ?? 'No especificado'} />
+              <DetailItem label="Contacto por cliente" value={assignment.clientContactEmail ?? 'No especificado'} />
+              <DetailItem label="Equipo / laptop" value={assignment.equipment?.name ?? 'No especificado'} />
+              <DetailItem label="Fin de contrato" value={`${formatResourceDate(assignment.project.contractEndDate)} · del proyecto`} />
+            </dl>
+          </div>
         ) : <p className="resource-detail-drawer__empty">Sin proyecto</p>}
       </section>
 
-      <section className="resource-detail-drawer__section" aria-labelledby="resource-collaborator-title">
-        <h3 id="resource-collaborator-title">Datos del colaborador</h3>
+      <section className="resource-detail-drawer__section" aria-labelledby="resource-contract-title">
+        <h3 id="resource-contract-title">Contrato</h3>
         <dl className="resource-detail-drawer__grid">
-          <DetailItem label="N° de empleado" value={detail.employeeNumber} />
-          <DetailItem label="Correo" value={detail.email ?? 'No especificado'} />
-          <DetailItem label="Cargo" value={detail.jobTitle?.name ?? 'No especificado'} />
-          <DetailItem label="Posición" value={detail.position?.name ?? 'No especificado'} />
-          <DetailItem label="Nivel" value={detail.level === null ? 'No especificado' : `N${detail.level}`} />
-          <DetailItem label="Equipo / laptop" value={assignment?.equipment?.name ?? 'No especificado'} />
-          <DetailItem label="Mes de vacaciones" value={formatVacationMonth(detail.vacationMonth)} />
           <DetailItem label="Inicio de contrato" value={formatResourceDate(detail.hireDate)} />
+          <DetailItem label="En periodo de prueba" value={isOnProbation(detail.probationEndDate) ? 'Sí' : 'No'} />
+          <DetailItem label="Día 90 de probatoria" value={formatResourceDate(detail.probationEndDate)} />
+          <DetailItem label="Mes de vacaciones" value={formatVacationMonth(detail.vacationMonth)} />
+        </dl>
+      </section>
+
+      <section className="resource-detail-drawer__section" aria-labelledby="resource-collaborator-title">
+        <h3 id="resource-collaborator-title">Colaborador</h3>
+        <dl className="resource-detail-drawer__grid">
+          <DetailItem label="Puesto" value={detail.jobTitle?.name ?? 'No especificado'} />
+          <DetailItem label="Posición" value={detail.position?.name ?? 'No especificado'} />
+          <DetailItem label="Correo" value={detail.email ?? 'No especificado'} />
+          <DetailItem label="UEN" value={detail.businessUnit?.name ?? 'No especificado'} />
+          <DetailItem label="Modalidad laboral" value={detail.workMode?.name ?? 'No especificado'} />
+          <DetailItem label="Talent Review" value={detail.talentReview?.name ?? 'No especificado'} />
+          <DetailItem label="Desvinculación" value={formatTermination(detail.termination)} />
         </dl>
       </section>
     </div>
@@ -187,23 +212,15 @@ function LastChangeSection({
       ) : lastChange ? (
         <div className="resource-detail-drawer__last-change">
           <p>
-            {lastChange.action === 'CREATE' ? 'Registro creado' : 'Registro actualizado'}
-            {' · '}
-            {lastChange.actor}
-            {' · '}
-            {formatResourceDate(lastChange.occurredAt)}
+            {lastChange.action === 'CREATE'
+              ? `Registro creado por ${lastChange.actor}`
+              : lastChange.fields.map((field, index) => (
+                <span key={field.field}>
+                  {index > 0 && <br />}
+                  {`${lastChange.actor} cambió ${field.label} de ${formatLastChangeValue(field.field, field.oldValue)} a ${formatLastChangeValue(field.field, field.newValue)} · ${formatResourceDateTime(lastChange.occurredAt)}`}
+                </span>
+              ))}
           </p>
-          <ul>
-            {lastChange.fields.map((field) => (
-              <li key={field.field}>
-                <strong>{field.label}</strong>
-                {': '}
-                {formatLastChangeValue(field.field, field.oldValue)}
-                {' → '}
-                {formatLastChangeValue(field.field, field.newValue)}
-              </li>
-            ))}
-          </ul>
         </div>
       ) : (
         <p className="resource-detail-drawer__empty">Cargando cambios…</p>
@@ -215,4 +232,27 @@ function LastChangeSection({
 function formatLastChangeValue(field: string, value: string | null): string {
   if (value === null) return 'Sin valor'
   return field.toLowerCase().includes('date') ? formatResourceDate(value) : value
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+function isOnProbation(probationEndDate: string | null): boolean {
+  if (!probationEndDate) return false
+  const today = new Date()
+  const endDate = new Date(`${probationEndDate}T23:59:59`)
+  return endDate >= today
+}
+
+function formatTermination(
+  termination: ResourceResponse['termination'],
+): string {
+  if (!termination) return 'No aplica'
+  return `${formatResourceDate(termination.date)} · ${termination.reason.name}`
 }

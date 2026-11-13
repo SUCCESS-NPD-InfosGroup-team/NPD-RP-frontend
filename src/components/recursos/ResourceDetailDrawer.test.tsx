@@ -32,7 +32,7 @@ const detail = {
   position: { id: 2, name: 'Analista' },
   level: 3,
   businessUnit: null,
-  workMode: null,
+  workMode: { id: 1, name: 'Remoto' },
   gender: null,
   talentReview: null,
   hireDate: '2026-01-03',
@@ -107,17 +107,22 @@ describe('ResourceDetailDrawer', () => {
     expect(screen.queryByRole('button', { name: 'Editar registro' })).not.toBeInTheDocument()
   })
 
-  it('renders assignment and collaborator blocks, including leader code', () => {
+  it('renders the current Figma section order and definition rows', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
 
-    expect(screen.getByRole('heading', { name: 'Estado y situación' })).toBeInTheDocument()
+    const headings = screen.getAllByRole('heading').map((heading) => heading.textContent)
+    expect(headings).toEqual(['Ana Torres', 'Proyecto', 'Contrato', 'Colaborador', 'Último cambio'])
+    expect(screen.getByText('#1045 · Nivel 3 · Remoto')).toBeInTheDocument()
     expect(screen.getByText('En 15 días')).toBeInTheDocument()
-    expect(screen.getByText('Días restantes')).toBeInTheDocument()
     expect(screen.getByText('Lorena · cód. 631')).toBeInTheDocument()
     expect(screen.getByText('Equipo / laptop')).toBeInTheDocument()
-    expect(screen.getAllByRole('term')).toHaveLength(19)
+    expect(screen.getByText('Inicio de contrato')).toBeInTheDocument()
+    expect(screen.getByText('Día 90 de probatoria')).toBeInTheDocument()
+    expect(screen.getByText('Puesto')).toBeInTheDocument()
+    expect(screen.getByText('Modalidad laboral')).toBeInTheDocument()
+    expect(screen.getAllByRole('term')).toHaveLength(16)
     expect(screen.getByText('Octubre')).toBeInTheDocument()
-    expect(screen.getByText('Fin de contrato del cliente')).toBeInTheDocument()
+    expect(screen.getByText(/Fin de contrato/)).toBeInTheDocument()
   })
 
   it('renders the no-project state', () => {
@@ -154,8 +159,7 @@ describe('ResourceDetailDrawer', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
 
     expect(screen.getByRole('heading', { name: 'Último cambio' })).toBeInTheDocument()
-    expect(screen.getByText(/Registro actualizado/)).toBeInTheDocument()
-    expect(screen.getByText(/30 sept 2026 → 31 oct 2026/)).toBeInTheDocument()
+    expect(screen.getByText(/maria\.perez cambió Fecha final de 30 sept 2026 a 31 oct 2026/)).toBeInTheDocument()
   })
 
   it('renders a created resource change with empty previous values', () => {
@@ -175,7 +179,6 @@ describe('ResourceDetailDrawer', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
 
     expect(screen.getByText(/Registro creado/)).toBeInTheDocument()
-    expect(screen.getByText(/Sin valor → Ana Torres/)).toBeInTheDocument()
   })
 
   it('shows the empty and independent error states for last change', () => {
@@ -248,7 +251,6 @@ describe('ResourceDetailDrawer', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
 
     expect(screen.getByText('Sin fecha final')).toBeInTheDocument()
-    expect(screen.getByText('Indefinida')).toBeInTheDocument()
     expect(screen.getAllByText('No especificado').length).toBeGreaterThan(0)
     expect(screen.getByText('No aplica')).toBeInTheDocument()
   })

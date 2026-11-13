@@ -1,10 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { formatDaysToEnd, formatResourceDate, formatVacationMonth } from './resourceDetailView'
+import {
+  formatDaysToEnd,
+  formatResourceDate,
+  formatResourceDateTime,
+  formatVacationMonth,
+} from './resourceDetailView'
 
 describe('resource detail formatting', () => {
   it('formats API dates in Spanish', () => {
     expect(formatResourceDate('2026-10-02')).toContain('02 oct 2026')
     expect(formatResourceDate(null)).toBe('Sin fecha')
+  })
+
+  it('formats change timestamps in the local timezone', () => {
+    const formatted = formatResourceDateTime('2026-10-02T15:14:00Z')
+    const expected = new Intl.DateTimeFormat('es-PA', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date('2026-10-02T15:14:00Z'))
+
+    expect(formatted).toBe(expected)
+    expect(formatted).toContain('2026')
   })
 
   it.each([
