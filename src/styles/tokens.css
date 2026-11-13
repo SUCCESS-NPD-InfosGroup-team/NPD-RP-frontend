@@ -35,6 +35,8 @@
   --state-warn-tint: #fdf0dc;
   --state-danger: #b42318;
   --state-danger-tint: #fbe5e3;
+  --state-danger-border-tint: #e7b4af;
+  --state-danger-text-strong: #7a1810;
 
   /* Tipografía */
   --font-display: "Barlow Condensed", system-ui, sans-serif; /* Bold: títulos y navegación */
@@ -45,6 +47,12 @@
   --fs-brand-mark: 15px;
   --fs-avatar: 13px;
   --fs-ops-status: 12.5px;
+  --fs-detail: 13.5px;
+  --fs-detail-badge: 12px;
+  --fs-detail-project: 13px;
+  --fs-detail-rail-caption: 12.5px;
+  --fs-detail-client-title: 15px;
+  --fs-detail-avatar: 18px;
 
   /* Medidas */
   --radius: 4px;
@@ -92,7 +100,19 @@
   --focus-offset: 2px;
   --no-access-height: 320px;
   --drawer-width: 440px;
-  --drawer-shadow: -16px 0 40px -20px rgba(51, 34, 28, 0.3);
+  --drawer-shadow: -16px 0 20px rgba(51, 34, 28, 0.35);
+  --drawer-padding-inline: 18px;
+  --drawer-border-width: 0.8px;
+  --resource-detail-avatar-size: 44px;
+  --resource-detail-label-width: 150px;
+  --resource-detail-rail-height: 26px;
+  --resource-detail-rail-bar-height: 20px;
+  --resource-detail-rail-inset: 3px;
+  --resource-detail-rail-stroke: 1px;
+  --resource-detail-rail-today-stroke: 1.6px;
+  --resource-detail-rail-radius: 3px;
+  --resource-detail-rail-bar-radius: 0.5px;
+  --resource-detail-status-dot-size: 7px;
   --table-avatar-size: 22px;
   --table-avatar-font-size: 10px;
   --drawer-title-size: 22px;

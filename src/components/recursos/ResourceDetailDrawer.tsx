@@ -1,12 +1,13 @@
-import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useResourceDetail } from '../../hooks/useResourceDetail'
 import type { Recurso } from '../../types'
 import type { ResourceLastChange, ResourceResponse } from '../../services/resources.types'
+import { AlertIcon, ClockIcon, EditIcon, XIcon } from '../icons'
 import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import { canPerformResourceAction } from './resourceDetailPermissions'
+import { calculateAssignmentRail } from './resourceAssignmentRail'
 import {
   formatDaysToEnd,
   formatResourceDate,
@@ -80,7 +81,7 @@ export function ResourceDetailDrawer({
               aria-label="Cerrar detalle del recurso"
               onClick={onClose}
             >
-              <X size={20} aria-hidden="true" />
+              <XIcon />
             </button>
           </div>
           <div className="resource-detail-drawer__chips">
@@ -112,14 +113,14 @@ export function ResourceDetailDrawer({
         </div>
 
         <footer className="resource-detail-drawer__footer">
+          {canPerformResourceAction(roles, 'edit') && (
+            <Button icon={<EditIcon />} onClick={() => onEdit(resource)}>Editar registro</Button>
+          )}
           {canPerformResourceAction(roles, 'history') && (
-            <Button variant="secondary" onClick={() => undefined}>Historial</Button>
+            <Button variant="secondary" icon={<ClockIcon />} onClick={() => undefined}>Historial</Button>
           )}
           {canPerformResourceAction(roles, 'audit') && (
-            <Button variant="secondary" onClick={() => undefined}>Auditoría</Button>
-          )}
-          {canPerformResourceAction(roles, 'edit') && (
-            <Button onClick={() => onEdit(resource)}>Editar registro</Button>
+            <Button variant="secondary" icon={<ClockIcon />} onClick={() => undefined}>Auditoría</Button>
           )}
         </footer>
       </aside>
@@ -134,23 +135,33 @@ function ResourceDetailContent({ detail }: Readonly<{ detail: ResourceResponse }
       <section className="resource-detail-drawer__section" aria-labelledby="resource-project-title">
         <h3 id="resource-project-title">Proyecto</h3>
         {assignment ? (
-          <div className="resource-detail-drawer__project-card">
+          <div className={`resource-detail-drawer__project-card${detail.situation.code === 'PENDIENTE_CONFIRMACION' ? ' is-pending' : ''}`}>
             <div className="resource-detail-drawer__project-heading">
               <div>
                 <strong>{assignment.client.name}</strong>
                 <span>{assignment.project.name}</span>
               </div>
-              <Chip tone={assignment.daysToEndDate !== null && (assignment.daysToEndDate ?? 0) < 0 ? 'danger' : 'neutral'}>
+              <span className={`resource-detail-drawer__days-badge${isAssignmentOverdue(assignment) ? ' is-overdue' : ''}`}>
                 {formatDaysToEnd(assignment.daysToEndDate)}
-              </Chip>
+              </span>
             </div>
+            <AssignmentRail detail={detail} />
             <dl className="resource-detail-drawer__grid">
-            <DetailItem label="Líder NPD" value={`${assignment.leader.name}${assignment.leaderEmployeeNumber ? ` · cód. ${assignment.leaderEmployeeNumber}` : ''}`} />
+              <DetailItem label="Líder NPD" value={`${assignment.leader.name}${assignment.leaderEmployeeNumber ? ` · cód. ${assignment.leaderEmployeeNumber}` : ''}`} />
               <DetailItem label="Rol actual en cliente" value={assignment.clientRole?.name ?? 'No especificado'} />
               <DetailItem label="Contacto por cliente" value={assignment.clientContactEmail ?? 'No especificado'} />
               <DetailItem label="Equipo / laptop" value={assignment.equipment?.name ?? 'No especificado'} />
-              <DetailItem label="Fin de contrato" value={`${formatResourceDate(assignment.project.contractEndDate)} · del proyecto`} />
+              <DetailItem
+                label="Fin de contrato"
+                value={(
+                  <>
+                    {formatResourceDate(assignment.project.contractEndDate)}
+                    <span className="resource-detail-drawer__value-suffix"> · del proyecto</span>
+                  </>
+                )}
+              />
             </dl>
+            {detail.situation.code === 'PENDIENTE_CONFIRMACION' && <PendingConfirmationNotice />}
           </div>
         ) : <p className="resource-detail-drawer__empty">Sin proyecto</p>}
       </section>
@@ -158,9 +169,17 @@ function ResourceDetailContent({ detail }: Readonly<{ detail: ResourceResponse }
       <section className="resource-detail-drawer__section" aria-labelledby="resource-contract-title">
         <h3 id="resource-contract-title">Contrato</h3>
         <dl className="resource-detail-drawer__grid">
-          <DetailItem label="Inicio de contrato" value={formatResourceDate(detail.hireDate)} />
+          <DetailItem label="Fecha de inicio de contrato" value={formatResourceDate(detail.hireDate)} />
           <DetailItem label="En periodo de prueba" value={isOnProbation(detail.probationEndDate) ? 'Sí' : 'No'} />
-          <DetailItem label="Día 90 de probatoria" value={formatResourceDate(detail.probationEndDate)} />
+          <DetailItem
+            label="Día 90 de probatoria"
+            value={detail.probationEndDate ? (
+              <>
+                {formatResourceDate(detail.probationEndDate)}
+                <span className="resource-detail-drawer__value-suffix"> · calculado</span>
+              </>
+            ) : '—'}
+          />
           <DetailItem label="Mes de vacaciones" value={formatVacationMonth(detail.vacationMonth)} />
         </dl>
       </section>
@@ -168,12 +187,12 @@ function ResourceDetailContent({ detail }: Readonly<{ detail: ResourceResponse }
       <section className="resource-detail-drawer__section" aria-labelledby="resource-collaborator-title">
         <h3 id="resource-collaborator-title">Colaborador</h3>
         <dl className="resource-detail-drawer__grid">
-          <DetailItem label="Puesto" value={detail.jobTitle?.name ?? 'No especificado'} />
-          <DetailItem label="Posición" value={detail.position?.name ?? 'No especificado'} />
-          <DetailItem label="Correo" value={detail.email ?? 'No especificado'} />
-          <DetailItem label="UEN" value={detail.businessUnit?.name ?? 'No especificado'} />
-          <DetailItem label="Modalidad laboral" value={detail.workMode?.name ?? 'No especificado'} />
-          <DetailItem label="Talent Review" value={detail.talentReview?.name ?? 'No especificado'} />
+          <DetailItem label="Puesto" value={detail.jobTitle?.name ?? '—'} />
+          <DetailItem label="Posición" value={detail.position?.name ?? '—'} />
+          <DetailItem label="UEN" value={detail.businessUnit?.name ?? '—'} />
+          <DetailItem label="Modalidad laboral" value={detail.workMode?.name ?? '—'} />
+          <DetailItem label="Correo" value={detail.email ?? '—'} />
+          <DetailItem label="Talent Review" value={detail.talentReview?.name ?? '—'} />
           <DetailItem label="Desvinculación" value={formatTermination(detail.termination)} />
         </dl>
       </section>
@@ -181,11 +200,48 @@ function ResourceDetailContent({ detail }: Readonly<{ detail: ResourceResponse }
   )
 }
 
-function DetailItem({ label, value }: Readonly<{ label: string; value: string }>) {
+function DetailItem({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
     <div className="resource-detail-drawer__item">
       <dt>{label}</dt>
       <dd>{value}</dd>
+    </div>
+  )
+}
+
+function AssignmentRail({ detail }: Readonly<{ detail: ResourceResponse }>) {
+  if (!detail.assignment) return null
+
+  const assignment = detail.assignment
+  const startDate = assignment.startDate ?? detail.hireDate
+  const rail = calculateAssignmentRail({
+    startDate,
+    endDate: assignment.endDate,
+    indefinite: assignment.indefinite,
+    today: getTodayIso(),
+  })
+  const railTone = getAssignmentRailTone(assignment, detail.status.code)
+  const endLabel = assignment.indefinite
+    ? 'sin fecha final'
+    : `fecha final ${formatResourceDate(assignment.endDate)}`
+
+  return (
+    <div className="resource-detail-drawer__rail">
+      <div
+        className="resource-detail-drawer__rail-graphic"
+        role="img"
+        aria-label={`Asignación desde ${formatResourceDate(startDate)} hasta ${endLabel}`}
+      >
+        <svg className="resource-detail-drawer__rail-track" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true">
+          <rect className={`resource-detail-drawer__rail-bar is-${railTone}`} x={rail.startPercent} width={rail.widthPercent} />
+          {rail.todayPercent !== null && (
+            <line className="resource-detail-drawer__rail-today" x1={rail.todayPercent} x2={rail.todayPercent} y1="0" y2="26" />
+          )}
+        </svg>
+      </div>
+      <p className="resource-detail-drawer__rail-caption">
+        En el proyecto desde {formatResourceDate(startDate)} → {endLabel}
+      </p>
     </div>
   )
 }
@@ -211,16 +267,16 @@ function LastChangeSection({
         <p className="resource-detail-drawer__empty">Sin cambios registrados</p>
       ) : lastChange ? (
         <div className="resource-detail-drawer__last-change">
-          <p>
-            {lastChange.action === 'CREATE'
-              ? `Registro creado por ${lastChange.actor}`
-              : lastChange.fields.map((field, index) => (
-                <span key={field.field}>
-                  {index > 0 && <br />}
-                  {`${lastChange.actor} cambió ${field.label} de ${formatLastChangeValue(field.field, field.oldValue)} a ${formatLastChangeValue(field.field, field.newValue)} · ${formatResourceDateTime(lastChange.occurredAt)}`}
-                </span>
-              ))}
-          </p>
+          {lastChange.action === 'CREATE'
+            ? <p>Registro creado por {lastChange.actor}</p>
+            : lastChange.fields.map((field) => (
+              <p key={field.field}>
+                {lastChange.actor} cambió <strong>{field.label}</strong> de{' '}
+                {formatLastChangeValue(field.field, field.oldValue)} a {formatLastChangeValue(field.field, field.newValue)}
+                {' · '}
+                {formatResourceDateTime(lastChange.occurredAt)}.
+              </p>
+            ))}
         </div>
       ) : (
         <p className="resource-detail-drawer__empty">Cargando cambios…</p>
@@ -230,7 +286,7 @@ function LastChangeSection({
 }
 
 function formatLastChangeValue(field: string, value: string | null): string {
-  if (value === null) return 'Sin valor'
+  if (value === null) return '—'
   return field.toLowerCase().includes('date') ? formatResourceDate(value) : value
 }
 
@@ -253,6 +309,38 @@ function isOnProbation(probationEndDate: string | null): boolean {
 function formatTermination(
   termination: ResourceResponse['termination'],
 ): string {
-  if (!termination) return 'No aplica'
+  if (!termination) return '—'
   return `${formatResourceDate(termination.date)} · ${termination.reason.name}`
+}
+
+function isAssignmentOverdue(assignment: NonNullable<ResourceResponse['assignment']>): boolean {
+  return (assignment.daysToEndDate ?? 0) < 0
+}
+
+function getAssignmentRailTone(
+  assignment: NonNullable<ResourceResponse['assignment']>,
+  status: ResourceResponse['status']['code'],
+): 'danger' | 'warn' | 'ok' {
+  if (isAssignmentOverdue(assignment) || status === 'BAJA') return 'danger'
+  return status === 'LICENCIA' ? 'warn' : 'ok'
+}
+
+function PendingConfirmationNotice() {
+  return (
+    <div className="resource-detail-drawer__pending-notice" role="note">
+      <span className="resource-detail-drawer__pending-icon"><AlertIcon /></span>
+      <p>
+        <strong>Pendiente de confirmación.</strong>
+        {' '}La fecha final pasó y nadie la extendió. Confirma si sigue en el proyecto o quítalo.
+      </p>
+    </div>
+  )
+}
+
+function getTodayIso(): string {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }

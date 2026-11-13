@@ -92,6 +92,11 @@ describe('ResourceDetailDrawer', () => {
 
     expect(screen.getByRole('button', { name: 'Historial' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Auditoría' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Historial' }).querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByRole('button', { name: 'Auditoría' }).querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByRole('button', { name: 'Editar registro' }).querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(Array.from(screen.getByRole('contentinfo').querySelectorAll('button'), (button) => button.textContent))
+      .toEqual(['Editar registro', 'Historial', 'Auditoría'])
     fireEvent.click(screen.getByRole('button', { name: 'Editar registro' }))
     expect(onEdit).toHaveBeenCalledWith(resource)
   })
@@ -116,13 +121,59 @@ describe('ResourceDetailDrawer', () => {
     expect(screen.getByText('En 15 días')).toBeInTheDocument()
     expect(screen.getByText('Lorena · cód. 631')).toBeInTheDocument()
     expect(screen.getByText('Equipo / laptop')).toBeInTheDocument()
-    expect(screen.getByText('Inicio de contrato')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /Asignación desde/ })).toBeInTheDocument()
+    expect(screen.getByText('Fecha de inicio de contrato')).toBeInTheDocument()
     expect(screen.getByText('Día 90 de probatoria')).toBeInTheDocument()
+    expect(screen.getByText('Fecha de inicio de contrato')).toBeInTheDocument()
     expect(screen.getByText('Puesto')).toBeInTheDocument()
     expect(screen.getByText('Modalidad laboral')).toBeInTheDocument()
     expect(screen.getAllByRole('term')).toHaveLength(16)
-    expect(screen.getByText('Octubre')).toBeInTheDocument()
+    expect(screen.getByText('OCT · calculado, cada año')).toBeInTheDocument()
+    const probationDay = screen.getByText('Día 90 de probatoria').parentElement?.querySelector('dd')
+    expect(probationDay?.textContent?.replace(/\s+/g, ' ').trim()).toBe('03 abr 2026 · calculado')
     expect(screen.getByText(/Fin de contrato/)).toBeInTheDocument()
+  })
+
+  it('draws the vertical today marker across the rail', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-13T12:00:00'))
+    try {
+      render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+      const marker = screen.getByRole('img', { name: /Asignación desde/ })
+        .querySelector('.resource-detail-drawer__rail-today')
+      expect(marker).toHaveAttribute('y1', '0')
+      expect(marker).toHaveAttribute('y2', '26')
+      expect(Number(marker?.getAttribute('x1'))).toBeGreaterThan(0)
+      expect(screen.getByRole('img', { name: /Asignación desde/ }).querySelectorAll('line')).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('styles a pending confirmation and shows its warning without CA-05 actions', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: {
+        ...detail,
+        situation: { code: 'PENDIENTE_CONFIRMACION' as const, label: 'Pendiente de confirmación' },
+        assignment: { ...detail.assignment, daysToEndDate: -7 },
+      },
+      lastChange: null,
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Pendiente de confirmación')).toHaveClass('ui-chip--danger')
+    expect(screen.getByText('Venció hace 7 días')).toHaveClass('resource-detail-drawer__days-badge', 'is-overdue')
+    expect(screen.getByText('BANESCO').closest('.resource-detail-drawer__project-card'))
+      .toHaveClass('is-pending')
+    expect(screen.getByText('Pendiente de confirmación.', { exact: false }).closest('[role="note"]'))
+      .toHaveTextContent('La fecha final pasó y nadie la extendió. Confirma si sigue en el proyecto o quítalo.')
+    expect(screen.getByRole('note').querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('button', { name: /Extender fecha final|Cambiar de proyecto|Quitar del proyecto/ }))
+      .not.toBeInTheDocument()
   })
 
   it('renders the no-project state', () => {
@@ -135,6 +186,7 @@ describe('ResourceDetailDrawer', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
 
     expect(screen.getByText('Sin proyecto')).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /Asignación/ })).not.toBeInTheDocument()
   })
 
   it('renders the last change and formats changed dates', () => {
@@ -159,7 +211,9 @@ describe('ResourceDetailDrawer', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
 
     expect(screen.getByRole('heading', { name: 'Último cambio' })).toBeInTheDocument()
-    expect(screen.getByText(/maria\.perez cambió Fecha final de 30 sept 2026 a 31 oct 2026/)).toBeInTheDocument()
+    const changeLine = document.querySelector('.resource-detail-drawer__last-change p')
+    expect(changeLine?.textContent?.replace(/\s+/g, ' ')).toMatch(/maria\.perez cambió Fecha final de 30 sep 2026 a 31 oct 2026 · \d{2} oct 2026, \d{2}:\d{2}\./)
+    expect(screen.getByText('Fecha final', { selector: 'strong' })).toBeInTheDocument()
   })
 
   it('renders a created resource change with empty previous values', () => {
@@ -251,7 +305,7 @@ describe('ResourceDetailDrawer', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
 
     expect(screen.getByText('Sin fecha final')).toBeInTheDocument()
-    expect(screen.getAllByText('No especificado').length).toBeGreaterThan(0)
-    expect(screen.getByText('No aplica')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /sin fecha final/ })).toBeInTheDocument()
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 })
