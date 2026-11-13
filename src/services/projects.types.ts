@@ -20,6 +20,7 @@ export interface Project {
   leadIds?: number[]
   startDate: string
   contractEnd: string | null
+  daysToContractEnd?: number | null
   pendingCount: number
   active: boolean
 }
@@ -78,7 +79,6 @@ export interface ApiError {
   }>
   field?: string
   existingProjectId?: number
-  existingProjectName?: string
   existingResourceId?: number
   existingResourceName?: string
 }
@@ -89,7 +89,6 @@ export class ApiRequestError extends Error implements ApiError {
   readonly detail: string
   readonly field?: string
   readonly existingProjectId?: number
-  readonly existingProjectName?: string
   readonly errors?: ApiError['errors']
   readonly existingResourceId?: number
   readonly existingResourceName?: string
@@ -102,7 +101,6 @@ export class ApiRequestError extends Error implements ApiError {
     this.detail = error.detail
     this.field = error.field
     this.existingProjectId = error.existingProjectId
-    this.existingProjectName = error.existingProjectName
     this.errors = error.errors
     this.existingResourceId = error.existingResourceId
     this.existingResourceName = error.existingResourceName

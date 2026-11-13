@@ -27,6 +27,10 @@ or tokens are persisted by this layout.
 Run `npm test` for the local suite, `npm run test:coverage` for coverage, and
 `npm run build` for the production TypeScript/build check.
 
+Feature documentation and the manual test checklist for Users and roles are
+available in [Documentacion/usuarios-y-roles.md](Documentacion/usuarios-y-roles.md)
+and [Documentacion/pruebas-usuarios-y-roles.md](Documentacion/pruebas-usuarios-y-roles.md).
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

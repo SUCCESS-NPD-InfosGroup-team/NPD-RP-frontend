@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: lts/*
           cache: npm            # guarda ~/.npm entre ejecuciones
-      - run: npm ci --ignore-scripts # instala exactamente lo del package-lock.json
+      - run: npm ci --ignore-scripts
       - run: npm run lint
 
   test:

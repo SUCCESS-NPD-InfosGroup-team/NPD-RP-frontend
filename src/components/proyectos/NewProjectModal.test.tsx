@@ -13,7 +13,6 @@ describe('NewProjectModal', () => {
       createProject,
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     const onCreated = vi.fn()
@@ -32,7 +31,6 @@ describe('NewProjectModal', () => {
       createProject: vi.fn().mockRejectedValue({ status: 403, message: 'Forbidden' }),
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={vi.fn()} />)
@@ -49,7 +47,6 @@ describe('NewProjectModal', () => {
       createProject,
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={vi.fn()} />)
@@ -59,30 +56,31 @@ describe('NewProjectModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
     expect(screen.getAllByText('Usa una fecha válida en formato dd/mm/aaaa.')).not.toHaveLength(0)
     fireEvent.change(screen.getByLabelText('Fin de contrato con el cliente'), { target: { value: '31032027' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Crear y agregar colaboradores' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
     await waitFor(() => expect(createProject).toHaveBeenCalledWith({ clientId: 'client-1', name: 'Fechas', contractEnd: '2027-03-31' }))
   })
 
-  it('shows a duplicate project link and closes from the cancel action', async () => {
+  it('shows the duplicate project problem detail and closes from the cancel action', async () => {
     const onClose = vi.fn()
+    const onDuplicateProject = vi.fn()
     vi.mocked(getProjectsApi).mockResolvedValue({
       createProject: vi.fn().mockRejectedValue({
         code: 'PROJECT_NAME_TAKEN',
-        existingProjectName: 'Atlas',
+        detail: 'El cliente Aurora ya tiene un proyecto llamado Atlas.',
         existingProjectId: 1,
         message: 'Duplicate',
       }),
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
-    render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
+    render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} onDuplicateProject={onDuplicateProject} />)
     fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
     fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Atlas' } })
     fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
-    expect(await screen.findByText('Atlas ya tiene un proyecto con este nombre.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Abrir Atlas' })).toHaveAttribute('href', '/proyectos?project=1')
+    expect(await screen.findByText('El cliente Aurora ya tiene un proyecto llamado Atlas.')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Abrir/ })).not.toBeInTheDocument()
+    expect(onDuplicateProject).toHaveBeenCalledWith('1')
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(onClose).toHaveBeenCalledOnce()
   })
@@ -94,7 +92,6 @@ describe('NewProjectModal', () => {
       createProject,
       listProjects: vi.fn(),
       listClients: vi.fn(),
-      createClient: vi.fn(),
       listClientProjects: vi.fn(),
     })
     render(<NewProjectModal open clients={[]} onCreated={onCreated} onClose={vi.fn()} />)
@@ -102,13 +99,37 @@ describe('NewProjectModal', () => {
     fireEvent.change(screen.getByLabelText('Nombre del cliente *'), { target: { value: 'Tigo' } })
     fireEvent.click(screen.getByLabelText('Cliente interno'))
     fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Tigo QA' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Crear y agregar colaboradores' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Crear proyecto' }))
     await waitFor(() => expect(createProject).toHaveBeenCalledWith({
       clientId: undefined,
       newClient: { name: 'Tigo', isInternal: true },
       name: 'Tigo QA',
       contractEnd: undefined,
     }))
-    expect(onCreated).toHaveBeenCalledWith({ id: 'project-4' }, { addMembers: true })
+    expect(onCreated).toHaveBeenCalledWith({ id: 'project-4' })
+  })
+
+  it('hides the add-members action until the registration route exists', () => {
+    render(<NewProjectModal open clients={[]} onCreated={vi.fn()} onClose={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: 'Crear y agregar colaboradores' })).not.toBeInTheDocument()
+  })
+
+  it('resets the form when closed and reopened', () => {
+    const onClose = vi.fn()
+    const view = render(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
+
+    fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: 'client-1' } })
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), { target: { value: 'Proyecto temporal' } })
+    fireEvent.change(screen.getByLabelText('Fin de contrato con el cliente'), { target: { value: '31122026' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(onClose).toHaveBeenCalledOnce()
+
+    view.rerender(<NewProjectModal open={false} clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
+    view.rerender(<NewProjectModal open clients={[{ id: 'client-1', name: 'Aurora', isInternal: false, active: true }]} onCreated={vi.fn()} onClose={onClose} />)
+
+    expect(screen.getByLabelText('Cliente *')).toHaveValue('')
+    expect(screen.getByLabelText('Nombre del proyecto *')).toHaveValue('')
+    expect(screen.getByLabelText('Fin de contrato con el cliente')).toHaveValue('')
   })
 })

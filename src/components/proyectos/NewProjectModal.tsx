@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field } from '../ui/Field'
-import { UserPlusIcon } from '../icons'
 import { getProjectsApi } from '../../services/projects'
 import type { Client, Project } from '../../services/projects.types'
 import { formatDateInput, toIsoDate } from '../../utils/dates'
@@ -10,8 +9,9 @@ import { formatDateInput, toIsoDate } from '../../utils/dates'
 interface NewProjectModalProps {
   open: boolean
   clients: Client[]
-  onCreated: (project: Project, options?: { addMembers?: boolean }) => void
+  onCreated: (project: Project) => void
   onClose: () => void
+  onDuplicateProject?: (projectId: string) => void
 }
 
 function getValidationError(clientId: string, name: string, contractEnd: string, isoContractEnd?: string): string {
@@ -29,15 +29,14 @@ function getApiErrorMessage(cause: unknown): string {
   return 'No se pudo crear el proyecto.'
 }
 
-function getDuplicateProject(cause: unknown, fallbackName: string): { name: string; id?: string } | undefined {
+function getDuplicateProjectId(cause: unknown): string | undefined {
   if (!cause || typeof cause !== 'object' || !('code' in cause) || cause.code !== 'PROJECT_NAME_TAKEN') return undefined
-  return {
-    name: 'existingProjectName' in cause ? String(cause.existingProjectName) : fallbackName,
-    id: 'existingProjectId' in cause ? String(cause.existingProjectId) : undefined,
-  }
+  return 'existingProjectId' in cause && cause.existingProjectId !== undefined
+    ? String(cause.existingProjectId)
+    : undefined
 }
 
-export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<NewProjectModalProps>) {
+export function NewProjectModal({ open, clients, onCreated, onClose, onDuplicateProject }: Readonly<NewProjectModalProps>) {
   const [clientId, setClientId] = useState('')
   const [newClient, setNewClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
@@ -46,7 +45,20 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
   const [contractEnd, setContractEnd] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [duplicateProject, setDuplicateProject] = useState<{ name: string; id?: string }>()
+  const [duplicateProjectId, setDuplicateProjectId] = useState<string>()
+
+  function handleClose(): void {
+    setClientId('')
+    setNewClient(false)
+    setNewClientName('')
+    setNewClientInternal(false)
+    setName('')
+    setContractEnd('')
+    setError('')
+    setSaving(false)
+    setDuplicateProjectId(undefined)
+    onClose()
+  }
 
   function handleDateChange(value: string): void {
     setContractEnd(formatDateInput(value))
@@ -55,11 +67,11 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
   const trimmedName = name.trim()
   const trimmedNewClientName = newClientName.trim()
   const invalidContractEnd = Boolean(error && contractEnd && !toIsoDate(contractEnd))
-  const nameError = duplicateProject ? `${duplicateProject.name} ya tiene un proyecto con este nombre.` : (!trimmedName ? error : undefined)
-  const nameFieldState = error && (duplicateProject || !trimmedName) ? 'error' : 'default'
-  const shouldShowErrorDetail = Boolean(error && trimmedName && (clientId || trimmedNewClientName) && !duplicateProject)
+  const nameError = !trimmedName ? error : undefined
+  const nameFieldState = error && (duplicateProjectId || !trimmedName) ? 'error' : 'default'
+  const shouldShowErrorDetail = Boolean(error && trimmedName && (clientId || trimmedNewClientName))
 
-  async function submit(addMembers = false) {
+  async function submit() {
     const isoContractEnd = toIsoDate(contractEnd)
     const validationError = getValidationError(newClient ? trimmedNewClientName : clientId, name, contractEnd, isoContractEnd)
     if (validationError) {
@@ -69,7 +81,7 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
 
     setSaving(true)
     setError('')
-    setDuplicateProject(undefined)
+    setDuplicateProjectId(undefined)
     try {
       const project = await (await getProjectsApi()).createProject({
         clientId: newClient ? undefined : clientId,
@@ -77,10 +89,12 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
         name: trimmedName,
         contractEnd: isoContractEnd,
       })
-      onCreated(project, { addMembers })
-      onClose()
+      onCreated(project)
+      handleClose()
     } catch (cause) {
-      setDuplicateProject(getDuplicateProject(cause, trimmedName))
+      const duplicateId = getDuplicateProjectId(cause)
+      setDuplicateProjectId(duplicateId)
+      if (duplicateId) onDuplicateProject?.(duplicateId)
       setError(getApiErrorMessage(cause))
     } finally {
       setSaving(false)
@@ -88,7 +102,7 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
   }
 
   return (
-    <Modal open={open} title="Nuevo proyecto" onClose={onClose}>
+    <Modal open={open} title="Nuevo proyecto" onClose={handleClose}>
       <p className="new-project-modal__intro">Créalo aunque todavía no tenga equipo. Lo podrás llenar ahora o después.</p>
       {error && <p className="new-project-modal__banner" role="alert">⚠ No se creó el proyecto. Corrige el campo marcado.</p>}
       {shouldShowErrorDetail && <p className="new-project-modal__error-detail">{error}</p>}
@@ -107,15 +121,12 @@ export function NewProjectModal({ open, clients, onCreated, onClose }: Readonly<
         </>
       )}
       <Field id="new-project-name" label="Nombre del proyecto *" value={name} onChange={(event) => setName(event.target.value)} state={nameFieldState} error={nameError} />
-      {duplicateProject && <p className="new-project-modal__duplicate"><a href={duplicateProject.id ? `/proyectos?project=${duplicateProject.id}` : '#'}>Abrir {duplicateProject.name}</a></p>}
       <Field id="new-project-contract" label="Fin de contrato con el cliente" placeholder="dd/mm/aaaa" value={contractEnd} onChange={(event) => handleDateChange(event.target.value)} state={invalidContractEnd ? 'error' : 'default'} error={invalidContractEnd ? error : undefined} />
       <p className="new-project-modal__help">Opcional. Con esta fecha se avisa a Sales a 30 y 15 días. El inicio del proyecto es el día en que lo creas.</p>
       <div className="ui-modal__actions">
-        <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-        <div className="new-project-modal__action-group">
-          <Button onClick={() => void submit()} disabled={saving}>{saving ? 'Creando…' : 'Crear proyecto'}</Button>
-          <Button variant="feature" icon={<UserPlusIcon />} onClick={() => void submit(true)} disabled={saving}>Crear y agregar colaboradores</Button>
-        </div>
+        <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
+        {/* TODO SCRUM-165: restore add-members action when the registration route exists. */}
+        <Button onClick={() => void submit()} disabled={saving}>{saving ? 'Creando…' : 'Crear proyecto'}</Button>
       </div>
     </Modal>
   )

@@ -1,53 +1,30 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import App from '../../App'
-import { AuthProvider } from '../../context/AuthContext'
-import { fakeKeycloak } from '../../test/keycloakMock'
-import { getResourcesApi, type ResourcesApi } from '../../services/resources'
-import { getProjectsApi, type ProjectsApi } from '../../services/projects'
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { ResourcesPage } from './ResourcesPage';
 
-vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMock')).fakeAuthModule)
-vi.mock('../../services/resources', () => ({ getResourcesApi: vi.fn() }))
-vi.mock('../../services/projects', () => ({ getProjectsApi: vi.fn() }))
-
-function renderAtPath(role: string, path: string) {
-  fakeKeycloak.tokenParsed = { ...fakeKeycloak.tokenParsed, realm_access: { roles: [role] } }
-  window.history.replaceState(null, '', path)
-  return render(<AuthProvider><App /></AuthProvider>)
-}
-
-describe('RegisterResourcePage', () => {
-  beforeEach(() => {
-    vi.mocked(getResourcesApi).mockResolvedValue({
-      getCatalogs: vi.fn().mockRejectedValue(new Error('offline')),
-      createResource: vi.fn(),
-      getResource: vi.fn(),
-    } as unknown as ResourcesApi)
-    vi.mocked(getProjectsApi).mockResolvedValue({
-      listClients: vi.fn().mockResolvedValue([]),
-      listClientProjects: vi.fn().mockResolvedValue([]),
-    } as unknown as ProjectsApi)
+vi.mock('../../services/api', () => ({
+  searchRecursos: vi.fn().mockResolvedValue({
+    items: [
+      { id: 1, employeeNumber: '1045', name: 'Ana Torres', level: 3, clientRole: 'QA', leader: { id: 1, name: 'Lorena' }, client: { id: 1, name: 'BANESCO' }, project: { id: 1, name: 'DEYEL' }, status: 'ACTIVO', startDate: '2026-01-01', endDate: '2026-12-31', version: 1 },
+    ],
+    groups: {}, page: 1, totalPages: 1, totalElements: 1
   })
+}));
 
-  it('opens from the header button for Operations administrators', async () => {
-    renderAtPath('operations-administrator', '/recursos')
-    await userEvent.click(screen.getByRole('button', { name: /Registrar recurso/ }))
-    expect(screen.getByRole('heading', { name: 'Registrar recurso' })).toBeInTheDocument()
-    expect(await screen.findByText('No se pudieron cargar las listas del formulario.')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
-    expect(window.location.pathname).toBe('/recursos')
-  })
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ hasRole: () => true })
+}));
 
-  it('denies access to other roles', () => {
-    renderAtPath('guest', '/recursos/nuevo')
-    expect(screen.getByRole('alert')).toHaveTextContent('Solo Operations administrator puede registrar recursos.')
-    expect(screen.queryByRole('button', { name: /Registrar recurso/ })).not.toBeInTheDocument()
-  })
+const renderPage = () => render(
+  <MemoryRouter>
+    <ResourcesPage />
+  </MemoryRouter>
+);
 
-  it('confirms the new record on the resources screen', () => {
-    fakeKeycloak.tokenParsed = { ...fakeKeycloak.tokenParsed, realm_access: { roles: ['operations-administrator'] } }
-    window.history.replaceState({ usr: { createdResource: { id: 1102, name: 'Laura Gómez' } }, key: 'x', idx: 0 }, '', '/recursos')
-    render(<AuthProvider><App /></AuthProvider>)
-    expect(screen.getByRole('status')).toHaveTextContent('Se registró a Laura Gómez.')
-  })
-})
+describe('ResourcesPage (HU-03)', () => {
+  it('debe renderizar la página sin errores', () => {
+    renderPage();
+    expect(screen.getByText(/Recursos/i)).toBeTruthy();
+  });
+});

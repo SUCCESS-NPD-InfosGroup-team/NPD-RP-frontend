@@ -1,6 +1,12 @@
 import { apiFetch } from './api'
 import { read } from './projects.api'
-import type { CatalogItem, Catalogs, ResourceRequest, ResourceResponse } from './resources.types'
+import type {
+  CatalogItem,
+  Catalogs,
+  ResourceLastChange,
+  ResourceRequest,
+  ResourceResponse,
+} from './resources.types'
 
 /** Each form list has its own endpoint in the planner module; all of them answer { items: [...] } */
 const CATALOG_PATHS = {
@@ -36,6 +42,9 @@ function listItems<T>(path: string): Promise<T[]> {
 }
 
 export const resourcesApi = {
+  async getNpdLeads(): Promise<CatalogItem[]> {
+    return listItems<CatalogItem>(CATALOG_PATHS.npdLeads)
+  },
   /** Requests every form list in parallel */
   async getCatalogs(): Promise<Catalogs> {
     const keys = Object.keys(CATALOG_PATHS) as (keyof Catalogs)[]
@@ -49,8 +58,21 @@ export const resourcesApi = {
       body: JSON.stringify(input),
     }))
   },
-  async getResource(id: number | string): Promise<ResourceResponse> {
-    return read<ResourceResponse>(await apiFetch('planner', `/resources/${encodeURIComponent(String(id))}`))
+  async getResource(id: number | string, signal?: AbortSignal): Promise<ResourceResponse> {
+    return read<ResourceResponse>(await apiFetch(
+      'planner',
+      `/resources/${encodeURIComponent(String(id))}`,
+      { signal },
+    ))
+  },
+  async fetchLastChange(id: number | string, signal?: AbortSignal): Promise<ResourceLastChange | null> {
+    const response = await apiFetch(
+      'history',
+      `/resources/${encodeURIComponent(String(id))}/last-change`,
+      { signal },
+    )
+    if (response.status === 204) return null
+    return read<ResourceLastChange>(response)
   },
 }
 

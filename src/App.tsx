@@ -6,12 +6,13 @@ import {
 } from './components/layout/roleNavigation'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
+import { ResourcesPage } from './pages/Recursos/ResourcesPage'
+import { RegistrarRecursoPage } from './pages/Recursos/RegistrarRecursoPage'
+import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
-import { ResourcesPage } from './pages/Recursos/RecursosPage'
-import { RegisterResourcePage } from './pages/Recursos/RegistrarRecursoPage'
+import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
 
 export interface AppProps {
-  onSearchResources?: (query: string) => void
   onRegisterResource?: () => void
   onLogout?: () => void | Promise<void>
   unreadNotificationCount?: number
@@ -33,12 +34,17 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
     )
   }
 
+  if (item.id === 'resources') {
+    return <ResourcesPage />
+  }
   if (item.id === 'projects') {
     return <ProjectsPage />
   }
-
-  if (item.id === 'resources') {
-    return <ResourcesPage />
+  if (item.id === 'arrivals') {
+    return <ArribosProximosPage />
+  }
+  if (item.id === 'users') {
+    return <UsuariosPage />
   }
 
   return (
@@ -49,7 +55,6 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
 }
 
 export default function App({
-  onSearchResources,
   onRegisterResource,
   onLogout,
   unreadNotificationCount,
@@ -67,7 +72,6 @@ export default function App({
         <Route
           element={
             <MainLayout
-              onSearchResources={onSearchResources}
               onRegisterResource={onRegisterResource}
               onLogout={onLogout}
               unreadNotificationCount={unreadNotificationCount}
@@ -76,7 +80,6 @@ export default function App({
           }
         >
           <Route index element={<Navigate to="/recursos" replace />} />
-          <Route path="recursos/nuevo" element={<RegisterResourcePage />} />
           {NAVIGATION_ITEMS.map((item) => (
             <Route
               key={item.id}
@@ -84,6 +87,8 @@ export default function App({
               element={<Screen roles={roles} item={item} />}
             />
           ))}
+          {/*Route Register BUG 05*/}
+          <Route path="recursos/nuevo" element={<RegistrarRecursoPage />} />
           <Route
             path="*"
             element={

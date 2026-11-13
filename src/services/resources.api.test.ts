@@ -76,6 +76,15 @@ describe('resourcesApi', () => {
     expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/catalogs/statuses')
   })
 
+  it('loads NPD leads from its dedicated endpoint', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      items: [{ id: 1, name: 'Noel Vega' }],
+    })))
+
+    await expect(resourcesApi.getNpdLeads()).resolves.toEqual([{ id: 1, name: 'Noel Vega' }])
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/resources/npd-leads')
+  })
+
   it('caches each list and only retries the ones that failed', async () => {
     mockedApiFetch.mockImplementation(async (_module: string, path: string) => (path === '/catalogs/genders'
       ? new Response('{}', { status: 503 })
@@ -92,6 +101,22 @@ describe('resourcesApi', () => {
   it('reads one resource', async () => {
     mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({ id: 7 })))
     await expect(resourcesApi.getResource(7)).resolves.toEqual({ id: 7 })
-    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/resources/7')
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/resources/7', { signal: undefined })
+  })
+
+  it('returns null when the resource has no last change', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(null, { status: 204 }))
+
+    await expect(resourcesApi.fetchLastChange(7)).resolves.toBeNull()
+    expect(mockedApiFetch).toHaveBeenCalledWith('history', '/resources/7/last-change', { signal: undefined })
+  })
+
+  it.each([400, 404, 503, 401])('propagates last-change HTTP error %s', async (status) => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      code: status === 503 ? 'SESSION_CHECK_UNAVAILABLE' : status === 401 ? 'UNAUTHORIZED' : 'INVALID_REQUEST',
+      detail: 'No se pudo completar la operación.',
+    }), { status }))
+
+    await expect(resourcesApi.fetchLastChange(7)).rejects.toMatchObject({ status })
   })
 })

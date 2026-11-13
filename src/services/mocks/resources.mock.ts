@@ -23,6 +23,7 @@ const takenEmployeeNumbers = new Map([['1045', { id: 1045, name: 'Ana Torres' }]
 const find = (items: { id: number; name: string }[], id: number | null) => items.find((item) => item.id === id) ?? null
 
 export const resourcesMock = {
+  async getNpdLeads() { return catalogs.npdLeads },
   async getCatalogs(): Promise<Catalogs> { return catalogs },
   async createResource(input: ResourceRequest): Promise<ResourceResponse> {
     const taken = takenEmployeeNumbers.get(input.employeeNumber)
@@ -68,4 +69,5 @@ export const resourcesMock = {
     if (!resource) throw new ApiRequestError({ status: 404, code: 'NOT_FOUND', detail: 'No existe el recurso.' })
     return resource
   },
+  async fetchLastChange() { return null },
 }

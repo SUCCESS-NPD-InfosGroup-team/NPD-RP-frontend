@@ -58,6 +58,6 @@ In the code:
 Current endpoints in the `planner` module:
 
 - `GET /planner/projects`, `POST /planner/projects`
-- `GET /planner/clients`, `POST /planner/clients`, `GET /planner/clients/{id}/projects`
+- `GET /planner/clients`, `GET /planner/clients/{id}/projects`
 - `POST /planner/resources`, `GET /planner/resources/{id}`, `GET /planner/resources/npd-leads`
 - `GET /planner/catalogs/{list}` (job-titles, positions, business-units, work-modes, genders, talent-reviews, client-roles, equipment, termination-reasons, statuses)
