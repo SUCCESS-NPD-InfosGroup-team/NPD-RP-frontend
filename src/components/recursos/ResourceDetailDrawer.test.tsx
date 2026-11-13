@@ -132,6 +132,92 @@ describe('ResourceDetailDrawer', () => {
     expect(screen.getByText('Sin proyecto')).toBeInTheDocument()
   })
 
+  it('renders the last change and formats changed dates', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: detail,
+      lastChange: {
+        action: 'UPDATE',
+        actor: 'maria.perez',
+        occurredAt: '2026-10-02T15:14:00Z',
+        fields: [{
+          field: 'assignment.endDate',
+          label: 'Fecha final',
+          oldValue: '2026-09-30',
+          newValue: '2026-10-31',
+        }],
+      },
+      lastChangeError: undefined,
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByRole('heading', { name: 'Último cambio' })).toBeInTheDocument()
+    expect(screen.getByText(/Registro actualizado/)).toBeInTheDocument()
+    expect(screen.getByText(/30 sept 2026 → 31 oct 2026/)).toBeInTheDocument()
+  })
+
+  it('renders a created resource change with empty previous values', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: detail,
+      lastChange: {
+        action: 'CREATE',
+        actor: 'maria.perez',
+        occurredAt: '2026-10-02T15:14:00Z',
+        fields: [{ field: 'name', label: 'Nombre', oldValue: null, newValue: 'Ana Torres' }],
+      },
+      lastChangeError: undefined,
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText(/Registro creado/)).toBeInTheDocument()
+    expect(screen.getByText(/Sin valor → Ana Torres/)).toBeInTheDocument()
+  })
+
+  it('shows the empty and independent error states for last change', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: detail,
+      lastChange: null,
+      lastChangeError: undefined,
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    const { rerender } = render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+    expect(screen.getByText('Sin cambios registrados')).toBeInTheDocument()
+
+    const refetch = vi.fn()
+    mockedUseResourceDetail.mockReturnValue({
+      resource: detail,
+      lastChange: undefined,
+      lastChangeError: new Error('503'),
+      loading: false,
+      error: undefined,
+      refetch,
+    })
+    rerender(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(refetch).toHaveBeenCalledOnce()
+  })
+
+  it('shows the last-change loading state while the history request is pending', () => {
+    mockedUseResourceDetail.mockReturnValue({
+      resource: detail,
+      lastChange: undefined,
+      lastChangeError: undefined,
+      loading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    })
+    render(<ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />)
+
+    expect(screen.getByText('Cargando cambios…')).toBeInTheDocument()
+  })
+
   it('renders indefinite assignment and empty optional values', () => {
     mockedUseResourceDetail.mockReturnValue({
       resource: {

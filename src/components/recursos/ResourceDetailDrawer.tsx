@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useResourceDetail } from '../../hooks/useResourceDetail'
 import type { Recurso } from '../../types'
-import type { ResourceResponse } from '../../services/resources.types'
+import type { ResourceLastChange, ResourceResponse } from '../../services/resources.types'
 import { Button } from '../ui/Button'
 import { canPerformResourceAction } from './resourceDetailPermissions'
 import { formatDaysToEnd, formatResourceDate, formatVacationMonth } from './resourceDetailView'
@@ -21,7 +21,14 @@ export function ResourceDetailDrawer({
   onEdit,
 }: Readonly<ResourceDetailDrawerProps>) {
   const { roles } = useAuth()
-  const { resource: detail, loading, error, refetch } = useResourceDetail(resource.id)
+  const {
+    resource: detail,
+    lastChange,
+    loading,
+    error,
+    lastChangeError,
+    refetch,
+  } = useResourceDetail(resource.id)
   const closeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -73,6 +80,9 @@ export function ResourceDetailDrawer({
             </div>
           )}
           {!loading && !error && detail && <ResourceDetailContent detail={detail} />}
+          {!loading && !error && detail && (
+            <LastChangeSection lastChange={lastChange} error={lastChangeError} onRetry={refetch} />
+          )}
         </div>
 
         <footer className="resource-detail-drawer__footer">
@@ -153,4 +163,56 @@ function DetailItem({ label, value }: Readonly<{ label: string; value: string }>
       <dd>{value}</dd>
     </div>
   )
+}
+
+function LastChangeSection({
+  lastChange,
+  error,
+  onRetry,
+}: Readonly<{
+  lastChange: ResourceLastChange | null | undefined
+  error: unknown
+  onRetry: () => void
+}>) {
+  return (
+    <section className="resource-detail-drawer__section" aria-labelledby="resource-last-change-title">
+      <h3 id="resource-last-change-title">Último cambio</h3>
+      {error ? (
+        <div className="resource-detail-drawer__state resource-detail-drawer__state--error" role="alert">
+          <p>No se pudo cargar el último cambio.</p>
+          <Button variant="secondary" onClick={onRetry}>Reintentar</Button>
+        </div>
+      ) : lastChange === null ? (
+        <p className="resource-detail-drawer__empty">Sin cambios registrados</p>
+      ) : lastChange ? (
+        <div className="resource-detail-drawer__last-change">
+          <p>
+            {lastChange.action === 'CREATE' ? 'Registro creado' : 'Registro actualizado'}
+            {' · '}
+            {lastChange.actor}
+            {' · '}
+            {formatResourceDate(lastChange.occurredAt)}
+          </p>
+          <ul>
+            {lastChange.fields.map((field) => (
+              <li key={field.field}>
+                <strong>{field.label}</strong>
+                {': '}
+                {formatLastChangeValue(field.field, field.oldValue)}
+                {' → '}
+                {formatLastChangeValue(field.field, field.newValue)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="resource-detail-drawer__empty">Cargando cambios…</p>
+      )}
+    </section>
+  )
+}
+
+function formatLastChangeValue(field: string, value: string | null): string {
+  if (value === null) return 'Sin valor'
+  return field.toLowerCase().includes('date') ? formatResourceDate(value) : value
 }

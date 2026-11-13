@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { resourcesApi } from '../services/resources.api'
 import type { ResourceResponse } from '../services/resources.types'
@@ -101,7 +101,7 @@ describe('useResourceDetail', () => {
     const { result } = renderHook(() => useResourceDetail(7))
 
     await waitFor(() => expect(mockedGetResource).toHaveBeenCalledTimes(1))
-    result.current.refetch()
+    act(() => result.current.refetch())
     await waitFor(() => expect(mockedGetResource).toHaveBeenCalledTimes(2))
   })
 })
