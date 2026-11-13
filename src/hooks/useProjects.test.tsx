@@ -13,20 +13,26 @@ function SummaryProbe() {
 }
 
 describe('useProjects', () => {
-  it('counts only projects ending within the next 30 days', async () => {
+  it('uses backend KPIs instead of deriving totals from the visible page', async () => {
+    const listProjects = vi.fn().mockResolvedValue({
+      items: [
+        { id: '1', name: 'Today', client: { id: '1', name: 'A', isInternal: false }, teamSize: 1, members: [], leads: [], startDate: '2026-01-01', contractEnd: '2026-11-01', daysToContractEnd: 0, pendingCount: 0, active: true },
+      ],
+      page: 1,
+      pageSize: 25,
+      total: 40,
+      totalPages: 2,
+    })
+    const getKpis = vi.fn().mockResolvedValue({
+      activeProjects: 40,
+      activeClients: 15,
+      contractEndingSoon: 3,
+      withoutTeam: 2,
+      unassignedPeople: 5,
+    })
     mockedGetProjectsApi.mockResolvedValue({
-      listProjects: vi.fn().mockResolvedValue({
-        items: [
-          { id: '1', name: 'Today', client: { id: '1', name: 'A', isInternal: false }, teamSize: 1, members: [], leads: [], startDate: '2026-01-01', contractEnd: '2026-11-01', daysToContractEnd: 0, pendingCount: 0, active: true },
-          { id: '2', name: 'Thirty', client: { id: '2', name: 'B', isInternal: false }, teamSize: 1, members: [], leads: [], startDate: '2026-01-01', contractEnd: '2026-12-01', daysToContractEnd: 30, pendingCount: 0, active: true },
-          { id: '3', name: 'Later', client: { id: '3', name: 'C', isInternal: false }, teamSize: 1, members: [], leads: [], startDate: '2026-01-01', contractEnd: '2027-01-01', daysToContractEnd: 31, pendingCount: 0, active: true },
-          { id: '4', name: 'Unknown', client: { id: '4', name: 'D', isInternal: false }, teamSize: 1, members: [], leads: [], startDate: '2026-01-01', contractEnd: null, daysToContractEnd: null, pendingCount: 0, active: true },
-        ],
-        page: 1,
-        pageSize: 25,
-        total: 4,
-        totalPages: 1,
-      }),
+      listProjects,
+      getKpis,
       listClients: vi.fn(),
       createProject: vi.fn(),
       listClientProjects: vi.fn(),
@@ -34,6 +40,8 @@ describe('useProjects', () => {
 
     render(<SummaryProbe />)
 
-    await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('3')).toBeInTheDocument())
+    expect(getKpis).toHaveBeenCalledWith({})
+    expect(listProjects).toHaveBeenCalledWith({}, 1)
   })
 })

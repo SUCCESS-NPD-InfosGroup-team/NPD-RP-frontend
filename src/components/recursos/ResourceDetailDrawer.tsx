@@ -86,7 +86,7 @@ export function ResourceDetailDrawer({
           </div>
           <div className="resource-detail-drawer__chips">
             <Chip tone="ok" className="resource-detail-drawer__status-chip">
-              {detail?.status.label ?? resource.estado}
+              {detail?.status.label ?? getResourceStatusLabel(resource.estado)}
             </Chip>
             <Chip tone={detail?.situation.code === 'PENDIENTE_CONFIRMACION' ? 'danger' : 'neutral'}>
               {detail?.situation.label ?? 'Situación no disponible'}
@@ -147,7 +147,12 @@ function ResourceDetailContent({ detail }: Readonly<{ detail: ResourceResponse }
             </div>
             <AssignmentRail detail={detail} />
             <dl className="resource-detail-drawer__grid">
-              <DetailItem label="Líder NPD" value={`${assignment.leader.name}${assignment.leaderEmployeeNumber ? ` · cód. ${assignment.leaderEmployeeNumber}` : ''}`} />
+              <DetailItem
+                label="Líder NPD"
+                value={assignment.leader
+                  ? `${assignment.leader.name}${assignment.leaderEmployeeNumber ? ` · cód. ${assignment.leaderEmployeeNumber}` : ''}`
+                  : 'No especificado'}
+              />
               <DetailItem label="Rol actual en cliente" value={assignment.clientRole?.name ?? 'No especificado'} />
               <DetailItem label="Contacto por cliente" value={assignment.clientContactEmail ?? 'No especificado'} />
               <DetailItem label="Equipo / laptop" value={assignment.equipment?.name ?? 'No especificado'} />
@@ -299,6 +304,12 @@ function getInitials(name: string): string {
     .join('')
 }
 
+function getResourceStatusLabel(status: unknown): string {
+  if (typeof status === 'string') return status
+  if (typeof status !== 'object' || status === null || !('label' in status)) return 'Estado no disponible'
+  return typeof status.label === 'string' ? status.label : 'Estado no disponible'
+}
+
 function isOnProbation(probationEndDate: string | null): boolean {
   if (!probationEndDate) return false
   const today = new Date()
@@ -310,7 +321,10 @@ function formatTermination(
   termination: ResourceResponse['termination'],
 ): string {
   if (!termination) return '—'
-  return `${formatResourceDate(termination.date)} · ${termination.reason.name}`
+  const date = termination.date ? formatResourceDate(termination.date) : null
+  const reason = termination.reason?.name
+  if (date && reason) return `${date} · ${reason}`
+  return date ?? reason ?? '—'
 }
 
 function isAssignmentOverdue(assignment: NonNullable<ResourceResponse['assignment']>): boolean {

@@ -9,6 +9,7 @@ import { Field } from '../../components/ui/Field'
 import { Paginador } from '../../components/ui/Paginador'
 import { useArrivals } from '../../hooks/useArrivals'
 import { getProjectsApi } from '../../services/projects'
+import { ApiRequestError } from '../../services/projects.types'
 import { getResourcesApi } from '../../services/resources'
 import type { Client } from '../../services/projects.types'
 import type { CatalogItem } from '../../services/resources.types'
@@ -71,6 +72,7 @@ export function ArribosProximosPage() {
   ].filter(Boolean)
   const total = data?.total ?? 0
   const from = (page - 1) * ARRIVALS_PAGE_SIZE + 1
+  const endpointUnavailable = error instanceof ApiRequestError && error.status === 404
 
   return (
     <section className="screen arrivals-page">
@@ -162,7 +164,11 @@ export function ArribosProximosPage() {
 
         {error ? (
           <div className="arrivals-page__empty arrivals-page__empty--error" role="alert">
-            <p>No se pudieron cargar los arribos próximos.</p>
+            <p>
+              {endpointUnavailable
+                ? 'La consulta de arribos próximos aún no está disponible en el backend.'
+                : 'No se pudieron cargar los arribos próximos.'}
+            </p>
             <Button variant="secondary" onClick={refetch}>Reintentar</Button>
           </div>
         ) : loading && !data ? (

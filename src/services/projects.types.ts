@@ -37,7 +37,7 @@ export interface ProjectFilters {
   search?: string
   clientId?: string
   leadId?: string
-  contractEnd?: 'next30' | 'next60' | 'none' | 'any'
+  contractEnd?: 'next30' | 'none' | 'any'
   includeInactive?: boolean
 }
 
