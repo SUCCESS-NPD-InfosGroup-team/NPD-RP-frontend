@@ -52,6 +52,7 @@ describe('ProjectsPage', () => {
       getCatalogs: vi.fn(),
       createResource: vi.fn(),
       getResource: vi.fn(),
+      fetchLastChange: vi.fn(),
     })
   })
 

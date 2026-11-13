@@ -5,6 +5,7 @@ import type { Filters, Recurso, RecursoApi } from '../../types';
 import { searchRecursos, apiFetch } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
+import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDrawer';
 import { ArrowRight, Download, Plus, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -60,6 +61,7 @@ export const ResourcesPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recursoAEditar, setRecursoAEditar] = useState<Recurso | null>(null);
+  const [recursoSeleccionado, setRecursoSeleccionado] = useState<Recurso | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
   // CA-14: selección múltiple
@@ -79,6 +81,13 @@ export const ResourcesPage = () => {
     return next;
   });
   const clearSelection = () => setSelectedIds(new Set());
+  const openResourceDetail = (resource: Recurso) => setRecursoSeleccionado(resource);
+  const handleResourceKeyDown = (event: React.KeyboardEvent, resource: Recurso) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openResourceDetail(resource);
+    }
+  };
   // BUG-01: Cargar catálogos al montar
   useEffect(() => {
     const loadCatalogos = async () => {
@@ -312,7 +321,15 @@ export const ResourcesPage = () => {
               </div>
 
               {recs.map(rec => (
-                <div key={rec.id} className="rp-row" onClick={() => setRecursoAEditar(rec)} style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 43, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, cursor: 'pointer', backgroundColor: C.surface }}>
+                <div
+                  key={rec.id}
+                  className="rp-row"
+                  onClick={() => openResourceDetail(rec)}
+                  onKeyDown={(event) => handleResourceKeyDown(event, rec)}
+                  role="button"
+                  tabIndex={0}
+                  style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 43, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, cursor: 'pointer', backgroundColor: C.surface }}
+                >
                   {isAdmin && (<div onClick={e => e.stopPropagation()}><input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} /></div>)}
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontFamily: FONT_DISPLAY, fontSize: 15, fontWeight: 700 }}>{rec.nEmpleado}</div>
@@ -346,7 +363,15 @@ export const ResourcesPage = () => {
                 {recs.map((rec, index) => {
                   const bar = getBarStyle(rec.fechaInicio, rec.fechaFin, index);
                   return (
-                    <div key={rec.id} style={{ height: 43, borderBottom: `1px solid ${C.borderSoft}`, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <div
+                      key={rec.id}
+                      className="rp-timeline-row"
+                      onClick={() => openResourceDetail(rec)}
+                      onKeyDown={(event) => handleResourceKeyDown(event, rec)}
+                      role="button"
+                      tabIndex={0}
+                      style={{ height: 43, borderBottom: `1px solid ${C.borderSoft}`, position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                    >
                       {WEEKS.map(w => (<div key={w} style={{ minWidth: 80, flex: 1, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
                       <div style={{ position: 'absolute', left: bar.left, width: bar.width, height: 16, backgroundColor: bar.backgroundColor, border: `1px solid ${bar.borderColor}`, borderRadius: 3, zIndex: 6 }} />
                     </div>
@@ -377,6 +402,16 @@ export const ResourcesPage = () => {
       {/* BUG-03 */}
       {recursoAEditar && isAdmin && (
         <EditarRecursoModal recurso={recursoAEditar} onClose={() => setRecursoAEditar(null)} onSave={() => { fetchData(); setRecursoAEditar(null); }} />
+      )}
+      {recursoSeleccionado && (
+        <ResourceDetailDrawer
+          resource={recursoSeleccionado}
+          onClose={() => setRecursoSeleccionado(null)}
+          onEdit={(resource) => {
+            setRecursoAEditar(resource);
+            setRecursoSeleccionado(null);
+          }}
+        />
       )}
     </div>
   );
