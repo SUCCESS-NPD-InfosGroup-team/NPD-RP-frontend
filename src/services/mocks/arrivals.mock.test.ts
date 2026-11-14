@@ -26,4 +26,13 @@ describe('arrivalsMock', () => {
     const ninety = await arrivalsMock.listArrivals({ windowDays: 90 })
     expect(ninety.total).toBeGreaterThan(byClient.total)
   })
+  it('builds the strip like the backend: overdue ones in the total, not among the 4 nearest', async () => {
+    const strip = await arrivalsMock.getStrip()
+    const list = await arrivalsMock.listArrivals({ windowDays: 30 })
+    expect(strip.windowDays).toBe(30)
+    expect(strip.total).toBe(list.summary.total)
+    expect(strip.nearest.length).toBeLessThanOrEqual(4)
+    expect(strip.nearest.every((event) => event.type !== 'PENDING_CONFIRMATION' && event.daysRemaining >= 0)).toBe(true)
+    expect(strip.nearest.map((event) => event.date)).toEqual([...strip.nearest.map((event) => event.date)].sort())
+  })
 })

@@ -55,6 +55,32 @@ describe('arrivalsApi', () => {
     )
   })
 
+  it('reads the strip of Recursos and maps its events like the list', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      windowDays: 30,
+      total: 8,
+      nearest: [{
+        id: 'PROBATION_END-41',
+        type: 'PROBATION_END',
+        date: '2026-11-25',
+        daysRemaining: 11,
+        resource: { id: 41, employeeNumber: '1078', name: 'Iván', clientRole: null },
+        resourceCount: 1,
+        client: { id: 4, name: 'TIGO' },
+        project: { id: 12, name: 'Portal' },
+        leader: null,
+        notice: { status: 'NONE', audience: null, stage: null, date: null },
+      }],
+    })))
+
+    await expect(arrivalsApi.getStrip()).resolves.toEqual({
+      windowDays: 30,
+      total: 8,
+      nearest: [expect.objectContaining({ id: 'PROBATION_END-41', resource: expect.objectContaining({ id: '41' }), client: 'TIGO', project: 'Portal', leader: null })],
+    })
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/upcoming-events/summary')
+  })
+
   it('surfaces API errors through the shared response reader', async () => {
     mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
       code: 'EVENTS_ERROR',
