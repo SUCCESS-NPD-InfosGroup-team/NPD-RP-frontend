@@ -1,0 +1,42 @@
+/* Strip "Arribos próximos" at the top of Recursos (HU-06 CA-01, Figma node 180:1469) */
+.arrivals-strip {
+  display: grid; grid-template-columns: 210px 1fr; margin-bottom: var(--space-4); overflow: hidden;
+  background: var(--surface-card); border: var(--border-width) solid var(--border-default); border-radius: var(--radius);
+}
+
+.arrivals-strip__summary {
+  display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-3);
+  padding: 14px var(--space-4); background: var(--brand-brown); color: var(--text-on-brand);
+}
+.arrivals-strip__title { margin: 0; font: 700 18px / 20px var(--font-display); }
+.arrivals-strip__subtitle { margin: 2px 0 0; color: var(--text-on-brand-muted); font-size: 12.5px; }
+.arrivals-strip__all {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--text-on-brand);
+  font-size: 13px; font-weight: 600; text-decoration: underline;
+}
+.arrivals-strip__all svg { width: 15px; height: 15px; }
+.arrivals-strip__all:focus-visible { outline: var(--border-focus-width) solid var(--text-on-brand); outline-offset: 2px; }
+
+.arrivals-strip__events { display: grid; grid-template-columns: repeat(4, 1fr); min-height: 108px; }
+.arrivals-strip__event {
+  display: flex; align-items: center; gap: var(--space-3); min-width: 0; padding: var(--space-3) var(--space-4);
+  border-left: var(--border-width) solid var(--border-default); color: inherit; text-decoration: none;
+}
+.arrivals-strip__event:first-child { border-left: 0; }
+.arrivals-strip__event:hover { background: var(--surface-group); }
+.arrivals-strip__event:focus-visible { outline: var(--border-focus-width) solid var(--brand-navy); outline-offset: -2px; }
+
+.arrivals-strip__days { display: flex; flex-direction: column; align-items: flex-start; flex: none; width: 58px; }
+.arrivals-strip__count { font: 700 34px / 1 var(--font-display); color: var(--text-primary); }
+.arrivals-strip__count--urgent { color: var(--state-danger); }
+.arrivals-strip__days small { color: var(--text-secondary); font-size: 11px; letter-spacing: .06em; }
+
+.arrivals-strip__body { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.arrivals-strip__who { max-width: 100%; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.arrivals-strip__where { color: var(--text-secondary); font-size: 12.5px; }
+
+.arrivals-strip__message {
+  display: flex; grid-column: 1 / -1; align-items: center; justify-content: center; gap: var(--space-3);
+  padding: var(--space-4); color: var(--text-secondary); font-size: 13px;
+}
+.arrivals-strip__message--error { color: var(--state-danger); }

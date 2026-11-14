@@ -6,6 +6,7 @@ import {
   type ArrivalFilters,
   type ArrivalNotice,
   type ArrivalsPage,
+  type ArrivalsStrip,
   type ArrivalsSummary,
   type ArrivalType,
 } from './arrivals.types'
@@ -26,6 +27,12 @@ interface ApiArrival {
   project: { id: number; name: string } | null
   leader: { id: number; name: string } | null
   notice: ArrivalNotice
+}
+
+interface ApiArrivalsStrip {
+  windowDays: number
+  total: number
+  nearest: ApiArrival[]
 }
 
 interface ApiArrivalsPage {
@@ -74,6 +81,12 @@ export const arrivalsApi = {
       total: response.page.totalElements,
       totalPages: response.page.totalPages,
     }
+  },
+
+  /** GET /api/v1/planner/upcoming-events/summary (SCRUM-181): the strip of Recursos */
+  async getStrip(): Promise<ArrivalsStrip> {
+    const response = await read<ApiArrivalsStrip>(await apiFetch('planner', '/upcoming-events/summary'))
+    return { windowDays: response.windowDays, total: response.total, nearest: response.nearest.map(mapArrival) }
   },
 }
 

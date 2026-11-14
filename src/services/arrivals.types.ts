@@ -58,6 +58,17 @@ export interface ArrivalsSummary {
   byType: Record<ArrivalType, number>
 }
 
+/**
+ * Strip at the top of Recursos (HU-06 CA-01). `total` is the N of "Ver los N eventos" (same as the
+ * Arribos list with a 30-day window, overdue ones included); `nearest` holds up to 4 events from today
+ * on, without the overdue ones.
+ */
+export interface ArrivalsStrip {
+  windowDays: number
+  total: number
+  nearest: ArrivalEvent[]
+}
+
 export interface ArrivalsPage {
   summary: ArrivalsSummary
   items: ArrivalEvent[]

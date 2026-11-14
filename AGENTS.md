@@ -60,4 +60,5 @@ Current endpoints in the `planner` module:
 - `GET /planner/projects`, `POST /planner/projects`
 - `GET /planner/clients`, `GET /planner/clients/{id}/projects`
 - `POST /planner/resources`, `GET /planner/resources/{id}`, `GET /planner/resources/npd-leads`
+- `GET /planner/upcoming-events` (Arribos próximos list), `GET /planner/upcoming-events/summary` (strip of Recursos)
 - `GET /planner/catalogs/{list}` (job-titles, positions, business-units, work-modes, genders, talent-reviews, client-roles, equipment, termination-reasons, statuses)

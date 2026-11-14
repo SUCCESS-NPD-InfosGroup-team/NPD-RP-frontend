@@ -6,8 +6,9 @@ import { searchRecursos, apiFetch } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
 import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDrawer';
-import { ArrowRight, Download, Plus, UserPlus } from 'lucide-react';
+import { Download, Plus, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
 
 
 // ==========================================
@@ -28,8 +29,6 @@ const GLOBAL_CSS = `
 .rp-root input, .rp-root select, .rp-root button { font-family: ${FONT_BODY}; }
 .rp-btn:hover { filter: brightness(0.97); }
 .rp-btn-primary:hover { background: ${C.primaryHover} !important; }
-.rp-stat-card--clickable:hover, .rp-stat-card--clickable:focus-visible { background: #351914 !important; }
-.rp-stat-card--clickable:focus-visible { outline: 2px solid ${C.brandBrown}; outline-offset: 2px; }
 .rp-row:hover { background: #FBF8F4 !important; }
 .rp-input:focus { outline: 2px solid #F5C9A8; border-color: ${C.primary} !important; }
 `;
@@ -235,13 +234,8 @@ export const ResourcesPage = () => {
         </div>
       </div>
 
-      {/* TARJETAS DE RESUMEN */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-        <StatCard title="Arribos próximos" value="11" sub="Lo que vence en los próximos 30 días" onClick={() => navigate('/arribos-proximos')} />
-        <StatCard title="Fin de contrato ≤ 30 días" value="12" sub="avisar a 30 y 15 días" danger />
-        <StatCard title="Fin de contrato ≤ 7 días" value="14" sub="1 semana" danger />
-        <StatCard title="Colaboradores sin proyecto" value="10" sub="listos para asignar" />
-      </div>
+      {/* ARRIBOS PRÓXIMOS (HU-06 CA-01) */}
+      <ArrivalsStrip />
 
       {/* PANEL DE FILTROS CON CATÁLOGOS */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -415,23 +409,6 @@ export const ResourcesPage = () => {
       )}
     </div>
   );
-};
-
-const StatCard = ({ title, value, sub, danger, onClick }: { title: string; value: string; sub: string; danger?: boolean; onClick?: () => void }) => {
-  const content = (
-    <>
-      <div style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 600, color: onClick ? C.white : C.text, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{title}</div>
-      <div style={{ fontFamily: FONT_DISPLAY, fontSize: 34, fontWeight: 700, lineHeight: 1.1, color: onClick ? C.white : danger ? C.danger : C.text, marginTop: 2 }}>{value}</div>
-      <div style={{ fontSize: 12, color: onClick ? C.white : C.muted, marginTop: 2 }}>{sub}</div>
-      {onClick && <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, color: C.white, fontSize: 12, fontWeight: 600 }}>Ver los {value} eventos <ArrowRight size={14} /></div>}
-    </>
-  );
-
-  if (onClick) {
-    return <button type="button" className="rp-stat-card--clickable" onClick={onClick} style={{ width: '100%', background: C.brandBrown, border: `1px solid ${C.brandBrown}`, borderRadius: 6, padding: '12px 12px 14px', textAlign: 'left', cursor: 'pointer' }}>{content}</button>;
-  }
-
-  return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '12px 12px 14px' }}>{content}</div>;
 };
 
 export const RowAction = ({ label, onClick }: { label: string; onClick: () => void }) => (

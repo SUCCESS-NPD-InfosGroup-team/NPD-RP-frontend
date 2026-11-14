@@ -7,6 +7,7 @@ import {
   type ArrivalFilters,
   type ArrivalNotice,
   type ArrivalsPage,
+  type ArrivalsStrip,
   type ArrivalsSummary,
   type ArrivalType,
 } from '../arrivals.types'
@@ -115,5 +116,17 @@ export const arrivalsMock = {
       total: items.length,
       totalPages: Math.ceil(items.length / ARRIVALS_PAGE_SIZE),
     }
+  },
+
+  /** Same rules as GET /upcoming-events/summary: overdue ones count in the total but are not shown */
+  async getStrip(): Promise<ArrivalsStrip> {
+    const windowDays = 30
+    const page = await this.listArrivals({ windowDays })
+    const nearest = records
+      .map(({ event }) => event)
+      .filter((event) => event.type !== 'PENDING_CONFIRMATION' && event.daysRemaining >= 0 && event.daysRemaining <= windowDays)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 4)
+    return { windowDays, total: page.summary.total, nearest }
   },
 }
