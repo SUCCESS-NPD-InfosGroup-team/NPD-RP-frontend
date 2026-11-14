@@ -12,6 +12,12 @@ vi.mock('../../services/api', () => ({
   })
 }));
 
+vi.mock('../../services/arrivals', () => ({
+  getArrivalsApi: () => Promise.resolve({
+    getStrip: () => Promise.resolve({ windowDays: 30, total: 3, nearest: [] }),
+  }),
+}));
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ hasRole: () => true })
 }));
@@ -35,6 +41,13 @@ describe('ResourcesPage (HU-03)', () => {
   it('debe renderizar la página sin errores', () => {
     renderPage();
     expect(screen.getByText(/Recursos/i)).toBeTruthy();
+  });
+
+  it('shows the upcoming events strip instead of fixed numbers (HU-06 CA-01)', async () => {
+    renderPage();
+    expect(await screen.findByRole('link', { name: /Ver los 3 eventos/ })).toHaveAttribute('href', '/arribos-proximos');
+    expect(screen.queryByText('Fin de contrato ≤ 7 días')).not.toBeInTheDocument();
+    expect(screen.queryByText('Colaboradores sin proyecto')).not.toBeInTheDocument();
   });
 
   it('opens the detail drawer from the table row and timeline row', async () => {
