@@ -14,7 +14,7 @@ export function formatResourceDate(value: string | null | undefined): string {
   return normalizeShortMonth(RESOURCE_DATE_FORMATTER.format(new Date(`${value.slice(0, 10)}T00:00:00Z`)).replace('.', ''))
 }
 
-export function formatResourceDateTime(value: string): string {
+export function formatResourceDateTime(value: string, timeZone?: string): string {
   const parts = new Intl.DateTimeFormat('es-PA', {
     day: '2-digit',
     month: 'short',
@@ -22,6 +22,7 @@ export function formatResourceDateTime(value: string): string {
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
+    ...(timeZone ? { timeZone } : {}),
   }).formatToParts(new Date(value))
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? ''
   return `${part('day')} ${normalizeShortMonth(part('month')).replace('.', '')} ${part('year')}, ${part('hour')}:${part('minute')}`

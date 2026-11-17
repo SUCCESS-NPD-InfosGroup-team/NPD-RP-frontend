@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useResourceDetail } from '../../hooks/useResourceDetail'
 import type { Recurso } from '../../types'
@@ -28,6 +29,7 @@ export function ResourceDetailDrawer({
   onEdit,
 }: Readonly<ResourceDetailDrawerProps>) {
   const { roles } = useAuth()
+  const navigate = useNavigate()
   const {
     resource: detail,
     lastChange,
@@ -120,7 +122,7 @@ export function ResourceDetailDrawer({
             <Button variant="secondary" icon={<ClockIcon />} onClick={() => undefined}>Historial</Button>
           )}
           {canPerformResourceAction(roles, 'audit') && (
-            <Button variant="secondary" icon={<ClockIcon />} onClick={() => undefined}>Auditoría</Button>
+            <Button variant="secondary" icon={<ClockIcon />} onClick={() => navigate(`/auditoria/${resource.id}`)}>Auditoría</Button>
           )}
         </footer>
       </aside>

@@ -124,6 +124,7 @@ describe('App routes', () => {
     ['customer-success', '/avisos'],
     ['npd-leader', '/tablero'],
     ['npd-leader', '/auditoria'],
+    ['npd-leader', '/auditoria/1045'],
   ] as const)('denies direct access for %s at %s', (role, path) => {
     renderAtPath(role, path)
 

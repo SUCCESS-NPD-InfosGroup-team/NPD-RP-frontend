@@ -94,7 +94,7 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     label: 'Auditoría',
     path: '/auditoria',
     allowedRoles: ['operations-administrator'],
-    showInNavigation: false,
+    showInNavigation: true,
   },
 ]
 
