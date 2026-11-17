@@ -46,7 +46,7 @@ export async function searchRecursos(
   const status = filters.estado?.toUpperCase()
   if (status === 'BAJA') {
     params.set('status', 'BAJA')
-  } else {
+  } else if (status !== 'TODOS') {
     params.append('status', 'ACTIVO')
     params.append('status', 'LICENCIA')
   }

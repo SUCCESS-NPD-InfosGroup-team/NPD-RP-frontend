@@ -57,7 +57,7 @@ export interface RecursoApi {
   leader: { id: number; name: string } | null;
   client?: { id: number; name: string } | null;
   project?: { id: number; name: string } | null;
-  status: string;
+  status: string | { code: string; label: string };
   startDate: string | null;
   endDate: string | null;
   version: number;
@@ -65,10 +65,20 @@ export interface RecursoApi {
 
 export interface ResourceSearchResponse {
   items: RecursoApi[];
-  groups: Record<string, { items: RecursoApi[]; total: number }>;
-  page: number;
-  totalPages: number;
-  totalElements: number;
+  groups: Array<{
+    type: string;
+    projectId: number | null;
+    project: string | null;
+    client: { id: number; name: string } | null;
+    contractEndDate: string | null;
+    total: number;
+  }>;
+  page: {
+    number: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  };
 }
 
 // ==========================================

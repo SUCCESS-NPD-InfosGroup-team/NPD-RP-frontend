@@ -140,7 +140,9 @@ export const ResourcesPage = () => {
         proyecto: item.project?.name || 'Sin proyecto',
         liderNPD: item.leader?.name || 'Sin líder',
         nivel: `N${item.level}`,
-        estado: item.status === 'ACTIVO' ? 'Activo' : item.status,
+        estado: typeof item.status === 'string'
+          ? item.status === 'ACTIVO' ? 'Activo' : item.status
+          : item.status.label,
         fechaInicio: item.startDate || '2026-10-19',
         fechaFin: item.endDate || '2026-12-20',
         version: item.version,
