@@ -1,0 +1,307 @@
+.audit-log-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: -4px -4px -30px;
+}
+
+.audit-log-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font: 500 13px / 1.2 var(--font-body);
+}
+
+.audit-log-page__breadcrumb a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.audit-log-page__breadcrumb [aria-current='page'] {
+  font-weight: 500;
+}
+
+.audit-log-page__breadcrumb > span[aria-hidden='true'] {
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.audit-log-page__heading {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 14px;
+}
+
+.audit-log-page__avatar {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--brand-orange-deep);
+  color: var(--text-on-brand);
+  font: 600 17px / 1 var(--font-body);
+}
+
+.audit-log-page__heading h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font: 700 30px / 1.1 var(--font-display);
+}
+
+.audit-log-page__heading p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font: 400 14px / 1.35 var(--font-body);
+}
+
+.audit-log-page__resource-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--state-danger-border-tint);
+  border-radius: var(--radius);
+  background: var(--surface-error);
+  color: var(--state-danger);
+}
+
+.audit-log-page__card {
+  overflow: hidden;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+}
+
+.audit-log-page__filters {
+  display: flex;
+  min-height: 68px;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: 12px 16px;
+  border-bottom: var(--border-width) solid var(--border-default);
+}
+
+.audit-log-page__filters .ui-field {
+  flex: 0 0 200px;
+}
+
+.audit-log-page__filters .ui-field:nth-child(2) {
+  flex-basis: 220px;
+}
+
+.audit-log-page__filters .ui-field:nth-child(3),
+.audit-log-page__filters .ui-field:nth-child(4) {
+  flex-basis: 150px;
+}
+
+.audit-log-page__filters-spacer {
+  min-width: 8px;
+  flex: 1 1 auto;
+}
+
+.audit-log-page__sort {
+  flex: 0 0 auto;
+  padding-bottom: 9px;
+  color: var(--text-secondary);
+  font: 400 13px / 1.2 var(--font-body);
+  white-space: nowrap;
+}
+
+.audit-log-page__filters .ui-paginador {
+  flex: 0 0 auto;
+  padding-bottom: 2px;
+}
+
+.audit-log-page__table-wrap {
+  overflow-x: auto;
+}
+
+.audit-log-page__table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: left;
+}
+
+.audit-log-page__date-column {
+  width: 150px;
+}
+
+.audit-log-page__author-column {
+  width: 230px;
+}
+
+.audit-log-page__action-column {
+  width: 120px;
+}
+
+.audit-log-page__field-column {
+  width: 220px;
+}
+
+.audit-log-page__table thead {
+  height: 36px;
+  background: var(--surface-header);
+}
+
+.audit-log-page__table thead tr {
+  border-bottom: var(--border-width) solid var(--border-strong);
+}
+
+.audit-log-page__table thead th {
+  padding: 0 12px;
+  color: var(--text-primary);
+  font: 700 12px / 1.2 var(--font-display);
+  letter-spacing: 0.72px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.audit-log-page__month {
+  height: 30px;
+  border-bottom: var(--border-width) solid var(--border-default);
+  background: var(--surface-group);
+}
+
+.audit-log-page__month th {
+  padding: 0 12px;
+  color: var(--text-secondary);
+  font: 700 12px / 1.2 var(--font-display);
+  letter-spacing: 0.72px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.audit-log-page__entry {
+  height: 44px;
+  border-bottom: var(--border-width) solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: 400 13.5px / 1.2 var(--font-body);
+}
+
+.audit-log-page__entry td {
+  overflow: hidden;
+  padding: 0 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-log-page__date,
+.audit-log-page__time {
+  display: block;
+}
+
+.audit-log-page__date {
+  font-weight: 600;
+}
+
+.audit-log-page__time {
+  margin-top: 1px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.audit-log-page__author,
+.audit-log-page__value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.audit-log-page__author-avatar {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--brand-brown);
+  color: var(--text-on-brand);
+  font: 600 11px / 1 var(--font-body);
+}
+
+.audit-log-page__field,
+.audit-log-page__value {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-log-page__old-value {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  text-overflow: ellipsis;
+}
+
+.audit-log-page__value-arrow {
+  flex: 0 0 auto;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.audit-log-page__value strong {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.audit-log-page__message {
+  margin: 0;
+  padding: 24px 16px;
+  color: var(--text-secondary);
+  font: 400 13.5px / 1.4 var(--font-body);
+  text-align: center;
+}
+
+.audit-log-page__message--error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--state-danger);
+}
+
+.audit-log-page__message--error p {
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .audit-log-page__filters {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .audit-log-page__filters-spacer {
+    display: none;
+  }
+
+  .audit-log-page__sort {
+    align-self: flex-end;
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .audit-log-page__filters .ui-field {
+    flex: 1 1 180px;
+  }
+
+  .audit-log-page__filters .ui-paginador {
+    margin-left: auto;
+  }
+
+  .audit-log-page__heading h1 {
+    font-size: 26px;
+  }
+}
