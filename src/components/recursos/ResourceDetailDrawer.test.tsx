@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render as testingRender, screen } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import type { Recurso } from '../../types'
 import { ResourceDetailDrawer } from './ResourceDetailDrawer'
@@ -8,6 +9,15 @@ const mockedUseResourceDetail = vi.hoisted(() => vi.fn())
 
 vi.mock('../../context/AuthContext', () => ({ useAuth: mockedUseAuth }))
 vi.mock('../../hooks/useResourceDetail', () => ({ useResourceDetail: mockedUseResourceDetail }))
+
+function render(ui: Parameters<typeof testingRender>[0]) {
+  return testingRender(ui, { wrapper: MemoryRouter })
+}
+
+function CurrentPath() {
+  const location = useLocation()
+  return <output data-testid="current-path">{location.pathname}</output>
+}
 
 const resource: Recurso = {
   id: '7',
@@ -99,6 +109,20 @@ describe('ResourceDetailDrawer', () => {
       .toEqual(['Editar registro', 'Historial', 'Auditoría'])
     fireEvent.click(screen.getByRole('button', { name: 'Editar registro' }))
     expect(onEdit).toHaveBeenCalledWith(resource)
+  })
+
+  it('navigates to the selected resource audit log', () => {
+    mockedUseAuth.mockReturnValue({ roles: ['operations-administrator'] })
+    testingRender(
+      <MemoryRouter initialEntries={['/recursos']}>
+        <ResourceDetailDrawer resource={resource} onClose={vi.fn()} onEdit={vi.fn()} />
+        <CurrentPath />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Auditoría' }))
+
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/auditoria/7')
   })
 
   it('renders the backend status label while the detail request is loading', () => {

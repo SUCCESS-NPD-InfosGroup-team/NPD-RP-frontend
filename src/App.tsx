@@ -11,6 +11,7 @@ import { RegistrarRecursoPage } from './pages/Recursos/RegistrarRecursoPage'
 import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
+import { AuditoriaPage } from './pages/Auditoria/AuditoriaPage'
 
 export interface AppProps {
   onRegisterResource?: () => void
@@ -45,6 +46,9 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
   }
   if (item.id === 'users') {
     return <UsuariosPage />
+  }
+  if (item.id === 'audit') {
+    return <AuditoriaPage />
   }
 
   return (
@@ -87,6 +91,7 @@ export default function App({
               element={<Screen roles={roles} item={item} />}
             />
           ))}
+          <Route path="auditoria/:resourceId" element={<AuditoriaPage />} />
           {/*Route Register BUG 05*/}
           <Route path="recursos/nuevo" element={<RegistrarRecursoPage />} />
           <Route

@@ -1,4 +1,4 @@
-import { apiFetch } from './api'
+import { apiFetch, searchRecursos } from './api'
 import { fakeKeycloak } from '../test/keycloakMock'
 
 vi.mock('../auth/keycloak', async () => (await import('../test/keycloakMock')).fakeAuthModule)
@@ -10,6 +10,31 @@ describe('apiFetch', () => {
     fetchMock.mockReset()
     fakeKeycloak.login.mockClear()
     vi.stubGlobal('fetch', fetchMock)
+  })
+
+  describe('searchRecursos', () => {
+    const fetchMock = vi.fn<typeof fetch>()
+
+    beforeEach(() => {
+      fetchMock.mockReset()
+      vi.stubGlobal('fetch', fetchMock)
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('omits status filters when listing all resources', async () => {
+      fetchMock.mockResolvedValue(new Response(
+        JSON.stringify({ items: [], groups: {}, page: 0, totalPages: 0, totalElements: 0 }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ))
+
+      await searchRecursos({ search: 'Ana', estado: 'Todos' }, 1, 25)
+
+      expect(fetchMock.mock.calls[0][0])
+        .toBe('/api/v1/planner/resources?page=0&size=25&q=Ana')
+    })
   })
 
   afterEach(() => {

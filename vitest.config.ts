@@ -13,7 +13,13 @@ export default defineConfig({
 
     include: [
       'src/pages/Recursos/**/*.test.tsx',
+      'src/pages/Auditoria/**/*.test.ts',
+      'src/pages/Auditoria/**/*.test.tsx',
       'src/components/recursos/**/*.test.tsx',
+      'src/components/auditoria/**/*.test.ts',
+      'src/components/auditoria/**/*.test.tsx',
+      'src/components/layout/**/*.test.ts',
+      'src/components/layout/**/*.test.tsx',
       'src/components/arribos/**/*.test.ts',
       'src/components/arribos/**/*.test.tsx',
       'src/hooks/**/*.test.ts',
@@ -29,7 +35,6 @@ export default defineConfig({
       'node_modules',
       'src/pages/Tablero/**',
       'src/pages/Avisos/**',
-      'src/pages/Auditoria/**',
       'src/pages/Usuarios/**',
       'src/pages/Vacaciones/**',
       'src/components/usuarios/**',

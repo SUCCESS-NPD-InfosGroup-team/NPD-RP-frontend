@@ -8,6 +8,7 @@ interface FieldProps {
   id: string
   label: string
   type?: FieldType
+  inputType?: string
   state?: FieldState
   error?: string
   value?: string
@@ -24,6 +25,7 @@ export function Field({
   id,
   label,
   type = 'input',
+  inputType,
   state = 'default',
   error,
   value,
@@ -65,6 +67,7 @@ export function Field({
             className={className}
             id={id}
             name={name}
+            type={inputType ?? 'text'}
             value={value}
             defaultValue={defaultValue}
             placeholder={placeholder}

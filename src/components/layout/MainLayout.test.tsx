@@ -24,10 +24,23 @@ vi.mock('../../pages/Recursos/ResourcesPage', () => ({
   ResourcesPage: () => <h1>Recursos</h1>
 }))
 
+vi.mock('../../hooks/useHistoryAuditLog', () => ({
+  useHistoryAuditLog: () => ({ loading: false, refetch: vi.fn() }),
+}))
+
+vi.mock('../../hooks/useResourceDetail', () => ({
+  useResourceDetail: () => ({
+    resource: { name: 'Ana Torres', employeeNumber: '1045' },
+    loading: false,
+    error: undefined,
+    refetch: vi.fn(),
+  }),
+}))
+
 const roleCases: Array<[Role, string[]]> = [
   [
     'operations-administrator',
-    ['Recursos', 'Proyectos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'],
+    ['Recursos', 'Proyectos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos', 'Auditoría'],
   ],
   ['guest', ['Recursos', 'Proyectos']],
   ['customer-success', ['Recursos', 'Proyectos', 'Vacaciones']],
@@ -56,10 +69,19 @@ function setAuthState(role: unknown, displayName = 'Juan David Vela Coronado') {
   }
 }
 
-function renderForRole(role: unknown, path = '/recursos', options: AppOptions = {}) {
+function renderForRole(
+  role: unknown,
+  path = '/recursos',
+  options: AppOptions = {},
+  routeState?: unknown,
+) {
   const { displayName, ...appOptions } = options
   setAuthState(role, displayName)
-  window.history.replaceState(null, '', path)
+  window.history.replaceState(
+    routeState === undefined ? null : { usr: routeState, key: 'test-route-state' },
+    '',
+    path,
+  )
   return render(
     <AuthProvider>
       <App {...appOptions} />
@@ -241,19 +263,66 @@ describe('role-based navigation', () => {
     expect(currentLink).toHaveClass('is-active')
   })
 
-  it('keeps the requested presentation order for the administrator menu', () => {
-    expect(getNavigationForRole('operations-administrator').map(({ label }) => label))
-      .toEqual(['Recursos', 'Proyectos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos'])
+  it.each(['/auditoria', '/auditoria/1045'])(
+    'marks the audit menu entry active at %s',
+    (path) => {
+      renderForRole('operations-administrator', path)
+
+      const currentLink = screen.getByRole('link', { name: /Auditoría/ })
+      expect(currentLink).toHaveAttribute('aria-current', 'page')
+      expect(currentLink).toHaveClass('is-active')
+    },
+  )
+
+  it('keeps the resource identity in the audit breadcrumb', () => {
+    renderForRole('operations-administrator', '/auditoria/1045')
+
+    const breadcrumb = screen.getByRole('navigation', { name: 'Migas de pan' })
+    expect(within(breadcrumb).getByRole('link', { name: 'Recursos' }))
+      .toHaveAttribute('href', '/recursos')
+    expect(breadcrumb).toHaveTextContent('Ana Torres #1045')
+    expect(within(breadcrumb).getByText('Auditoría')).toHaveAttribute('aria-current', 'page')
   })
 
-  it('keeps arrivals and audit out of the top navigation in the mockup', () => {
+  it('returns to the audit selector when the resource was chosen from the audit tab', () => {
+    renderForRole('operations-administrator', '/auditoria/1045', {}, {
+      breadcrumbSource: 'audit-selector',
+    })
+
+    const breadcrumb = screen.getByRole('navigation', { name: 'Migas de pan' })
+    expect(within(breadcrumb).getByRole('link', { name: 'Auditoría' }))
+      .toHaveAttribute('href', '/auditoria')
+    expect(breadcrumb).toHaveTextContent('Ana Torres #1045')
+    expect(within(breadcrumb).getAllByText('Auditoría')).toHaveLength(2)
+  })
+
+  it.each([
+    ['guest', '/auditoria'],
+    ['guest', '/auditoria/1045'],
+    ['customer-success', '/auditoria'],
+    ['customer-success', '/auditoria/1045'],
+    ['npd-leader', '/auditoria'],
+    ['npd-leader', '/auditoria/1045'],
+  ] as const)('denies audit URL access to %s at %s', (role, path) => {
+    renderForRole(role, path)
+
+    expect(screen.getByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
+      .toBeInTheDocument()
+  })
+
+  it('keeps the requested presentation order for the administrator menu', () => {
+    expect(getNavigationForRole('operations-administrator').map(({ label }) => label))
+      .toEqual(['Recursos', 'Proyectos', 'Tablero', 'Vacaciones', 'Infosweb', 'Usuarios', 'Avisos', 'Auditoría'])
+  })
+
+  it('shows audit in the top navigation for the administrator', () => {
     renderForRole('operations-administrator')
 
     const navigation = screen.getByRole('navigation', { name: 'Navegación principal' })
     expect(within(navigation).queryByRole('link', { name: /Arribos próximos/ }))
       .not.toBeInTheDocument()
-    expect(within(navigation).queryByRole('link', { name: /Auditoría/ }))
-      .not.toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: /Auditoría/ }))
+      .toBeInTheDocument()
   })
 
   it('places main navigation in the top bar without a side panel', () => {
