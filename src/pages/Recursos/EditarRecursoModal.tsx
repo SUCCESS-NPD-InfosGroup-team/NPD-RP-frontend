@@ -10,6 +10,8 @@ interface Props {
   onSave: () => void;
 }
 
+const STATUS_BY_LABEL: Record<string, string> = { Activo: 'ACTIVO', Licencia: 'LICENCIA' };
+
 export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,7 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
     employeeNumber: recurso.nEmpleado,
     name: recurso.nombre,
     level: Number(recurso.nivel.replace('N', '')) || 1,
-    status: recurso.estado === 'Activo' ? 'ACTIVO' : recurso.estado === 'Licencia' ? 'LICENCIA' : 'BAJA',
+    status: STATUS_BY_LABEL[recurso.estado] ?? 'BAJA',
     endDate: recurso.fechaFin || '', 
   });
 

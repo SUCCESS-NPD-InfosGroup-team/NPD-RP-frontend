@@ -20,7 +20,7 @@ export function Button({
 }: Readonly<ButtonProps>) {
   return (
     <button
-      className={`ui-button ui-button--${variant}${className ? ` ${className}` : ''}`}
+      className={['ui-button', `ui-button--${variant}`, className].filter(Boolean).join(' ')}
       ref={ref}
       type={type}
       {...props}

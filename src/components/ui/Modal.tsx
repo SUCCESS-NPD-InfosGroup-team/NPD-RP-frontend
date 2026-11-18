@@ -71,7 +71,7 @@ export function Modal({ open, isOpen, title, children, onClose, className = '' }
       <dialog
         ref={dialogRef}
         open
-        className={`ui-modal${className ? ` ${className}` : ''}`}
+        className={['ui-modal', className].filter(Boolean).join(' ')}
         aria-modal="true"
         aria-labelledby={title ? 'ui-modal-title' : undefined}
         tabIndex={-1}

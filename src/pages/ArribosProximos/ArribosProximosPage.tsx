@@ -72,7 +72,6 @@ export function ArribosProximosPage() {
   ].filter(Boolean)
   const total = data?.total ?? 0
   const from = (page - 1) * ARRIVALS_PAGE_SIZE + 1
-  const endpointUnavailable = error instanceof ApiRequestError && error.status === 404
 
   return (
     <section className="screen arrivals-page">
@@ -162,23 +161,35 @@ export function ArribosProximosPage() {
           )}
         </div>
 
-        {error ? (
-          <div className="arrivals-page__empty arrivals-page__empty--error" role="alert">
-            <p>
-              {endpointUnavailable
-                ? 'La consulta de arribos próximos aún no está disponible en el backend.'
-                : 'No se pudieron cargar los arribos próximos.'}
-            </p>
-            <Button variant="secondary" onClick={refetch}>Reintentar</Button>
-          </div>
-        ) : loading && !data ? (
-          <div className="arrivals-page__empty">Cargando arribos próximos…</div>
-        ) : data?.items.length ? (
-          <ArrivalsTable events={data.items} />
-        ) : (
-          <div className="arrivals-page__empty">No hay eventos con estos filtros en los próximos {windowDays} días.</div>
-        )}
+        <ArrivalsResults data={data} loading={loading} error={error} refetch={refetch} windowDays={windowDays} />
       </div>
     </section>
   )
+}
+
+function ArrivalsResults({
+  data,
+  loading,
+  error,
+  refetch,
+  windowDays,
+}: Readonly<Pick<ReturnType<typeof useArrivals>, 'data' | 'loading' | 'error' | 'refetch'> & { windowDays: number }>) {
+  if (error) {
+    const endpointUnavailable = error instanceof ApiRequestError && error.status === 404
+    return (
+      <div className="arrivals-page__empty arrivals-page__empty--error" role="alert">
+        <p>
+          {endpointUnavailable
+            ? 'La consulta de arribos próximos aún no está disponible en el backend.'
+            : 'No se pudieron cargar los arribos próximos.'}
+        </p>
+        <Button variant="secondary" onClick={refetch}>Reintentar</Button>
+      </div>
+    )
+  }
+  if (loading && !data) return <div className="arrivals-page__empty">Cargando arribos próximos…</div>
+  if (!data?.items.length) {
+    return <div className="arrivals-page__empty">No hay eventos con estos filtros en los próximos {windowDays} días.</div>
+  }
+  return <ArrivalsTable events={data.items} />
 }

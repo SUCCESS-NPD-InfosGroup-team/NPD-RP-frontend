@@ -29,27 +29,44 @@ export function ArrivalsStrip() {
           <p className="arrivals-strip__subtitle">Lo que vence en los próximos {windowDays} días</p>
         </div>
         <Link className="arrivals-strip__all" to={ARRIVALS_PATH}>
-          {data ? `Ver ${data.total === 1 ? 'el evento' : `los ${data.total} eventos`}` : 'Ver arribos próximos'}
+          {allEventsLabel(data?.total)}
           <ArrowRightIcon />
         </Link>
       </div>
 
       <div className="arrivals-strip__events">
-        {error ? (
-          <div className="arrivals-strip__message arrivals-strip__message--error" role="alert">
-            <span>No se pudieron cargar los arribos próximos.</span>
-            <Button variant="secondary" onClick={refetch}>Reintentar</Button>
-          </div>
-        ) : loading && !data ? (
-          <div className="arrivals-strip__message">Cargando arribos próximos…</div>
-        ) : data?.nearest.length ? (
-          data.nearest.map((event) => <StripEvent key={event.id} event={event} />)
-        ) : (
-          <div className="arrivals-strip__message">Nada vence en los próximos {windowDays} días.</div>
-        )}
+        <StripEvents data={data} loading={loading} error={error} refetch={refetch} windowDays={windowDays} />
       </div>
     </section>
   )
+}
+
+function allEventsLabel(total: number | undefined): string {
+  if (total === undefined) return 'Ver arribos próximos'
+  if (total === 1) return 'Ver el evento'
+  return `Ver los ${total} eventos`
+}
+
+function StripEvents({
+  data,
+  loading,
+  error,
+  refetch,
+  windowDays,
+}: Readonly<Pick<ReturnType<typeof useArrivalsStrip>, 'data' | 'loading' | 'error' | 'refetch'> & { windowDays: number }>) {
+  if (error) {
+    return (
+      <div className="arrivals-strip__message arrivals-strip__message--error" role="alert">
+        <span>No se pudieron cargar los arribos próximos.</span>
+        <Button variant="secondary" onClick={refetch}>Reintentar</Button>
+      </div>
+    )
+  }
+  if (loading && !data) return <div className="arrivals-strip__message">Cargando arribos próximos…</div>
+  if (!data?.nearest.length) {
+    return <div className="arrivals-strip__message">Nada vence en los próximos {windowDays} días.</div>
+  }
+  return <>{data.nearest.map((event) => <StripEvent key={event.id} event={event} />)}</>
 }
 
 function StripEvent({ event }: Readonly<{ event: ArrivalEvent }>) {

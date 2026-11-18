@@ -136,9 +136,7 @@ export const ResourcesPage = () => {
         proyecto: item.project?.name || 'Sin proyecto',
         liderNPD: item.leader?.name || 'Sin líder',
         nivel: `N${item.level}`,
-        estado: typeof item.status === 'string'
-          ? item.status === 'ACTIVO' ? 'Activo' : item.status
-          : item.status.label,
+        estado: statusLabel(item.status),
         fechaInicio: item.startDate || '2026-10-19',
         fechaFin: item.endDate || '2026-12-20',
         version: item.version,
@@ -410,6 +408,11 @@ export const ResourcesPage = () => {
     </div>
   );
 };
+
+function statusLabel(status: RecursoApi['status']): string {
+  if (typeof status !== 'string') return status.label;
+  return status === 'ACTIVO' ? 'Activo' : status;
+}
 
 export const RowAction = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
