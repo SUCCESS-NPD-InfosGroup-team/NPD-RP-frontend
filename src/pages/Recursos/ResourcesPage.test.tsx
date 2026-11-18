@@ -60,13 +60,20 @@ describe('ResourcesPage (HU-03)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Editar registro' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-    fireEvent.keyDown(screen.getByText('#1045').parentElement?.parentElement as HTMLElement, { key: 'Enter' });
+    fireEvent.click(screen.getByRole('button', { name: /#1045/ }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle del recurso' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-    const timelineRow = document.querySelector('.rp-timeline-row') as HTMLElement;
-    fireEvent.keyDown(timelineRow, { key: ' ' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle de Ana Torres' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('selects a row with its checkbox without opening the detail drawer', async () => {
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Seleccionar Ana Torres' }));
+    expect(screen.getByText('1 seleccionados')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

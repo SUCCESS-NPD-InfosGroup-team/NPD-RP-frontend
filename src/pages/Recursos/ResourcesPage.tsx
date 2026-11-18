@@ -30,6 +30,8 @@ const GLOBAL_CSS = `
 .rp-btn:hover { filter: brightness(0.97); }
 .rp-btn-primary:hover { background: ${C.primaryHover} !important; }
 .rp-row:hover { background: #FBF8F4 !important; }
+.rp-row-button { display: grid; align-items: center; height: 100%; padding: 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rp-timeline-row { width: 100%; padding: 0; border: none; background: none; font: inherit; }
 .rp-input:focus { outline: 2px solid #F5C9A8; border-color: ${C.primary} !important; }
 `;
 const labelStyle: CSSProperties = { display: 'block', fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 };
@@ -81,12 +83,6 @@ export const ResourcesPage = () => {
   });
   const clearSelection = () => setSelectedIds(new Set());
   const openResourceDetail = (resource: Recurso) => setRecursoSeleccionado(resource);
-  const handleResourceKeyDown = (event: React.KeyboardEvent, resource: Recurso) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openResourceDetail(resource);
-    }
-  };
   // BUG-01: Cargar catálogos al montar
   useEffect(() => {
     const loadCatalogos = async () => {
@@ -158,7 +154,7 @@ export const ResourcesPage = () => {
   }, [filters]);
   useEffect(() => {
     const loadData = async () => { await fetchData(); };
-    loadData();
+    void loadData();
   }, [fetchData]);
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -320,25 +316,28 @@ export const ResourcesPage = () => {
                 <div
                   key={rec.id}
                   className="rp-row"
-                  onClick={() => openResourceDetail(rec)}
-                  onKeyDown={(event) => handleResourceKeyDown(event, rec)}
-                  role="button"
-                  tabIndex={0}
-                  style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 43, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, cursor: 'pointer', backgroundColor: C.surface }}
+                  style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 43, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, backgroundColor: C.surface }}
                 >
-                  {isAdmin && (<div onClick={e => e.stopPropagation()}><input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} /></div>)}
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: FONT_DISPLAY, fontSize: 15, fontWeight: 700 }}>{rec.nEmpleado}</div>
-                    <div style={{ color: C.muted, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nombre}</div>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.proyecto}</div>
-                    <div style={{ color: C.muted, fontSize: 11 }}>{rec.cliente}</div>
-                  </div>
-                  <div style={{ color: C.text }}>{rec.liderNPD}</div>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ backgroundColor: C.pillBg, color: C.pillText, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{rec.nivel}</span>
-                  </div>
+                  {isAdmin && (<div><input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} /></div>)}
+                  <button
+                    type="button"
+                    className="rp-row-button"
+                    onClick={() => openResourceDetail(rec)}
+                    style={{ gridColumn: isAdmin ? '2 / -1' : '1 / -1', gridTemplateColumns: GRID_COLS }}
+                  >
+                    <span style={{ display: 'block', minWidth: 0 }}>
+                      <span style={{ display: 'block', fontFamily: FONT_DISPLAY, fontSize: 15, fontWeight: 700 }}>{rec.nEmpleado}</span>
+                      <span style={{ display: 'block', color: C.muted, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nombre}</span>
+                    </span>
+                    <span style={{ display: 'block', minWidth: 0 }}>
+                      <span style={{ display: 'block', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.proyecto}</span>
+                      <span style={{ display: 'block', color: C.muted, fontSize: 11 }}>{rec.cliente}</span>
+                    </span>
+                    <span style={{ display: 'block', color: C.text }}>{rec.liderNPD}</span>
+                    <span style={{ display: 'block', textAlign: 'center' }}>
+                      <span style={{ backgroundColor: C.pillBg, color: C.pillText, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{rec.nivel}</span>
+                    </span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -359,18 +358,17 @@ export const ResourcesPage = () => {
                 {recs.map((rec, index) => {
                   const bar = getBarStyle(rec.fechaInicio, rec.fechaFin, index);
                   return (
-                    <div
+                    <button
                       key={rec.id}
+                      type="button"
                       className="rp-timeline-row"
                       onClick={() => openResourceDetail(rec)}
-                      onKeyDown={(event) => handleResourceKeyDown(event, rec)}
-                      role="button"
-                      tabIndex={0}
+                      aria-label={`Ver detalle de ${rec.nombre}`}
                       style={{ height: 43, borderBottom: `1px solid ${C.borderSoft}`, position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     >
-                      {WEEKS.map(w => (<div key={w} style={{ minWidth: 80, flex: 1, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
-                      <div style={{ position: 'absolute', left: bar.left, width: bar.width, height: 16, backgroundColor: bar.backgroundColor, border: `1px solid ${bar.borderColor}`, borderRadius: 3, zIndex: 6 }} />
-                    </div>
+                      {WEEKS.map(w => (<span key={w} style={{ display: 'block', minWidth: 80, flex: 1, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
+                      <span style={{ display: 'block', position: 'absolute', left: bar.left, width: bar.width, height: 16, backgroundColor: bar.backgroundColor, border: `1px solid ${bar.borderColor}`, borderRadius: 3, zIndex: 6 }} />
+                    </button>
                   );
                 })}
               </div>
@@ -397,7 +395,7 @@ export const ResourcesPage = () => {
 
       {/* BUG-03 */}
       {recursoAEditar && isAdmin && (
-        <EditarRecursoModal recurso={recursoAEditar} onClose={() => setRecursoAEditar(null)} onSave={() => { fetchData(); setRecursoAEditar(null); }} />
+        <EditarRecursoModal recurso={recursoAEditar} onClose={() => setRecursoAEditar(null)} onSave={() => { void fetchData(); setRecursoAEditar(null); }} />
       )}
       {recursoSeleccionado && (
         <ResourceDetailDrawer
