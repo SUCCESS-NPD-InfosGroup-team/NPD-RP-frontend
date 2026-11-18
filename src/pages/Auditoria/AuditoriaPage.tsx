@@ -172,12 +172,12 @@ export function AuditoriaPage() {
         </div>
       )}
 
-      {loading && <p className="audit-log-page__message" role="status">Cargando auditoría…</p>}
+      {loading && <output className="audit-log-page__message">Cargando auditoría…</output>}
 
       {!loading && !error && visibleItems.length === 0 && !dateError && (
-        <div className="audit-log-page__message" role="status">
+        <output className="audit-log-page__message">
           No hay cambios registrados para este recurso.
-        </div>
+        </output>
       )}
 
       {!loading && !error && visibleItems.length > 0 && (

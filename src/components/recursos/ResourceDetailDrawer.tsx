@@ -50,12 +50,11 @@ export function ResourceDetailDrawer({
   }, [onClose])
 
   return (
-    <div className="resource-detail-drawer__layer" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose()
-    }}>
-      <aside
+    <div className="resource-detail-drawer__layer">
+      <button className="resource-detail-drawer__backdrop" type="button" tabIndex={-1} aria-hidden="true" aria-label="Cerrar" onClick={onClose} />
+      <dialog
+        open
         className="resource-detail-drawer"
-        role="dialog"
         aria-modal="true"
         aria-labelledby="resource-detail-drawer-title"
       >
@@ -125,7 +124,7 @@ export function ResourceDetailDrawer({
             <Button variant="secondary" icon={<ClockIcon />} onClick={() => navigate(`/auditoria/${resource.id}`)}>Auditoría</Button>
           )}
         </footer>
-      </aside>
+      </dialog>
     </div>
   )
 }

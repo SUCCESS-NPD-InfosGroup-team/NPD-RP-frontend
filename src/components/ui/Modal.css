@@ -8,7 +8,21 @@
   background: color-mix(in srgb, var(--text-primary) 45%, transparent);
 }
 
+.ui-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
 .ui-modal {
+  position: relative;
+  inset: auto;
+  margin: 0;
+  border: 0;
+  color: inherit;
   width: min(100%, 560px);
   max-height: calc(100vh - 48px);
   overflow: auto;

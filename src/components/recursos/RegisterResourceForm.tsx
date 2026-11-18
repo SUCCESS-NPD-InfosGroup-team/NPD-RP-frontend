@@ -333,10 +333,10 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
             ) : (
               <>
                 <div className="resource-form__project-bar">
-                  <div className="resource-form__toggle" role="group" aria-label="¿Tiene proyecto?">
+                  <fieldset className="resource-form__toggle" aria-label="¿Tiene proyecto?">
                     <button type="button" aria-pressed={values.withProject} className={values.withProject ? 'is-active' : ''} onClick={() => update('withProject', true)}>Con proyecto</button>
                     <button type="button" aria-pressed={!values.withProject} className={values.withProject ? '' : 'is-active'} onClick={() => update('withProject', false)}>Sin proyecto por ahora</button>
-                  </div>
+                  </fieldset>
                   {canCreateProjects && (
                     <Button variant="ghost" icon={<PlusIcon />} onClick={() => setNewProjectOpen(true)}>Crear proyecto</Button>
                   )}

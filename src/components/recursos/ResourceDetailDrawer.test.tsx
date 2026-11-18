@@ -91,7 +91,7 @@ describe('ResourceDetailDrawer', () => {
     render(<ResourceDetailDrawer resource={resource} onClose={onClose} onEdit={vi.fn()} />)
 
     expect(screen.getByLabelText('Cargando detalle')).toBeInTheDocument()
-    fireEvent.mouseDown(screen.getByRole('dialog').parentElement as HTMLElement, { target: screen.getByRole('dialog').parentElement })
+    fireEvent.click(document.querySelector('.resource-detail-drawer__backdrop') as HTMLElement)
     expect(onClose).toHaveBeenCalledOnce()
   })
 
