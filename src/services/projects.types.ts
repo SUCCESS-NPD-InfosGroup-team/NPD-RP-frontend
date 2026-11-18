@@ -89,7 +89,7 @@ export class ApiRequestError extends Error implements ApiError {
   readonly detail: string
   readonly field?: string
   readonly existingProjectId?: number
-  readonly errors?: ApiError['errors']
+  readonly errors?: NonNullable<ApiError['errors']>
   readonly existingResourceId?: number
   readonly existingResourceName?: string
 

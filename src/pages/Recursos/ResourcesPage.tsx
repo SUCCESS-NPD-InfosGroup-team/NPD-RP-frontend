@@ -273,7 +273,7 @@ export const ResourcesPage = () => {
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
           <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} />
-          Incluir inactivos
+          <span>Incluir inactivos</span>
         </label>
         <button className="rp-btn" onClick={() => setFilters(INITIAL_FILTERS)} style={{ height: 38, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: C.primary }}>
           Limpiar filtros

@@ -86,7 +86,7 @@ export function ProjectsPage() {
         <Field id="project-contract" label="Fin de contrato" type="select" value={contractEnd} onChange={(event) => setContractEnd(event.target.value as typeof contractEnd)} options={[{ value: 'any', label: 'Cualquier fecha' }, { value: 'next30', label: 'Próximos 30 días' }]} />
         <label className="projects-page__checkbox">
           <input type="checkbox" checked={includeInactive} onChange={(event) => setIncludeInactive(event.target.checked)} />
-          Incluir inactivos
+          <span>Incluir inactivos</span>
         </label>
       </div>
       {loading && !data && <div className="projects-page__empty">Cargando proyectos…</div>}

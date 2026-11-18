@@ -67,7 +67,7 @@ export const CrearUsuarioModal = ({ isOpen, onClose }: CrearUsuarioModalProps) =
 
     if (!formData.email.trim()) {
       newErrors.email = 'El correo es obligatorio.';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(formData.email)) {
       newErrors.email = 'El correo no es válido.';
     } else if (usuarios.some((u) => u.email.toLowerCase() === formData.email.toLowerCase())) {
       newErrors.email = `Ya existe una cuenta con este correo.`;

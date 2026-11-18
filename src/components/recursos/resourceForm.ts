@@ -5,7 +5,7 @@ import { addDaysIso, todayIso, toIsoDate } from '../../utils/dates'
 /** Probation ends on day 90 counted from the contract start date (generated column in the DB) */
 export const PROBATION_DAYS = 90
 const SMALLINT_MAX = 32767
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/
 
 export interface ResourceFormValues {
   employeeNumber: string
@@ -93,7 +93,7 @@ export const FIELD_LABELS: Record<string, string> = {
 const FIELD_ORDER = Object.keys(FIELD_LABELS)
 
 export function fieldId(path: string): string {
-  return `resource-${path.replace(/\./g, '-')}`
+  return `resource-${path.replaceAll('.', '-')}`
 }
 
 export function orderedErrorFields(errors: FieldErrors): string[] {

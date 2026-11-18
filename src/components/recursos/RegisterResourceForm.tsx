@@ -192,7 +192,7 @@ function AssignmentPanel({
         <Field {...fieldProps('assignment.endDate')} label={values.indefinite ? 'Fecha final' : 'Fecha final *'} placeholder="dd/mm/aaaa" value={values.indefinite ? '' : values.endDate} disabled={values.indefinite} onChange={(event) => update('endDate', formatDateInput(event.target.value))} />
         <label className="resource-form__checkbox">
           <input type="checkbox" checked={values.indefinite} onChange={(event) => update('indefinite', event.target.checked)} />
-          Sin fecha final (indefinido)
+          <span>Sin fecha final (indefinido)</span>
         </label>
       </div>
       <div className="resource-form__span-2">

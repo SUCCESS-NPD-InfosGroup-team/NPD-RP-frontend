@@ -48,10 +48,10 @@ export function Modal({ open, isOpen, title, children, onClose, className = '' }
         return
       }
       const first = elements[0]
-      const last = elements[elements.length - 1]
+      const last = elements.at(-1)
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
-        last.focus()
+        last?.focus()
       } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault()
         first.focus()
