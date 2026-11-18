@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SearchIcon } from '../../components/icons'
 import { Paginador } from '../../components/ui/Paginador'
@@ -16,6 +16,11 @@ export function ResourceAuditSelector() {
   const [data, setData] = useState<ResourceSearchResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    searchRef.current?.focus()
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -87,7 +92,7 @@ export function ResourceAuditSelector() {
             <span className="resource-audit-selector__search-control">
               <SearchIcon aria-hidden="true" />
               <input
-                autoFocus
+                ref={searchRef}
                 type="search"
                 value={query}
                 placeholder="Nombre o número de empleado"
@@ -129,7 +134,7 @@ export function ResourceAuditSelector() {
             )}
           </table>
 
-          {loading && <p className="resource-audit-selector__state" role="status">Cargando recursos…</p>}
+          {loading && <output className="resource-audit-selector__state">Cargando recursos…</output>}
           {!loading && error && (
             <div className="resource-audit-selector__state resource-audit-selector__state--error" role="alert">
               <p>No se pudieron cargar los recursos.</p>
@@ -137,7 +142,7 @@ export function ResourceAuditSelector() {
             </div>
           )}
           {!loading && !error && items.length === 0 && (
-            <p className="resource-audit-selector__state" role="status">No se encontró ningún recurso</p>
+            <output className="resource-audit-selector__state">No se encontró ningún recurso</output>
           )}
         </div>
       </div>

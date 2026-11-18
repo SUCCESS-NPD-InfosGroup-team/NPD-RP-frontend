@@ -7,6 +7,12 @@ interface ProjectsTableProps {
   highlightedProjectId?: string
 }
 
+function contractEndCell(remaining: number | null | undefined, contractEnd: string | null) {
+  if (remaining === null || remaining === undefined || remaining > 30) return formatProjectDate(contractEnd)
+  if (remaining < 0) return <Chip tone="solid-danger">Vencido</Chip>
+  return <Chip tone="solid-danger">{`D-${remaining}`}</Chip>
+}
+
 export function ProjectsTable({ projects, highlightedProjectId }: Readonly<ProjectsTableProps>) {
   return (
     <div className="projects-page__table">
@@ -34,11 +40,7 @@ export function ProjectsTable({ projects, highlightedProjectId }: Readonly<Proje
                 </span>
                 <span>{project.leads.length ? project.leads.join(', ') : '—'}</span>
                 <span>{formatProjectDate(project.startDate)}</span>
-                <span>{remaining !== null && remaining !== undefined && remaining < 0
-                  ? <Chip tone="solid-danger">Vencido</Chip>
-                  : remaining !== null && remaining !== undefined && remaining <= 30
-                    ? <Chip tone="solid-danger">{`D-${remaining}`}</Chip>
-                    : formatProjectDate(project.contractEnd)}</span>
+                <span>{contractEndCell(remaining, project.contractEnd)}</span>
                 <span>{project.pendingCount || '—'}</span>
                 <span>{/* TODO SCRUM-165: restore add-members action when the registration route exists. */}</span>
               </div>

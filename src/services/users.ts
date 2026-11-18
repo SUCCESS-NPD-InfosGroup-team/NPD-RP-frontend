@@ -16,7 +16,7 @@ export class UsersApiError extends Error implements Problem {
   readonly code: string
   readonly title: string
   readonly detail: string
-  readonly errors?: Problem['errors']
+  readonly errors?: NonNullable<Problem['errors']>
 
   constructor(problem: Problem) {
     super(problem.detail)

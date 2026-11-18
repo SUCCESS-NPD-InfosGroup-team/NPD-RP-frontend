@@ -20,6 +20,13 @@ describe('Modal', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('closes when the backdrop is clicked', async () => {
+    const onClose = vi.fn()
+    render(<Modal open title="Editar recurso" onClose={onClose}>Contenido</Modal>)
+    await userEvent.click(document.querySelector('.ui-modal__backdrop') as HTMLElement)
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('renders nothing when closed', () => {
     render(<Modal open={false} onClose={vi.fn()}>Contenido</Modal>)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

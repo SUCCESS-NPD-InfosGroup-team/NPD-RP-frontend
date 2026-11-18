@@ -30,6 +30,8 @@ const GLOBAL_CSS = `
 .rp-btn:hover { filter: brightness(0.97); }
 .rp-btn-primary:hover { background: ${C.primaryHover} !important; }
 .rp-row:hover { background: #FBF8F4 !important; }
+.rp-row-button { display: grid; align-items: center; height: 100%; padding: 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rp-timeline-row { width: 100%; padding: 0; border: none; background: none; font: inherit; }
 .rp-input:focus { outline: 2px solid #F5C9A8; border-color: ${C.primary} !important; }
 `;
 const labelStyle: CSSProperties = { display: 'block', fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 };
@@ -81,12 +83,6 @@ export const ResourcesPage = () => {
   });
   const clearSelection = () => setSelectedIds(new Set());
   const openResourceDetail = (resource: Recurso) => setRecursoSeleccionado(resource);
-  const handleResourceKeyDown = (event: React.KeyboardEvent, resource: Recurso) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openResourceDetail(resource);
-    }
-  };
   // BUG-01: Cargar catálogos al montar
   useEffect(() => {
     const loadCatalogos = async () => {
@@ -140,9 +136,7 @@ export const ResourcesPage = () => {
         proyecto: item.project?.name || 'Sin proyecto',
         liderNPD: item.leader?.name || 'Sin líder',
         nivel: `N${item.level}`,
-        estado: typeof item.status === 'string'
-          ? item.status === 'ACTIVO' ? 'Activo' : item.status
-          : item.status.label,
+        estado: statusLabel(item.status),
         fechaInicio: item.startDate || '2026-10-19',
         fechaFin: item.endDate || '2026-12-20',
         version: item.version,
@@ -158,7 +152,7 @@ export const ResourcesPage = () => {
   }, [filters]);
   useEffect(() => {
     const loadData = async () => { await fetchData(); };
-    loadData();
+    void loadData();
   }, [fetchData]);
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -242,44 +236,44 @@ export const ResourcesPage = () => {
       {/* PANEL DE FILTROS CON CATÁLOGOS */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div style={{ flex: 1.2, minWidth: 220 }}>
-          <label style={labelStyle}>Buscar</label>
-          <input className="rp-input" type="text" name="search" value={filters.search} placeholder="Nombre, N° empleado, proyecto..." onChange={handleFilterChange} style={inputStyle} />
+          <label htmlFor="rp-filter-search" style={labelStyle}>Buscar</label>
+          <input id="rp-filter-search" className="rp-input" type="text" name="search" value={filters.search} placeholder="Nombre, N° empleado, proyecto..." onChange={handleFilterChange} style={inputStyle} />
         </div>
         
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Cliente</label>
-          <select className="rp-input" name="cliente" value={filters.cliente} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-cliente" style={labelStyle}>Cliente</label>
+          <select id="rp-filter-cliente" className="rp-input" name="cliente" value={filters.cliente} onChange={handleFilterChange} style={inputStyle}>
             <option value="Todos">Todos</option>
             {catalogos.clientes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Proyecto</label>
-          <select className="rp-input" name="proyecto" value={filters.proyecto} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-proyecto" style={labelStyle}>Proyecto</label>
+          <select id="rp-filter-proyecto" className="rp-input" name="proyecto" value={filters.proyecto} onChange={handleFilterChange} style={inputStyle}>
             <option value="Todos">Todos</option>
             {catalogos.proyectos.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
 
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Líder NPD</label>
-          <select className="rp-input" name="liderNPD" value={filters.liderNPD} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-lider" style={labelStyle}>Líder NPD</label>
+          <select id="rp-filter-lider" className="rp-input" name="liderNPD" value={filters.liderNPD} onChange={handleFilterChange} style={inputStyle}>
             <option value="Todos">Todos</option>
             {catalogos.lideres.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
         </div>
 
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Situación</label>
-          <select className="rp-input" name="situacion" value={filters.situacion} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-situacion" style={labelStyle}>Situación</label>
+          <select id="rp-filter-situacion" className="rp-input" name="situacion" value={filters.situacion} onChange={handleFilterChange} style={inputStyle}>
             {SITUACIONES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
           <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} />
-          Incluir inactivos
+          <span>Incluir inactivos</span>
         </label>
         <button className="rp-btn" onClick={() => setFilters(INITIAL_FILTERS)} style={{ height: 38, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: C.primary }}>
           Limpiar filtros
@@ -320,25 +314,28 @@ export const ResourcesPage = () => {
                 <div
                   key={rec.id}
                   className="rp-row"
-                  onClick={() => openResourceDetail(rec)}
-                  onKeyDown={(event) => handleResourceKeyDown(event, rec)}
-                  role="button"
-                  tabIndex={0}
-                  style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 43, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, cursor: 'pointer', backgroundColor: C.surface }}
+                  style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 43, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, backgroundColor: C.surface }}
                 >
-                  {isAdmin && (<div onClick={e => e.stopPropagation()}><input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} /></div>)}
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: FONT_DISPLAY, fontSize: 15, fontWeight: 700 }}>{rec.nEmpleado}</div>
-                    <div style={{ color: C.muted, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nombre}</div>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.proyecto}</div>
-                    <div style={{ color: C.muted, fontSize: 11 }}>{rec.cliente}</div>
-                  </div>
-                  <div style={{ color: C.text }}>{rec.liderNPD}</div>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ backgroundColor: C.pillBg, color: C.pillText, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{rec.nivel}</span>
-                  </div>
+                  {isAdmin && (<div><input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} /></div>)}
+                  <button
+                    type="button"
+                    className="rp-row-button"
+                    onClick={() => openResourceDetail(rec)}
+                    style={{ gridColumn: isAdmin ? '2 / -1' : '1 / -1', gridTemplateColumns: GRID_COLS }}
+                  >
+                    <span style={{ display: 'block', minWidth: 0 }}>
+                      <span style={{ display: 'block', fontFamily: FONT_DISPLAY, fontSize: 15, fontWeight: 700 }}>{rec.nEmpleado}</span>
+                      <span style={{ display: 'block', color: C.muted, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nombre}</span>
+                    </span>
+                    <span style={{ display: 'block', minWidth: 0 }}>
+                      <span style={{ display: 'block', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.proyecto}</span>
+                      <span style={{ display: 'block', color: C.muted, fontSize: 11 }}>{rec.cliente}</span>
+                    </span>
+                    <span style={{ display: 'block', color: C.text }}>{rec.liderNPD}</span>
+                    <span style={{ display: 'block', textAlign: 'center' }}>
+                      <span style={{ backgroundColor: C.pillBg, color: C.pillText, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{rec.nivel}</span>
+                    </span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -359,18 +356,17 @@ export const ResourcesPage = () => {
                 {recs.map((rec, index) => {
                   const bar = getBarStyle(rec.fechaInicio, rec.fechaFin, index);
                   return (
-                    <div
+                    <button
                       key={rec.id}
+                      type="button"
                       className="rp-timeline-row"
                       onClick={() => openResourceDetail(rec)}
-                      onKeyDown={(event) => handleResourceKeyDown(event, rec)}
-                      role="button"
-                      tabIndex={0}
+                      aria-label={`Ver detalle de ${rec.nombre}`}
                       style={{ height: 43, borderBottom: `1px solid ${C.borderSoft}`, position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     >
-                      {WEEKS.map(w => (<div key={w} style={{ minWidth: 80, flex: 1, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
-                      <div style={{ position: 'absolute', left: bar.left, width: bar.width, height: 16, backgroundColor: bar.backgroundColor, border: `1px solid ${bar.borderColor}`, borderRadius: 3, zIndex: 6 }} />
-                    </div>
+                      {WEEKS.map(w => (<span key={w} style={{ display: 'block', minWidth: 80, flex: 1, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
+                      <span style={{ display: 'block', position: 'absolute', left: bar.left, width: bar.width, height: 16, backgroundColor: bar.backgroundColor, border: `1px solid ${bar.borderColor}`, borderRadius: 3, zIndex: 6 }} />
+                    </button>
                   );
                 })}
               </div>
@@ -397,7 +393,7 @@ export const ResourcesPage = () => {
 
       {/* BUG-03 */}
       {recursoAEditar && isAdmin && (
-        <EditarRecursoModal recurso={recursoAEditar} onClose={() => setRecursoAEditar(null)} onSave={() => { fetchData(); setRecursoAEditar(null); }} />
+        <EditarRecursoModal recurso={recursoAEditar} onClose={() => setRecursoAEditar(null)} onSave={() => { void fetchData(); setRecursoAEditar(null); }} />
       )}
       {recursoSeleccionado && (
         <ResourceDetailDrawer
@@ -412,6 +408,11 @@ export const ResourcesPage = () => {
     </div>
   );
 };
+
+function statusLabel(status: RecursoApi['status']): string {
+  if (typeof status !== 'string') return status.label;
+  return status === 'ACTIVO' ? 'Activo' : status;
+}
 
 export const RowAction = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>

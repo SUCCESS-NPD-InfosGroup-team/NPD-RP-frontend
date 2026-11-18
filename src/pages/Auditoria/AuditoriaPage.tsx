@@ -69,11 +69,7 @@ export function AuditoriaPage() {
 
   const actorOptions = data?.actors ?? []
   const fieldOptions = data?.fields ?? []
-  const resourceName = resourceDetailState.resource
-    ? `${resourceDetailState.resource.name} #${resourceDetailState.resource.employeeNumber}`
-    : resourceDetailState.loading
-      ? 'Cargando recurso…'
-      : `Recurso #${resourceId}`
+  const resourceName = resourceTitle(resourceDetailState, resourceId)
   const totalElements = data?.page.totalElements ?? 0
   const pageMeta = data?.page
   const visibleItems = data?.items ?? []
@@ -172,12 +168,12 @@ export function AuditoriaPage() {
         </div>
       )}
 
-      {loading && <p className="audit-log-page__message" role="status">Cargando auditoría…</p>}
+      {loading && <output className="audit-log-page__message">Cargando auditoría…</output>}
 
       {!loading && !error && visibleItems.length === 0 && !dateError && (
-        <div className="audit-log-page__message" role="status">
+        <output className="audit-log-page__message">
           No hay cambios registrados para este recurso.
-        </div>
+        </output>
       )}
 
       {!loading && !error && visibleItems.length > 0 && (
@@ -215,6 +211,15 @@ export function AuditoriaPage() {
       </section>
     </section>
   )
+}
+
+function resourceTitle(
+  state: { resource?: { name: string; employeeNumber: string | number } | null; loading: boolean },
+  resourceId: string | undefined,
+): string {
+  if (state.resource) return `${state.resource.name} #${state.resource.employeeNumber}`
+  if (state.loading) return 'Cargando recurso…'
+  return `Recurso #${resourceId}`
 }
 
 function isAuditSelectorState(state: unknown): boolean {

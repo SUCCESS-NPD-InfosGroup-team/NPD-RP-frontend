@@ -7,7 +7,7 @@
 .arrivals-page__subtitle { margin: 2px 0 0; color: var(--text-secondary); }
 
 /* Type cards (CA-03) */
-.arrivals-page__cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
+.arrivals-page__cards { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
 .arrivals-page__card {
   display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--border-default); border-radius: var(--radius);

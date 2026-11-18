@@ -10,6 +10,8 @@ interface Props {
   onSave: () => void;
 }
 
+const STATUS_BY_LABEL: Record<string, string> = { Activo: 'ACTIVO', Licencia: 'LICENCIA' };
+
 export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,7 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
     employeeNumber: recurso.nEmpleado,
     name: recurso.nombre,
     level: Number(recurso.nivel.replace('N', '')) || 1,
-    status: recurso.estado === 'Activo' ? 'ACTIVO' : recurso.estado === 'Licencia' ? 'LICENCIA' : 'BAJA',
+    status: STATUS_BY_LABEL[recurso.estado] ?? 'BAJA',
     endDate: recurso.fechaFin || '', 
   });
 
@@ -73,23 +75,23 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>N° Empleado</label>
-            <input type="text" name="employeeNumber" value={formData.employeeNumber} onChange={handleChange} required style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            <label htmlFor="editar-employeeNumber" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>N° Empleado</label>
+            <input id="editar-employeeNumber" type="text" name="employeeNumber" value={formData.employeeNumber} onChange={handleChange} required style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nombre</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} required style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            <label htmlFor="editar-name" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nombre</label>
+            <input id="editar-name" type="text" name="name" value={formData.name} onChange={handleChange} required style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nivel</label>
-              <input type="number" name="level" value={formData.level} onChange={handleChange} min="1" max="5" required style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+              <label htmlFor="editar-level" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nivel</label>
+              <input id="editar-level" type="number" name="level" value={formData.level} onChange={handleChange} min="1" max="5" required style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Estado</label>
-              <select name="status" value={formData.status} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
+              <label htmlFor="editar-status" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Estado</label>
+              <select id="editar-status" name="status" value={formData.status} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
                 <option value="ACTIVO">Activo</option>
                 <option value="LICENCIA">Licencia</option>
                 <option value="BAJA">Baja</option>
@@ -98,8 +100,8 @@ export const EditarRecursoModal = ({ recurso, onClose, onSave }: Props) => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Fecha Fin (Dejar vacío si es indefinido)</label>
-            <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+            <label htmlFor="editar-endDate" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Fecha Fin (Dejar vacío si es indefinido)</label>
+            <input id="editar-endDate" type="date" name="endDate" value={formData.endDate} onChange={handleChange} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>

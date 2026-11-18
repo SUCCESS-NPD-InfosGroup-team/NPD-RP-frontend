@@ -11,7 +11,7 @@ interface ArrivalTypeCardsProps {
 /** CA-03: each card shows the count of its type and works as a filter; selecting it again clears the filter */
 export function ArrivalTypeCards({ summary, selected, onSelect }: Readonly<ArrivalTypeCardsProps>) {
   return (
-    <div className="arrivals-page__cards" role="group" aria-label="Filtrar por tipo de evento">
+    <fieldset className="arrivals-page__cards" aria-label="Filtrar por tipo de evento">
       {ARRIVAL_TYPES.map((type) => {
         const meta = ARRIVAL_TYPE_META[type]
         const isSelected = selected === type
@@ -31,6 +31,6 @@ export function ArrivalTypeCards({ summary, selected, onSelect }: Readonly<Arriv
           </button>
         )
       })}
-    </div>
+    </fieldset>
   )
 }

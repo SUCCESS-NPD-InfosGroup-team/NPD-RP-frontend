@@ -50,12 +50,11 @@ export function ResourceDetailDrawer({
   }, [onClose])
 
   return (
-    <div className="resource-detail-drawer__layer" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose()
-    }}>
-      <aside
+    <div className="resource-detail-drawer__layer">
+      <button className="resource-detail-drawer__backdrop" type="button" tabIndex={-1} aria-hidden="true" aria-label="Cerrar" onClick={onClose} />
+      <dialog
+        open
         className="resource-detail-drawer"
-        role="dialog"
         aria-modal="true"
         aria-labelledby="resource-detail-drawer-title"
       >
@@ -125,7 +124,7 @@ export function ResourceDetailDrawer({
             <Button variant="secondary" icon={<ClockIcon />} onClick={() => navigate(`/auditoria/${resource.id}`)}>Auditoría</Button>
           )}
         </footer>
-      </aside>
+      </dialog>
     </div>
   )
 }
@@ -151,9 +150,7 @@ function ResourceDetailContent({ detail }: Readonly<{ detail: ResourceResponse }
             <dl className="resource-detail-drawer__grid">
               <DetailItem
                 label="Líder NPD"
-                value={assignment.leader
-                  ? `${assignment.leader.name}${assignment.leaderEmployeeNumber ? ` · cód. ${assignment.leaderEmployeeNumber}` : ''}`
-                  : 'No especificado'}
+                value={leaderLabel(assignment.leader?.name, assignment.leaderEmployeeNumber)}
               />
               <DetailItem label="Rol actual en cliente" value={assignment.clientRole?.name ?? 'No especificado'} />
               <DetailItem label="Contacto por cliente" value={assignment.clientContactEmail ?? 'No especificado'} />
@@ -253,6 +250,11 @@ function AssignmentRail({ detail }: Readonly<{ detail: ResourceResponse }>) {
   )
 }
 
+function leaderLabel(name: string | undefined, employeeNumber: string | number | null | undefined): string {
+  if (!name) return 'No especificado'
+  return employeeNumber ? [name, `cód. ${employeeNumber}`].join(' · ') : name
+}
+
 function LastChangeSection({
   lastChange,
   error,
@@ -265,14 +267,31 @@ function LastChangeSection({
   return (
     <section className="resource-detail-drawer__section" aria-labelledby="resource-last-change-title">
       <h3 id="resource-last-change-title">Último cambio</h3>
-      {error ? (
-        <div className="resource-detail-drawer__state resource-detail-drawer__state--error" role="alert">
-          <p>No se pudo cargar el último cambio.</p>
-          <Button variant="secondary" onClick={onRetry}>Reintentar</Button>
-        </div>
-      ) : lastChange === null ? (
-        <p className="resource-detail-drawer__empty">Sin cambios registrados</p>
-      ) : lastChange ? (
+      <LastChangeContent lastChange={lastChange} error={error} onRetry={onRetry} />
+    </section>
+  )
+}
+
+function LastChangeContent({
+  lastChange,
+  error,
+  onRetry,
+}: Readonly<{
+  lastChange: ResourceLastChange | null | undefined
+  error: unknown
+  onRetry: () => void
+}>) {
+  if (error) {
+    return (
+      <div className="resource-detail-drawer__state resource-detail-drawer__state--error" role="alert">
+        <p>No se pudo cargar el último cambio.</p>
+        <Button variant="secondary" onClick={onRetry}>Reintentar</Button>
+      </div>
+    )
+  }
+  if (lastChange === null) return <p className="resource-detail-drawer__empty">Sin cambios registrados</p>
+  if (lastChange === undefined) return <p className="resource-detail-drawer__empty">Cargando cambios…</p>
+  return (
         <div className="resource-detail-drawer__last-change">
           {lastChange.action === 'CREATE'
             ? <p>Registro creado por {lastChange.actor}</p>
@@ -285,10 +304,6 @@ function LastChangeSection({
               </p>
             ))}
         </div>
-      ) : (
-        <p className="resource-detail-drawer__empty">Cargando cambios…</p>
-      )}
-    </section>
   )
 }
 

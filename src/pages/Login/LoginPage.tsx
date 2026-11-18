@@ -62,8 +62,9 @@ export const LoginPage = () => {
             Usa tu cuenta corporativa de Infosgroup.
           </p>
 
-          <label style={{ fontSize: '13px', fontWeight: 'bold' }}>Correo corporativo</label>
+          <label htmlFor="login-email" style={{ fontSize: '13px', fontWeight: 'bold' }}>Correo corporativo</label>
           <input
+            id="login-email"
             type="email"
             placeholder="nombre@infosgroup.com"
             style={{
@@ -76,8 +77,9 @@ export const LoginPage = () => {
             }}
           />
 
-          <label style={{ fontSize: '13px', fontWeight: 'bold' }}>Contraseña</label>
+          <label htmlFor="login-password" style={{ fontSize: '13px', fontWeight: 'bold' }}>Contraseña</label>
           <input
+            id="login-password"
             type="password"
             placeholder="Tu contraseña"
             style={{

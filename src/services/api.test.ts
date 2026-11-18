@@ -12,6 +12,10 @@ describe('apiFetch', () => {
     vi.stubGlobal('fetch', fetchMock)
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   describe('searchRecursos', () => {
     const fetchMock = vi.fn<typeof fetch>()
 
@@ -35,10 +39,6 @@ describe('apiFetch', () => {
       expect(fetchMock.mock.calls[0][0])
         .toBe('/api/v1/planner/resources?page=0&size=25&q=Ana')
     })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('calls /api/v1/{module} with a fresh bearer token and keeps the caller headers', async () => {

@@ -150,8 +150,9 @@ export const RegistrarVacacionModal = ({ isOpen, onClose }: RegistrarVacacionMod
       )}
 
       <form onSubmit={handleSubmit}>
-        <label style={labelStyle}>Colaborador *</label>
+        <label htmlFor="vacacion-colaborador" style={labelStyle}>Colaborador *</label>
         <select
+          id="vacacion-colaborador"
           value={formData.nEmpleado}
           onChange={(e) => handleChange('nEmpleado', e.target.value)}
           style={inputStyle('colaborador')}
@@ -168,8 +169,9 @@ export const RegistrarVacacionModal = ({ isOpen, onClose }: RegistrarVacacionMod
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div>
-            <label style={labelStyle}>Inicio *</label>
+            <label htmlFor="vacacion-inicio" style={labelStyle}>Inicio *</label>
             <input
+              id="vacacion-inicio"
               type="date"
               value={formData.fechaInicio}
               onChange={(e) => handleChange('fechaInicio', e.target.value)}
@@ -179,8 +181,9 @@ export const RegistrarVacacionModal = ({ isOpen, onClose }: RegistrarVacacionMod
           </div>
 
           <div>
-            <label style={labelStyle}>Fin *</label>
+            <label htmlFor="vacacion-fin" style={labelStyle}>Fin *</label>
             <input
+              id="vacacion-fin"
               type="date"
               value={formData.fechaFin}
               onChange={(e) => handleChange('fechaFin', e.target.value)}
@@ -206,8 +209,9 @@ export const RegistrarVacacionModal = ({ isOpen, onClose }: RegistrarVacacionMod
           </div>
         )}
 
-        <label style={labelStyle}>Nota (opcional)</label>
+        <label htmlFor="vacacion-nota" style={labelStyle}>Nota (opcional)</label>
         <input
+          id="vacacion-nota"
           type="text"
           value={formData.nota}
           onChange={(e) => handleChange('nota', e.target.value)}

@@ -19,7 +19,8 @@ export async function apiFetch(module: ApiModule, path: string, init: RequestIni
   headers.set('Authorization', `Bearer ${keycloak.token ?? ''}`)
   headers.set('Content-Type', 'application/json')
 
-  const response = await fetch(`/api/v1/${module}${path.startsWith('/') ? path : `/${path}`}`, { ...init, headers })
+  const normalizedPath = path.startsWith('/') ? path : '/' + path
+  const response = await fetch(`/api/v1/${module}${normalizedPath}`, { ...init, headers })
   if (response.status === 401) {
     await keycloak.login()
   }
