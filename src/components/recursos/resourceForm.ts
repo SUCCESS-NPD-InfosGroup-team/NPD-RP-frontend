@@ -105,44 +105,72 @@ function rank(path: string): number {
   return index === -1 ? FIELD_ORDER.length : index
 }
 
-export function validateResourceForm(values: ResourceFormValues, today: string): FieldErrors {
+const INVALID_DATE = 'Usa una fecha válida en formato dd/mm/aaaa.'
+
+type Rule = [path: string, message: string | false]
+
+/** Keeps the first failing message of each field */
+function collectErrors(rules: Rule[]): FieldErrors {
   const errors: FieldErrors = {}
-  const hireDate = toIsoDate(values.hireDate)
-
-  if (!values.employeeNumber.trim()) errors.employeeNumber = 'Escribe el N° de empleado.'
-  if (!values.name.trim()) errors.name = 'Escribe el nombre del colaborador.'
-  if (values.email.trim() && !EMAIL_PATTERN.test(values.email.trim())) errors.email = 'Usa un correo válido.'
-  if (!values.positionId) errors.positionId = 'Selecciona la posición en Infosgroup.'
-  if (values.level.trim() && !isSmallint(values.level.trim())) errors.level = 'Usa un número entero mayor que 0.'
-  if (!values.workModeId) errors.workModeId = 'Selecciona la modalidad laboral.'
-  if (!values.genderId) errors.genderId = 'Selecciona el género.'
-  if (!values.hireDate) errors.hireDate = 'Indica el inicio de contrato.'
-  else if (!hireDate) errors.hireDate = 'Usa una fecha válida en formato dd/mm/aaaa.'
-  if (!values.status) errors.status = 'Selecciona el estado.'
-
-  if (values.status === 'BAJA') {
-    const terminationDate = toIsoDate(values.terminationDate)
-    if (!values.terminationReasonId) errors['termination.reasonId'] = 'Selecciona el motivo de desvinculación.'
-    if (!values.terminationDate) errors['termination.date'] = 'Indica la fecha de desvinculación.'
-    else if (!terminationDate) errors['termination.date'] = 'Usa una fecha válida en formato dd/mm/aaaa.'
-    else if (hireDate && terminationDate < hireDate) errors['termination.date'] = 'No puede ser anterior al inicio de contrato.'
-    return errors
+  for (const [path, message] of rules) {
+    if (message && !(path in errors)) errors[path] = message
   }
-
-  if (!values.withProject) return errors
-
-  if (!values.clientId) errors['assignment.clientId'] = 'Selecciona el cliente.'
-  if (!values.projectId) errors['assignment.projectId'] = 'Selecciona el proyecto.'
-  if (!values.leaderId) errors['assignment.leaderId'] = 'Selecciona el líder NPD.'
-  if (!values.indefinite) {
-    const endDate = toIsoDate(values.endDate)
-    if (!values.endDate) errors['assignment.endDate'] = 'Indica la fecha final o marca indefinido.'
-    else if (!endDate) errors['assignment.endDate'] = 'Usa una fecha válida en formato dd/mm/aaaa.'
-    else if (endDate < today) errors['assignment.endDate'] = 'Ya pasó. Usa una fecha futura o marca indefinido.'
-  }
-  const contact = values.clientContactEmail.trim()
-  if (contact && !EMAIL_PATTERN.test(contact)) errors['assignment.clientContactEmail'] = 'Usa un correo válido.'
   return errors
+}
+
+/** Message for a required dd/mm/aaaa date, or false when it is valid */
+function requiredDateError(raw: string, missing: string): string | false {
+  if (!raw) return missing
+  return toIsoDate(raw) ? false : INVALID_DATE
+}
+
+function invalidEmail(raw: string): boolean {
+  const email = raw.trim()
+  return email !== '' && !EMAIL_PATTERN.test(email)
+}
+
+function personRules(values: ResourceFormValues): Rule[] {
+  const level = values.level.trim()
+  return [
+    ['employeeNumber', !values.employeeNumber.trim() && 'Escribe el N° de empleado.'],
+    ['name', !values.name.trim() && 'Escribe el nombre del colaborador.'],
+    ['email', invalidEmail(values.email) && 'Usa un correo válido.'],
+    ['positionId', !values.positionId && 'Selecciona la posición en Infosgroup.'],
+    ['level', level !== '' && !isSmallint(level) && 'Usa un número entero mayor que 0.'],
+    ['workModeId', !values.workModeId && 'Selecciona la modalidad laboral.'],
+    ['genderId', !values.genderId && 'Selecciona el género.'],
+    ['hireDate', requiredDateError(values.hireDate, 'Indica el inicio de contrato.')],
+    ['status', !values.status && 'Selecciona el estado.'],
+  ]
+}
+
+function terminationRules(values: ResourceFormValues): Rule[] {
+  const hireDate = toIsoDate(values.hireDate)
+  const terminationDate = toIsoDate(values.terminationDate)
+  return [
+    ['termination.reasonId', !values.terminationReasonId && 'Selecciona el motivo de desvinculación.'],
+    ['termination.date', requiredDateError(values.terminationDate, 'Indica la fecha de desvinculación.')],
+    ['termination.date', Boolean(hireDate && terminationDate && terminationDate < hireDate) && 'No puede ser anterior al inicio de contrato.'],
+  ]
+}
+
+function assignmentRules(values: ResourceFormValues, today: string): Rule[] {
+  const endDate = toIsoDate(values.endDate)
+  return [
+    ['assignment.clientId', !values.clientId && 'Selecciona el cliente.'],
+    ['assignment.projectId', !values.projectId && 'Selecciona el proyecto.'],
+    ['assignment.leaderId', !values.leaderId && 'Selecciona el líder NPD.'],
+    ['assignment.endDate', !values.indefinite && requiredDateError(values.endDate, 'Indica la fecha final o marca indefinido.')],
+    ['assignment.endDate', !values.indefinite && Boolean(endDate && endDate < today) && 'Ya pasó. Usa una fecha futura o marca indefinido.'],
+    ['assignment.clientContactEmail', invalidEmail(values.clientContactEmail) && 'Usa un correo válido.'],
+  ]
+}
+
+export function validateResourceForm(values: ResourceFormValues, today: string): FieldErrors {
+  const rules = personRules(values)
+  if (values.status === 'BAJA') rules.push(...terminationRules(values))
+  else if (values.withProject) rules.push(...assignmentRules(values, today))
+  return collectErrors(rules)
 }
 
 function isSmallint(value: string): boolean {
