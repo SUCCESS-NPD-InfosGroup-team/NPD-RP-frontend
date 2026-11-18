@@ -143,7 +143,7 @@ export const AvisoEditor = ({ aviso, onSave }: AvisoEditorProps) => {
         )}
 
         {/* Umbrales */}
-        <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', display: 'block', marginTop: '16px' }}>UMBRALES (DÍAS ANTES)</label>
+        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', margin: '16px 0 0' }}>UMBRALES (DÍAS ANTES)</p>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '6px' }}>
           <div style={{ flex: 1 }}>
             {/* 4. Uso de Number.parseInt */}
@@ -180,7 +180,7 @@ export const AvisoEditor = ({ aviso, onSave }: AvisoEditorProps) => {
         {renderDestinatarios('cc')}
 
         {/* Plantilla */}
-        <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', display: 'block', marginTop: '16px' }}>PLANTILLA DEL CORREO</label>
+        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', margin: '16px 0 0' }}>PLANTILLA DEL CORREO</p>
         <p style={{ fontSize: '12px', color: '#666', marginTop: '2px', marginBottom: '8px' }}>
           En español. Usa marcadores entre llaves; se reemplazan con los datos de cada cliente.
         </p>

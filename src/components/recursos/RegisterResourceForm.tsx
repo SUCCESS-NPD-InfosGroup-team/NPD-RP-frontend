@@ -295,14 +295,12 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
                     disabled={!probation.endDate}
                     onChange={(event) => update('onProbation', event.target.checked)}
                   />
-                  <span>
-                    <strong>En periodo de prueba</strong>
-                    <small aria-live="polite">
-                      {probation.endDate && probation.vacationMonth
-                        ? `Día ${PROBATION_DAYS} calculado desde el inicio de contrato: ${fromIsoDate(probation.endDate)}. El mes de vacaciones (${MONTH_NAMES[probation.vacationMonth - 1]}) también sale de esta fecha.`
-                        : `Se calcula con la fecha de inicio de contrato: día ${PROBATION_DAYS}. Puedes marcarlo o desmarcarlo después.`}
-                    </small>
-                  </span>
+                  <strong>En periodo de prueba</strong>
+                  <small aria-live="polite">
+                    {probation.endDate && probation.vacationMonth
+                      ? `Día ${PROBATION_DAYS} calculado desde el inicio de contrato: ${fromIsoDate(probation.endDate)}. El mes de vacaciones (${MONTH_NAMES[probation.vacationMonth - 1]}) también sale de esta fecha.`
+                      : `Se calcula con la fecha de inicio de contrato: día ${PROBATION_DAYS}. Puedes marcarlo o desmarcarlo después.`}
+                  </small>
                 </label>
               </div>
             </div>

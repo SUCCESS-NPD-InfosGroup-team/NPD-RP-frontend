@@ -238,37 +238,37 @@ export const ResourcesPage = () => {
       {/* PANEL DE FILTROS CON CATÁLOGOS */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div style={{ flex: 1.2, minWidth: 220 }}>
-          <label style={labelStyle}>Buscar</label>
-          <input className="rp-input" type="text" name="search" value={filters.search} placeholder="Nombre, N° empleado, proyecto..." onChange={handleFilterChange} style={inputStyle} />
+          <label htmlFor="rp-filter-search" style={labelStyle}>Buscar</label>
+          <input id="rp-filter-search" className="rp-input" type="text" name="search" value={filters.search} placeholder="Nombre, N° empleado, proyecto..." onChange={handleFilterChange} style={inputStyle} />
         </div>
         
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Cliente</label>
-          <select className="rp-input" name="cliente" value={filters.cliente} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-cliente" style={labelStyle}>Cliente</label>
+          <select id="rp-filter-cliente" className="rp-input" name="cliente" value={filters.cliente} onChange={handleFilterChange} style={inputStyle}>
             <option value="Todos">Todos</option>
             {catalogos.clientes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Proyecto</label>
-          <select className="rp-input" name="proyecto" value={filters.proyecto} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-proyecto" style={labelStyle}>Proyecto</label>
+          <select id="rp-filter-proyecto" className="rp-input" name="proyecto" value={filters.proyecto} onChange={handleFilterChange} style={inputStyle}>
             <option value="Todos">Todos</option>
             {catalogos.proyectos.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
 
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Líder NPD</label>
-          <select className="rp-input" name="liderNPD" value={filters.liderNPD} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-lider" style={labelStyle}>Líder NPD</label>
+          <select id="rp-filter-lider" className="rp-input" name="liderNPD" value={filters.liderNPD} onChange={handleFilterChange} style={inputStyle}>
             <option value="Todos">Todos</option>
             {catalogos.lideres.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
         </div>
 
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={labelStyle}>Situación</label>
-          <select className="rp-input" name="situacion" value={filters.situacion} onChange={handleFilterChange} style={inputStyle}>
+          <label htmlFor="rp-filter-situacion" style={labelStyle}>Situación</label>
+          <select id="rp-filter-situacion" className="rp-input" name="situacion" value={filters.situacion} onChange={handleFilterChange} style={inputStyle}>
             {SITUACIONES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>

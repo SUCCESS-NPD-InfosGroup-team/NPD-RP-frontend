@@ -159,8 +159,9 @@ export const CrearUsuarioModal = ({ isOpen, onClose }: CrearUsuarioModalProps) =
       )}
 
       <form onSubmit={handleSubmit}>
-        <label style={labelStyle}>Nombre completo *</label>
+        <label htmlFor="crear-usuario-nombre" style={labelStyle}>Nombre completo *</label>
         <input
+          id="crear-usuario-nombre"
           type="text"
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
@@ -169,8 +170,9 @@ export const CrearUsuarioModal = ({ isOpen, onClose }: CrearUsuarioModalProps) =
         />
         {errors.name && <div style={errorStyle}>⚠ {errors.name}</div>}
 
-        <label style={labelStyle}>Correo corporativo *</label>
+        <label htmlFor="crear-usuario-correo" style={labelStyle}>Correo corporativo *</label>
         <input
+          id="crear-usuario-correo"
           type="email"
           value={formData.email}
           onChange={(e) => handleChange('email', e.target.value)}
@@ -179,15 +181,17 @@ export const CrearUsuarioModal = ({ isOpen, onClose }: CrearUsuarioModalProps) =
         />
         {errors.email && <div style={errorStyle}>⚠ {errors.email}</div>}
 
-        <label style={labelStyle}>Rol *</label>
+        <fieldset style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <legend style={{ ...labelStyle, padding: 0 }}>Rol *</legend>
         <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {ROLES.map((role) => (
             <label
               key={role.value}
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
+                display: 'grid',
+                gridTemplateColumns: 'auto 1fr',
+                alignItems: 'start',
+                columnGap: '10px',
                 padding: '10px 12px',
                 border:
                   formData.role === role.value
@@ -205,17 +209,16 @@ export const CrearUsuarioModal = ({ isOpen, onClose }: CrearUsuarioModalProps) =
                 value={role.value}
                 checked={formData.role === role.value}
                 onChange={(e) => handleChange('role', e.target.value)}
-                style={{ marginTop: '3px' }}
+                style={{ marginTop: '3px', gridRow: 'span 2' }}
               />
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{role.label}</div>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-                  {role.description}
-                </div>
-              </div>
+              <strong style={{ fontSize: '14px' }}>{role.label}</strong>
+              <small style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                {role.description}
+              </small>
             </label>
           ))}
         </div>
+        </fieldset>
         {errors.role && <div style={errorStyle}>⚠ {errors.role}</div>}
 
         <div
