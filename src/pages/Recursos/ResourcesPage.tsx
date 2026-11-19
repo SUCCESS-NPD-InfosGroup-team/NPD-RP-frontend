@@ -137,8 +137,8 @@ export const ResourcesPage = () => {
         liderNPD: item.leader?.name || 'Sin líder',
         nivel: `N${item.level}`,
         estado: statusLabel(item.status),
-        fechaInicio: item.startDate || '2026-10-19',
-        fechaFin: item.endDate || '2026-12-20',
+        fechaInicio: item.assignmentStart || '2026-10-19',
+        fechaFin: item.assignmentEnd || '2026-12-20',
         version: item.version,
       }));
       setRecursos(mappedItems);
@@ -175,8 +175,8 @@ export const ResourcesPage = () => {
         'Líder': r.leader?.name,
         'Nivel': r.level,
         'Estado': r.status,
-        'Fecha Inicio': r.startDate,
-        'Fecha Fin': r.endDate,
+        'Fecha Inicio': r.assignmentStart,
+        'Fecha Fin': r.assignmentEnd,
       })));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Recursos');

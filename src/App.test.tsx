@@ -142,6 +142,26 @@ describe('App routes', () => {
     },
   )
 
+  it('opens the register form for the operations administrator', () => {
+    renderAtPath('operations-administrator', '/recursos/nuevo')
+
+    expect(screen.getByRole('heading', { name: 'Registrar Recurso' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
+      .not.toBeInTheDocument()
+  })
+
+  it.each(['guest', 'customer-success', 'npd-leader', 'unknown-role'])(
+    'denies the register form to %s',
+    (role) => {
+      renderAtPath(role, '/recursos/nuevo')
+
+      expect(screen.getByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
+        .toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'Registrar Recurso' }))
+        .not.toBeInTheDocument()
+    },
+  )
+
   it('shows a not-found state for an unknown route', () => {
     renderAtPath('guest', '/no-existe')
 

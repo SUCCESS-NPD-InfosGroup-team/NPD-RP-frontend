@@ -1,5 +1,6 @@
 import { apiFetch, searchRecursos } from './api'
 import { fakeKeycloak } from '../test/keycloakMock'
+import { buildResourceSearchResponse } from '../test/fixtures/resourceSearch'
 
 vi.mock('../auth/keycloak', async () => (await import('../test/keycloakMock')).fakeAuthModule)
 
@@ -30,7 +31,7 @@ describe('apiFetch', () => {
 
     it('omits status filters when listing all resources', async () => {
       fetchMock.mockResolvedValue(new Response(
-        JSON.stringify({ items: [], groups: {}, page: 0, totalPages: 0, totalElements: 0 }),
+        JSON.stringify(buildResourceSearchResponse([], { totalPages: 0 })),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ))
 
