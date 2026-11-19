@@ -3,37 +3,29 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { searchRecursos } from '../../services/api'
 import type { RecursoApi, ResourceSearchResponse } from '../../types'
+import { buildResource, buildResourceSearchResponse } from '../../test/fixtures/resourceSearch'
 import { ResourceAuditSelector } from './ResourceAuditSelector'
 
 vi.mock('../../services/api', () => ({
   searchRecursos: vi.fn(),
 }))
 
-const resource: RecursoApi = {
+const resource = buildResource({
   id: 1045,
-  employeeNumber: '1045',
-  name: 'Ana Torres',
   level: 2,
   clientRole: 'Developer',
   leader: null,
   client: { id: 4, name: 'Acme' },
   project: { id: 8, name: 'Proyecto Uno' },
-  status: { code: 'ACTIVO', label: 'Activo' },
-  startDate: null,
-  endDate: null,
-  version: 1,
-}
+  projectId: 8,
+})
 
 function response(
   items: RecursoApi[],
   totalElements = items.length,
   totalPages = 1,
 ): ResourceSearchResponse {
-  return {
-    items,
-    groups: [],
-    page: { number: 0, size: 25, totalElements, totalPages },
-  }
+  return buildResourceSearchResponse(items, { totalElements, totalPages })
 }
 
 function LocationOutput() {

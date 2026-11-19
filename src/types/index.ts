@@ -48,6 +48,7 @@ export interface User {
 // TIPOS REALES DE LA API (Basados en Scalar)
 // ==========================================
 
+/** Una fila de GET /planner/resources (ResourceListItemResponse en el backend). */
 export interface RecursoApi {
   id: number;
   employeeNumber: string;
@@ -55,12 +56,26 @@ export interface RecursoApi {
   level: number;
   clientRole: string | null;
   leader: { id: number; name: string } | null;
-  client?: { id: number; name: string } | null;
-  project?: { id: number; name: string } | null;
   status: string | { code: string; label: string };
-  startDate: string | null;
-  endDate: string | null;
-  version: number;
+  /** ASIGNADO, PENDIENTE_CONFIRMACION o SIN_PROYECTO. */
+  situation: { code: string; label: string };
+  hireDate: string | null;
+  onProbation: boolean;
+  probationEndDate: string | null;
+  /** @deprecated Usar project.id. */
+  projectId: number | null;
+  /** Inicio de la barra: la fecha más tardía entre la creación del proyecto y la contratación. */
+  assignmentStart: string | null;
+  /** Fecha final en el proyecto; null con indefinido o sin proyecto. */
+  assignmentEnd: string | null;
+  indefinite: boolean;
+  daysToAssignmentEnd: number | null;
+  project: { id: number; name: string } | null;
+  client: { id: number; name: string } | null;
+  /** false = proyecto inactivo («No especificado»); null = «Sin proyecto». */
+  projectActive: boolean | null;
+  /** El listado no lo envía; solo llega en el detalle del recurso. */
+  version?: number;
 }
 
 export interface ResourceSearchResponse {
