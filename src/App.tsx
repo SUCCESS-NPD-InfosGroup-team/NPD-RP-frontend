@@ -4,10 +4,10 @@ import {
   canAccessNavigationItem,
   NAVIGATION_ITEMS,
 } from './components/layout/roleNavigation'
+import { NoAccess, RegisterResourceRoute } from './components/layout/AccessGuard'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
-import { RegistrarRecursoPage } from './pages/Recursos/RegistrarRecursoPage'
 import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
@@ -27,12 +27,7 @@ interface ScreenProps {
 
 function Screen({ roles, item }: Readonly<ScreenProps>) {
   if (!canAccessNavigationItem(roles, item.id)) {
-    return (
-      <section className="no-access" role="alert">
-        <h1>No tienes acceso a esta pantalla</h1>
-        <p>Tu perfil no tiene permiso para consultar esta sección.</p>
-      </section>
-    )
+    return <NoAccess />
   }
 
   if (item.id === 'resources') {
@@ -92,8 +87,7 @@ export default function App({
             />
           ))}
           <Route path="auditoria/:resourceId" element={<AuditoriaPage />} />
-          {/*Route Register BUG 05*/}
-          <Route path="recursos/nuevo" element={<RegistrarRecursoPage />} />
+          <Route path="recursos/nuevo" element={<RegisterResourceRoute roles={roles} />} />
           <Route
             path="*"
             element={
