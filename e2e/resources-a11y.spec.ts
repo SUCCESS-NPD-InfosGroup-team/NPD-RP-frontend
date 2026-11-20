@@ -2,14 +2,13 @@ import AxeBuilder from '@axe-core/playwright'
 import { test, expect } from './support/test'
 
 /**
- * Accesibilidad WCAG 2.1 A/AA con axe-core: no se aceptan violaciones serias ni críticas nuevas.
- * KNOWN son hallazgos previos al PR #48, reportados en el informe de pruebas (A11Y-F1..F3): al
- * corregirlos, quítalos de la lista para que la prueba los vigile.
+ * Accesibilidad WCAG 2.1 A/AA con axe-core: no se aceptan violaciones serias ni críticas.
+ * EXEMPT son excepciones que WCAG permite y axe no distingue:
+ * - El «IG» del logo usa el naranja de marca (#ff5000, 3,3:1). WCAG 1.4.3 exime el texto que
+ *   forma parte de un logotipo.
  */
-const KNOWN = new Set([
+const EXEMPT = new Set([
   'color-contrast .brand-mark',
-  'label-content-name-mismatch .brand',
-  'scrollable-region-focusable .resource-detail-drawer__body',
 ])
 
 test.describe('Recursos · accesibilidad', () => {
@@ -19,7 +18,7 @@ test.describe('Recursos · accesibilidad', () => {
   const serious = (results: Awaited<ReturnType<typeof scan>>) => results.violations
     .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
     .flatMap((violation) => violation.nodes.map((node) => ({ key: `${violation.id} ${node.target.join(' ')}`, help: violation.help })))
-    .filter(({ key }) => !KNOWN.has(key))
+    .filter(({ key }) => !EXEMPT.has(key))
     .map(({ key, help }) => `${key}: ${help}`)
 
   test('E2E-A11Y-01 roster', async ({ page, open }) => {
@@ -40,6 +39,19 @@ test.describe('Recursos · accesibilidad', () => {
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
     await expect(page.getByRole('alert')).toBeVisible()
     expect(serious(await scan(page))).toEqual([])
+  })
+
+  test('E2E-A11Y-05 el detalle se desplaza con el teclado', async ({ page, open }) => {
+    await open('/recursos')
+    await page.getByRole('button', { name: /^Ver detalle de / }).first().click()
+    const body = page.getByRole('region', { name: 'Datos del recurso' })
+    await expect(body).toBeVisible()
+
+    await body.focus()
+    await expect(body).toBeFocused()
+    const before = await body.evaluate((node) => node.scrollTop)
+    await page.keyboard.press('PageDown')
+    await expect.poll(() => body.evaluate((node) => node.scrollTop)).toBeGreaterThan(before)
   })
 
   test('E2E-A11Y-04 los filtros y la paginación se usan con teclado', async ({ page, open }) => {

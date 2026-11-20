@@ -78,7 +78,8 @@ export function MainLayout({
   return (
     <div className="app-shell">
       <header className="app-header">
-        <NavLink className="brand" to="/recursos" aria-label="NPD Planner, inicio">
+        {/* Sin aria-label: el nombre accesible es el texto visible «NPD Planner» (WCAG 2.5.3) */}
+        <NavLink className="brand" to="/recursos">
           <span className="brand-mark" aria-hidden="true">IG</span>
           <span>NPD Planner</span>
         </NavLink>

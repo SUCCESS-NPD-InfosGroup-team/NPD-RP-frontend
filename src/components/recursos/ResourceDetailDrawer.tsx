@@ -95,7 +95,8 @@ export function ResourceDetailDrawer({
           </div>
         </header>
 
-        <div className="resource-detail-drawer__body">
+        {/* Enfocable para desplazarse con el teclado cuando el contenido no cabe (WCAG 2.1.1) */}
+        <div className="resource-detail-drawer__body" tabIndex={0} role="region" aria-label="Datos del recurso">
           {loading && (
             <div className="resource-detail-drawer__state" aria-label="Cargando detalle">
               Cargando detalle…
