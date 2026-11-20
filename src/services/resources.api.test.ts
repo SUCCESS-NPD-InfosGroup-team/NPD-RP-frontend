@@ -98,6 +98,33 @@ describe('resourcesApi', () => {
     expect(mockedApiFetch).toHaveBeenCalledOnce()
   })
 
+  it('puts the whole record with the version that was read (HU-02)', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({ id: 1045, version: 4 }), { status: 200 }))
+
+    await expect(resourcesApi.updateResource(1045, { ...request, version: 3 })).resolves.toMatchObject({ version: 4 })
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/resources/1045', expect.objectContaining({
+      method: 'PUT',
+      body: JSON.stringify({ ...request, version: 3 }),
+    }))
+  })
+
+  it('keeps who saved the record on a 409 CONCURRENT_MODIFICATION', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({
+      code: 'CONCURRENT_MODIFICATION', detail: 'Otra persona guardó el registro.', currentVersion: 4, updatedBy: 'lbatista',
+    }), { status: 409 }))
+
+    await expect(resourcesApi.updateResource(1045, { ...request, version: 3 })).rejects.toMatchObject({
+      status: 409, code: 'CONCURRENT_MODIFICATION', updatedBy: 'lbatista',
+    })
+  })
+
+  it('loads the client roles of the roster filter', async () => {
+    mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({ items: [{ id: 7, name: 'QA Funcional' }] }), { status: 200 }))
+
+    await expect(resourcesApi.getClientRoles()).resolves.toEqual([{ id: 7, name: 'QA Funcional' }])
+    expect(mockedApiFetch).toHaveBeenCalledWith('planner', '/catalogs/client-roles')
+  })
+
   it('reads one resource', async () => {
     mockedApiFetch.mockResolvedValue(new Response(JSON.stringify({ id: 7 })))
     await expect(resourcesApi.getResource(7)).resolves.toEqual({ id: 7 })

@@ -1,6 +1,6 @@
 // src/services/api.ts
 import { keycloak, updateTokenOrLogout } from '../auth/keycloak'
-import type { Filters, ResourceSearchResponse } from '../types'
+import type { Filters, RecursoApi, ResourceSearchResponse } from '../types'
 
 /**
  * Backend modules. Every endpoint lives under one of them: /api/v1/{module}/{resource}.
@@ -44,6 +44,8 @@ export async function searchRecursos(
   if (filters.rol && filters.rol !== 'Todos') params.set('clientRoleId', filters.rol)
   if (filters.nivel && filters.nivel !== 'Todos') params.set('level', filters.nivel.replace('N', ''))
 
+  if (filters.situacion && filters.situacion !== 'Todos') params.set('situation', filters.situacion)
+
   const status = filters.estado?.toUpperCase()
   if (status === 'BAJA') {
     params.set('status', 'BAJA')
@@ -59,35 +61,19 @@ export async function searchRecursos(
   return response.json() as Promise<ResourceSearchResponse>
 }
 
-export interface UpdateRecursoPayload {
-  employeeNumber: string
-  name: string
-  email?: string
-  level: number
-  status: string
-  version: number
-  positionId?: number
-  workModeId?: number
-  genderId?: number
-  hireDate?: string
-  onProbation?: boolean
-  assignment?: {
-    endDate?: string
-    indefinite: boolean
-  }
-}
+/** Tamaño máximo de página que acepta el backend (spring.data.web.pageable.max-page-size) */
+export const MAX_PAGE_SIZE = 100
 
-export async function updateRecurso(id: string, payload: UpdateRecursoPayload): Promise<unknown> {
-  const response = await apiFetch('planner', `/resources/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  })
-
-  if (response.status === 409) {
-    throw new Error('CONFLICT: El registro fue modificado por otro usuario. Por favor, recarga la página.')
+/**
+ * Todos los recursos que cumplen los filtros, recorriendo las páginas del backend (BUG-06).
+ * El backend recorta cualquier `size` mayor a 100, así que no basta con pedir una página grande.
+ */
+export async function searchAllRecursos(filters: Filters): Promise<RecursoApi[]> {
+  const first = await searchRecursos(filters, 1, MAX_PAGE_SIZE)
+  const items = [...first.items]
+  for (let page = 2; page <= first.page.totalPages; page++) {
+    const next = await searchRecursos(filters, page, MAX_PAGE_SIZE)
+    items.push(...next.items)
   }
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: No se pudo actualizar el recurso.`)
-  }
-  return response.json()
+  return items
 }
