@@ -27,33 +27,52 @@ export async function apiFetch(module: ApiModule, path: string, init: RequestIni
   return response
 }
 
-export async function searchRecursos(
-  filters: Filters,
-  page = 1,
-  size = 25,
-): Promise<ResourceSearchResponse> {
+/** Filtro de la pantalla → parámetro de la API. «Todos» o vacío no se envía */
+const FILTER_PARAMS: ReadonlyArray<[keyof Filters, string]> = [
+  ['cliente', 'clientId'],
+  ['proyecto', 'projectId'],
+  ['liderNPD', 'leaderId'],
+  ['rol', 'clientRoleId'],
+  ['situacion', 'situation'],
+]
+
+/** Activo = ACTIVO y LICENCIA; Baja = BAJA; Todos = sin filtro de estado */
+function appendStatus(params: URLSearchParams, estado: string | undefined): void {
+  const status = estado?.toUpperCase()
+  if (status === 'TODOS') return
+  if (status === 'BAJA') {
+    params.set('status', 'BAJA')
+    return
+  }
+  params.append('status', 'ACTIVO')
+  params.append('status', 'LICENCIA')
+}
+
+export function buildSearchParams(filters: Filters, page = 1, size = 25): URLSearchParams {
   const params = new URLSearchParams({
     page: String(Math.max(page - 1, 0)),
     size: String(size),
   })
 
-  if (filters.search?.trim()) params.set('q', filters.search.trim())
-  if (filters.cliente && filters.cliente !== 'Todos') params.set('clientId', filters.cliente)
-  if (filters.proyecto && filters.proyecto !== 'Todos') params.set('projectId', filters.proyecto)
-  if (filters.liderNPD && filters.liderNPD !== 'Todos') params.set('leaderId', filters.liderNPD)
-  if (filters.rol && filters.rol !== 'Todos') params.set('clientRoleId', filters.rol)
-  if (filters.nivel && filters.nivel !== 'Todos') params.set('level', filters.nivel.replace('N', ''))
-
-  if (filters.situacion && filters.situacion !== 'Todos') params.set('situation', filters.situacion)
-
-  const status = filters.estado?.toUpperCase()
-  if (status === 'BAJA') {
-    params.set('status', 'BAJA')
-  } else if (status !== 'TODOS') {
-    params.append('status', 'ACTIVO')
-    params.append('status', 'LICENCIA')
+  const q = filters.search?.trim()
+  if (q) params.set('q', q)
+  for (const [filter, param] of FILTER_PARAMS) {
+    const value = filters[filter]
+    if (value && value !== 'Todos') params.set(param, value)
   }
+  const level = filters.nivel?.replace('N', '')
+  if (level && level !== 'Todos') params.set('level', level)
 
+  appendStatus(params, filters.estado)
+  return params
+}
+
+export async function searchRecursos(
+  filters: Filters,
+  page = 1,
+  size = 25,
+): Promise<ResourceSearchResponse> {
+  const params = buildSearchParams(filters, page, size)
   const response = await apiFetch('planner', `/resources?${params.toString()}`)
   if (!response.ok) {
     throw new Error('Error al buscar recursos')
@@ -70,10 +89,7 @@ export const MAX_PAGE_SIZE = 100
  */
 export async function searchAllRecursos(filters: Filters): Promise<RecursoApi[]> {
   const first = await searchRecursos(filters, 1, MAX_PAGE_SIZE)
-  const items = [...first.items]
-  for (let page = 2; page <= first.page.totalPages; page++) {
-    const next = await searchRecursos(filters, page, MAX_PAGE_SIZE)
-    items.push(...next.items)
-  }
-  return items
+  const remaining = Array.from({ length: Math.max(first.page.totalPages - 1, 0) }, (_, index) => index + 2)
+  const rest = await Promise.all(remaining.map((page) => searchRecursos(filters, page, MAX_PAGE_SIZE)))
+  return [first, ...rest].flatMap((response) => response.items)
 }

@@ -227,11 +227,66 @@ function AssignmentPanel({
   )
 }
 
+type LoadState = 'loading' | 'ready' | 'error'
+
+/**
+ * Edit mode (HU-02): reads the record from GET /planner/resources/{id} and hands it to `onLoaded`.
+ * `reload` discards unsaved changes, as «Recargar registro» asks.
+ */
+function useResourceRecord(resourceId: number | string | undefined, onLoaded: (resource: ResourceResponse) => void) {
+  const [loadState, setLoadState] = useState<LoadState>(resourceId === undefined ? 'ready' : 'loading')
+
+  const reload = useCallback(async () => {
+    if (resourceId === undefined) return
+    setLoadState('loading')
+    try {
+      const resource = await (await getResourcesApi()).getResource(resourceId)
+      onLoaded(resource)
+      setLoadState('ready')
+    } catch {
+      setLoadState('error')
+    }
+  }, [resourceId, onLoaded])
+
+  useEffect(() => {
+    const load = async () => { await reload() }
+    void load()
+  }, [reload])
+
+  return { loadState, reload }
+}
+
+function RecordLoadState({ loadState, onRetry }: Readonly<{ loadState: LoadState; onRetry: () => void }>) {
+  if (loadState === 'loading') {
+    return <output className="resource-form__note">Cargando el registro…</output>
+  }
+  return (
+    <div className="resource-form__summary" role="alert">
+      <AlertIcon />
+      <p>No se pudo cargar el registro del recurso.</p>
+      <Button variant="secondary" onClick={onRetry}>Reintentar</Button>
+    </div>
+  )
+}
+
+/** CA-08: tells which imported «No especificado» values must be replaced before saving */
+function NotSpecifiedNotice({ fields }: Readonly<{ fields: string[] }>) {
+  if (fields.length === 0) return null
+  return (
+    <output className="resource-form__summary">
+      <AlertIcon />
+      <p>
+        Este registro viene del import con valores «No especificado» en{' '}
+        {fields.map((path) => FIELD_LABELS[path] ?? path).join(' y ')}. Elige el valor real para poder guardar.
+      </p>
+    </output>
+  )
+}
+
 export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, onCancel }: Readonly<RegisterResourceFormProps>) {
   const mode: FormMode = resourceId === undefined ? 'create' : 'edit'
   const [values, setValues] = useState<ResourceFormValues>(EMPTY_RESOURCE_FORM)
   const [version, setVersion] = useState<number>()
-  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>(mode === 'edit' ? 'loading' : 'ready')
   const [toFix, setToFix] = useState<string[]>([])
   const [stale, setStale] = useState(false)
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -269,29 +324,18 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
     loadClients()
   }, [loadCatalogs, loadClients])
 
-  /** Edit mode: reads the record, with the version the PUT will send. Discards unsaved changes */
-  const loadResource = useCallback(() => {
-    if (resourceId === undefined) return
-    setLoadState('loading')
-    void getResourcesApi()
-      .then((api) => api.getResource(resourceId))
-      .then((resource) => {
-        setValues(fromResourceResponse(resource))
-        setVersion(resource.version)
-        setToFix(resource.fieldsToFix)
-        setErrors(fieldsToFixErrors(resource.fieldsToFix))
-        setGeneralError('')
-        setShowSummary(false)
-        setStale(false)
-        setLoadState('ready')
-      })
-      .catch(() => setLoadState('error'))
-  }, [resourceId])
-
-  useEffect(() => {
-    const load = async () => { loadResource() }
-    void load()
-  }, [loadResource])
+  /** Edit mode: prefills the form with the record and the version the PUT will send */
+  const applyRecord = useCallback((resource: ResourceResponse) => {
+    setValues(fromResourceResponse(resource))
+    setVersion(resource.version)
+    setToFix(resource.fieldsToFix)
+    setErrors(fieldsToFixErrors(resource.fieldsToFix))
+    setGeneralError('')
+    setShowSummary(false)
+    setStale(false)
+  }, [])
+  const { loadState, reload } = useResourceRecord(resourceId, applyRecord)
+  const reloadRecord = () => { void reload() }
 
   useEffect(() => {
     if (!values.clientId) return
@@ -395,18 +439,7 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
   const visibleProjects = values.clientId ? clientProjects : []
   const editing = mode === 'edit'
 
-  if (loadState === 'loading') {
-    return <p className="resource-form__note" role="status">Cargando el registro…</p>
-  }
-  if (loadState === 'error') {
-    return (
-      <div className="resource-form__summary" role="alert">
-        <AlertIcon />
-        <p>No se pudo cargar el registro del recurso.</p>
-        <Button variant="secondary" onClick={loadResource}>Reintentar</Button>
-      </div>
-    )
-  }
+  if (loadState !== 'ready') return <RecordLoadState loadState={loadState} onRetry={reloadRecord} />
 
   return (
     <>
@@ -415,18 +448,10 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
           errorFields={stale ? [] : errorFields}
           generalError={generalError}
           summaryRef={summaryRef}
-          onReload={stale ? loadResource : undefined}
+          onReload={stale ? reloadRecord : undefined}
         />
       )}
-      {editing && toFix.length > 0 && !showSummary && (
-        <div className="resource-form__summary" role="status">
-          <AlertIcon />
-          <p>
-            Este registro viene del import con valores «No especificado» en{' '}
-            {toFix.map((path) => FIELD_LABELS[path] ?? path).join(' y ')}. Elige el valor real para poder guardar.
-          </p>
-        </div>
-      )}
+      {editing && !showSummary && <NotSpecifiedNotice fields={toFix} />}
       {catalogsError && (
         <div className="resource-form__summary" role="alert">
           <AlertIcon />
