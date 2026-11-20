@@ -6,6 +6,7 @@ import { searchAllRecursos, searchRecursos } from '../../services/api';
 import { getProjectsApi, type ProjectsApi } from '../../services/projects';
 import { getResourcesApi, type ResourcesApi } from '../../services/resources';
 import { buildResource, buildResourceSearchResponse, resourceSearchResponse } from '../../test/fixtures/resourceSearch';
+import type { ResourceSearchResponse } from '../../types';
 
 vi.mock('../../services/api', () => ({ searchRecursos: vi.fn(), searchAllRecursos: vi.fn() }));
 vi.mock('../../services/projects', () => ({ getProjectsApi: vi.fn() }));
@@ -210,6 +211,27 @@ describe('ResourcesPage · BUG-01 real search API', () => {
     expect(withoutProject.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(0);
     const indefinite = screen.getByRole('button', { name: 'Ver detalle de Importado' });
     expect(indefinite.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(1);
+  });
+
+  it('ignores a slow response of an older search that arrives after the current one', async () => {
+    let releaseOld: (value: ResourceSearchResponse) => void = () => undefined;
+    const oldSearch = new Promise<ResourceSearchResponse>((resolve) => { releaseOld = resolve; });
+    const current = buildResourceSearchResponse([buildResource({ id: 9, name: 'Ana Zúñiga' })], { totalElements: 1, totalPages: 1 });
+    mockedSearch.mockImplementation((filters) => (filters.search === 'zuniga' ? Promise.resolve(current) : oldSearch));
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'zuniga' } });
+    expect(await screen.findByText('Ana Zúñiga')).toBeInTheDocument();
+
+    releaseOld(buildResourceSearchResponse(
+      Array.from({ length: 3 }, (_, index) => buildResource({ id: 100 + index, name: `Vieja ${index}` })),
+      { totalElements: 130, totalPages: 6 },
+    ));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(screen.getByText('Ana Zúñiga')).toBeInTheDocument();
+    expect(screen.queryByText('Vieja 0')).not.toBeInTheDocument();
+    expect(screen.getByText('1 colaboradores, 25 por página.')).toBeInTheDocument();
   });
 
   it('says so when nobody matches the filters', async () => {

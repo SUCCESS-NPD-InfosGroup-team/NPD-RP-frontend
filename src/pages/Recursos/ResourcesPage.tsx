@@ -1,5 +1,5 @@
 // src/pages/Recursos/ResourcesPage.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { Filters, Recurso, RecursoApi } from '../../types';
 import { searchAllRecursos, searchRecursos } from '../../services/api';
@@ -158,21 +158,28 @@ export const ResourcesPage = () => {
   }, [filters.cliente, clienteElegido]);
   const proyectosDelCliente = clienteElegido ? catalogos.proyectos : [];
 
-  // BUG-01 y BUG-02: API real, paginada en el servidor
+  // BUG-01 y BUG-02: API real, paginada en el servidor.
+  // Solo se aplica la respuesta de la última búsqueda: con la red lenta, una respuesta vieja que
+  // llega tarde no debe pisar la de los filtros actuales.
+  const latestSearch = useRef(0);
   const fetchData = useCallback(async () => {
+    const searchId = ++latestSearch.current;
+    const isCurrent = () => searchId === latestSearch.current;
     setLoading(true);
     setError(null);
     try {
       const res = await searchRecursos(filters, page, PAGE_SIZE);
+      if (!isCurrent()) return;
       setRecursos(res.items.map(toRecurso));
       setPageInfo({ totalElements: res.page.totalElements, totalPages: res.page.totalPages });
       setSelectedIds(new Set());
     } catch {
+      if (!isCurrent()) return;
       setError('No se pudieron cargar los recursos.');
       setRecursos([]);
       setPageInfo(EMPTY_PAGE);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [filters, page]);
   useEffect(() => {

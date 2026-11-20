@@ -148,7 +148,7 @@ describe('RegisterResourceForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sin proyecto por ahora' }))
     fireEvent.click(screen.getByRole('button', { name: 'Registrar recurso' }))
     expect(await screen.findByText('El N° 1045 ya está registrado (Ana Torres).')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Abrir su registro' })).toHaveAttribute('href', '/recursos/1045')
+    expect(screen.getByRole('link', { name: 'Abrir su registro' })).toHaveAttribute('href', '/recursos/1045/editar')
     change('N° de empleado *', '1103')
     expect(screen.queryByRole('link', { name: 'Abrir su registro' })).not.toBeInTheDocument()
   })
@@ -168,7 +168,7 @@ describe('RegisterResourceForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Registrar recurso' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Corrige los 2 campos marcados: N° de empleado y Correo del recurso.')
     expect(screen.getByText('Ese correo ya está registrado.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Abrir su registro' })).toHaveAttribute('href', '/recursos/1045')
+    expect(screen.getByRole('link', { name: 'Abrir su registro' })).toHaveAttribute('href', '/recursos/1045/editar')
   })
 
   it('shows the detail when the database does not answer', async () => {

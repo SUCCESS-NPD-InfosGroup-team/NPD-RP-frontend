@@ -469,7 +469,7 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
               <div>
                 <Field {...fieldProps('employeeNumber')} label="N° de empleado *" value={values.employeeNumber} onChange={(event) => update('employeeNumber', event.target.value)} />
                 {duplicate && (
-                  <a className="resource-form__duplicate" href={`/recursos/${duplicate.id}`}>Abrir su registro</a>
+                  <a className="resource-form__duplicate" href={`/recursos/${duplicate.id}/editar`}>Abrir su registro</a>
                 )}
               </div>
               <div className="resource-form__span-2">
