@@ -25,7 +25,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'], channel: process.env.PW_CHROME_CHANNEL } },
   ],
   webServer: {
-    command: `npx vite --port ${PORT} --strictPort`,
+    command: `npm run dev -- --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

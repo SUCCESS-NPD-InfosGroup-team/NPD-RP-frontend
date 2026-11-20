@@ -10,7 +10,8 @@
     "test:coverage": "vitest run --coverage --exclude 'src/pages/Tablero/**' --exclude 'src/pages/Avisos/**' --exclude 'src/pages/Usuarios/**' --exclude 'src/pages/Vacaciones/**' --exclude 'src/context/**' --exclude 'src/services/**' --exclude 'src/App.test.tsx'",
     "build": "vite build",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "file-saver": "^2.0.5",
