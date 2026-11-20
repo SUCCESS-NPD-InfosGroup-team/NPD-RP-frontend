@@ -32,3 +32,9 @@ coverage
 
 # Local Keycloak realm and theme files
 keycloak-local/
+
+# Playwright (E2E)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

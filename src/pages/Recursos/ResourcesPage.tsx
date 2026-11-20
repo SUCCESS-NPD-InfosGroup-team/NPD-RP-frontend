@@ -1,14 +1,16 @@
 // src/pages/Recursos/ResourcesPage.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { Filters, Recurso, RecursoApi } from '../../types';
-import { searchRecursos, apiFetch } from '../../services/api';
+import { searchAllRecursos, searchRecursos } from '../../services/api';
+import { getProjectsApi } from '../../services/projects';
+import { getResourcesApi } from '../../services/resources';
 import { useAuth } from '../../context/AuthContext';
-import { EditarRecursoModal } from '../../components/recursos/EditarRecursoModal';
 import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDrawer';
 import { Download, Plus, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
+import { exportFileName, statusText, toExportRows } from './resourceExport';
 
 
 // ==========================================
@@ -47,12 +49,42 @@ const SITUACIONES = [
   { value: 'SIN_PROYECTO', label: 'Sin proyecto' },
 ];
 const INITIAL_FILTERS: Filters = {
-  search: '', cliente: 'Todos', proyecto: 'Todos', liderNPD: 'Todos', rol: 'Todos', nivel: 'Todos', estado: 'Activo', situacion: 'Todos',
+  search: '', cliente: 'Todos', proyecto: 'Todos', liderNPD: 'Todos', rol: 'Todos', nivel: '', estado: 'Activo', situacion: 'Todos',
 };
-// Interfaz para los catálogos
+/** El backend pagina de a 25 (HU-03) */
+const PAGE_SIZE = 25;
+// Opciones de los filtros: los ids van como texto en los <select>
 interface CatalogoItem {
-  id: number;
+  id: number | string;
   name: string;
+}
+interface PageInfo {
+  totalElements: number;
+  totalPages: number;
+}
+const EMPTY_PAGE: PageInfo = { totalElements: 0, totalPages: 0 };
+
+/** Grupo de la fila: el cliente, «No especificado» si el proyecto está inactivo o «Sin proyecto» */
+function groupLabel(item: RecursoApi): string {
+  if (item.projectActive === false) return 'No especificado';
+  return item.client?.name ?? 'Sin proyecto';
+}
+
+function toRecurso(item: RecursoApi): Recurso {
+  return {
+    id: item.id.toString(),
+    nEmpleado: `#${item.employeeNumber}`,
+    nombre: item.name,
+    rol: item.clientRole ?? 'Sin rol',
+    cliente: groupLabel(item),
+    proyecto: item.project?.name ?? 'Sin proyecto',
+    liderNPD: item.leader?.name ?? 'Sin líder',
+    nivel: item.level == null ? '—' : `N${item.level}`,
+    estado: statusText(item.status),
+    // Sin datos falsos (BUG-02): sin proyecto no hay barra; sin fin es indefinido
+    fechaInicio: item.assignmentStart ?? '',
+    fechaFin: item.assignmentEnd ?? '',
+  };
 }
 export const ResourcesPage = () => {
   const { hasRole } = useAuth();
@@ -61,10 +93,13 @@ export const ResourcesPage = () => {
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recursoAEditar, setRecursoAEditar] = useState<Recurso | null>(null);
   const [recursoSeleccionado, setRecursoSeleccionado] = useState<Recurso | null>(null);
-  const [includeInactive, setIncludeInactive] = useState(false);
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
+  const [page, setPage] = useState(1);
+  const [pageInfo, setPageInfo] = useState<PageInfo>(EMPTY_PAGE);
+  const [catalogError, setCatalogError] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   // CA-14: selección múltiple
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const gridCols = isAdmin ? `32px ${GRID_COLS}` : GRID_COLS;
@@ -73,8 +108,9 @@ export const ResourcesPage = () => {
     clientes: CatalogoItem[];
     proyectos: CatalogoItem[];
     lideres: CatalogoItem[];
+    roles: CatalogoItem[];
   }>({
-    clientes: [], proyectos: [], lideres: []
+    clientes: [], proyectos: [], lideres: [], roles: []
   });
   const toggleOne = (id: string) => setSelectedIds(prev => {
     const next = new Set(prev);
@@ -83,106 +119,103 @@ export const ResourcesPage = () => {
   });
   const clearSelection = () => setSelectedIds(new Set());
   const openResourceDetail = (resource: Recurso) => setRecursoSeleccionado(resource);
-  // BUG-01: Cargar catálogos al montar
-  useEffect(() => {
-    const loadCatalogos = async () => {
-      try {
-        const [resClientes, resLideres] = await Promise.all([
-          apiFetch('planner', '/clients').then(r => r.json()),
-          apiFetch('planner', '/resources/npd-leads').then(r => r.json()),
-        ]);
-        setCatalogos(prev => ({ 
-          ...prev, 
-          clientes: resClientes.items || [],
-          lideres: resLideres.items || [],
-         }));
-      } catch {
-        // Error silencioso
-      }
-    };
-    void loadCatalogos();
+  // BUG-01: opciones de los filtros desde la API; si fallan se avisa (BUG-02)
+  const loadCatalogos = useCallback(async () => {
+    try {
+      const [projectsApi, resourcesApi] = await Promise.all([getProjectsApi(), getResourcesApi()]);
+      const [clientes, lideres, roles] = await Promise.all([
+        projectsApi.listClients(),
+        resourcesApi.getNpdLeads(),
+        resourcesApi.getClientRoles(),
+      ]);
+      setCatalogos(prev => ({ ...prev, clientes, lideres, roles }));
+      setCatalogError(false);
+    } catch {
+      setCatalogError(true);
+    }
   }, []);
 
-  // BUG-01: Cargar proyectos cuando cambia el cliente
   useEffect(() => {
+    const load = async () => { await loadCatalogos(); };
+    void load();
+  }, [loadCatalogos]);
+
+  // BUG-01: proyectos del cliente elegido
+  const clienteElegido = Boolean(filters.cliente && filters.cliente !== 'Todos');
+  useEffect(() => {
+    if (!clienteElegido) return;
+    let current = true;
     const loadProyectos = async () => {
-      if (!filters.cliente || filters.cliente === 'Todos') {
-        setCatalogos(prev => ({ ...prev, proyectos: []}));
-        return;
+      try {
+        const proyectos = await (await getProjectsApi()).listClientProjects(filters.cliente as string);
+        if (current) setCatalogos(prev => ({ ...prev, proyectos }));
+      } catch {
+        if (current) setCatalogError(true);
       }
-        try {
-          const res = await apiFetch('planner', `/clients/${filters.cliente}/projects`);
-          const data = await res.json();
-            setCatalogos(prev => ({ ...prev, proyectos: data.items || []}));
-        } catch {
-          // Error silencioso
-        }
     };
     void loadProyectos();
-  }, [filters.cliente]);
+    return () => { current = false; };
+  }, [filters.cliente, clienteElegido]);
+  const proyectosDelCliente = clienteElegido ? catalogos.proyectos : [];
 
-  // BUG-01 y BUG-02: API real
+  // BUG-01 y BUG-02: API real, paginada en el servidor.
+  // Solo se aplica la respuesta de la última búsqueda: con la red lenta, una respuesta vieja que
+  // llega tarde no debe pisar la de los filtros actuales.
+  const latestSearch = useRef(0);
   const fetchData = useCallback(async () => {
+    const searchId = ++latestSearch.current;
+    const isCurrent = () => searchId === latestSearch.current;
     setLoading(true);
     setError(null);
     try {
-      const res = await searchRecursos(filters, 1, 25);
-      const mappedItems: Recurso[] = res.items.map((item: RecursoApi) => ({
-        id: item.id.toString(),
-        nEmpleado: `#${item.employeeNumber || '0000'}`,
-        nombre: item.name || 'Sin nombre',
-        rol: item.clientRole || 'Sin rol',
-        cliente: item.client?.name || 'No especificado',
-        proyecto: item.project?.name || 'Sin proyecto',
-        liderNPD: item.leader?.name || 'Sin líder',
-        nivel: `N${item.level}`,
-        estado: statusLabel(item.status),
-        fechaInicio: item.assignmentStart || '2026-10-19',
-        fechaFin: item.assignmentEnd || '2026-12-20',
-        version: item.version,
-      }));
-      setRecursos(mappedItems);
+      const res = await searchRecursos(filters, page, PAGE_SIZE);
+      if (!isCurrent()) return;
+      setRecursos(res.items.map(toRecurso));
+      setPageInfo({ totalElements: res.page.totalElements, totalPages: res.page.totalPages });
       setSelectedIds(new Set());
     } catch {
-      setError('No se pudo conectar con la API');
+      if (!isCurrent()) return;
+      setError('No se pudieron cargar los recursos.');
       setRecursos([]);
+      setPageInfo(EMPTY_PAGE);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [filters]);
+  }, [filters, page]);
   useEffect(() => {
-    const loadData = async () => { await fetchData(); };
-    void loadData();
+    const load = async () => { await fetchData(); };
+    void load();
   }, [fetchData]);
+
+  /** Un filtro nuevo vuelve a la página 1; otro cliente limpia el proyecto */
+  const updateFilters = (changes: Partial<Filters>) => {
+    setFilters(prev => ({ ...prev, ...changes, ...('cliente' in changes ? { proyecto: 'Todos' } : {}) }));
+    setPage(1);
+  };
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+    const { name } = e.target;
+    const value = name === 'nivel' ? e.target.value.replace(/\D/g, '').slice(0, 3) : e.target.value;
+    updateFilters({ [name]: value });
   };
 
-  // BUG-06: Exportar TODOS los datos
+  // BUG-06: exporta todos los recursos que cumplen los filtros, no solo la página en pantalla
   const handleExport = async () => {
+    setExporting(true);
+    setExportError(null);
     try {
-      const XLSX = await import('xlsx');
-      const { saveAs } = await import('file-saver');
-      
-      const res = await searchRecursos(filters, 1, 10000);
-      
-      const ws = XLSX.utils.json_to_sheet(res.items.map(r => ({
-        'N° Empleado': r.employeeNumber,
-        'Nombre': r.name,
-        'Rol': r.clientRole,
-        'Cliente': r.client?.name,
-        'Proyecto': r.project?.name,
-        'Líder': r.leader?.name,
-        'Nivel': r.level,
-        'Estado': r.status,
-        'Fecha Inicio': r.assignmentStart,
-        'Fecha Fin': r.assignmentEnd,
-      })));
+      const [items, XLSX, { saveAs }] = await Promise.all([
+        searchAllRecursos(filters),
+        import('xlsx'),
+        import('file-saver'),
+      ]);
+      const ws = XLSX.utils.json_to_sheet(toExportRows(items));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Recursos');
-      saveAs(new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/octet-stream' }), `Recursos_${new Date().toISOString().split('T')[0]}.xlsx`);
+      saveAs(new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/octet-stream' }), exportFileName());
     } catch {
-      alert("Error al exportar");
+      setExportError('No se pudo exportar. Intenta de nuevo.');
+    } finally {
+      setExporting(false);
     }
   };
   const allSelected = recursos.length > 0 && selectedIds.size === recursos.length;
@@ -193,10 +226,11 @@ export const ResourcesPage = () => {
     return acc;
   }, {} as Record<string, Recurso[]>);
   const getBarStyle = (inicio: string, fin: string, index: number) => {
-    const start = new Date(inicio).getTime();
-    const end = new Date(fin).getTime();
     const rangeStart = new Date('2026-10-01').getTime();
     const rangeEnd = new Date('2027-04-01').getTime();
+    const start = new Date(inicio).getTime();
+    // Sin fecha final = indefinido: la barra llega al final del rango
+    const end = fin ? new Date(fin).getTime() : rangeEnd;
     const total = rangeEnd - rangeStart;
     const left = Math.max(0, ((start - rangeStart) / total) * 100);
     const width = Math.max(2, ((end - start) / total) * 100);
@@ -217,16 +251,18 @@ export const ResourcesPage = () => {
         <div>
           <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Recursos</h1>
           <p style={{ fontSize: 14, color: C.muted, margin: '8px 0 0' }}>
-            {recursos.length} colaboradores activos en {Object.keys(groupedRecursos).length} clientes, 25 por página.
+            {pageInfo.totalElements} colaboradores, {PAGE_SIZE} por página.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="rp-btn" onClick={handleExport} style={{ height: 38, padding: '0 16px', border: `1px solid ${C.border}`, background: C.surface, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500, color: C.text }}>
-            <Download size={16} /> Exportar
+          <button className="rp-btn" onClick={() => void handleExport()} disabled={exporting} style={{ height: 38, padding: '0 16px', border: `1px solid ${C.border}`, background: C.surface, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500, color: C.text }}>
+            <Download size={16} /> {exporting ? 'Exportando…' : 'Exportar'}
           </button>
+          {isAdmin && (
           <button onClick={() => navigate('/recursos/nuevo')} className="rp-btn-primary" style={{ height: 38, padding: '0 16px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
             <Plus size={16} /> Registrar recurso
           </button>
+          )}
         </div>
       </div>
 
@@ -252,7 +288,7 @@ export const ResourcesPage = () => {
           <label htmlFor="rp-filter-proyecto" style={labelStyle}>Proyecto</label>
           <select id="rp-filter-proyecto" className="rp-input" name="proyecto" value={filters.proyecto} onChange={handleFilterChange} style={inputStyle}>
             <option value="Todos">Todos</option>
-            {catalogos.proyectos.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {proyectosDelCliente.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
 
@@ -265,6 +301,19 @@ export const ResourcesPage = () => {
         </div>
 
         <div style={{ flex: 1, minWidth: 180 }}>
+          <label htmlFor="rp-filter-rol" style={labelStyle}>Rol</label>
+          <select id="rp-filter-rol" className="rp-input" name="rol" value={filters.rol} onChange={handleFilterChange} style={inputStyle}>
+            <option value="Todos">Todos</option>
+            {catalogos.roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        </div>
+
+        <div style={{ flex: 0.5, minWidth: 90 }}>
+          <label htmlFor="rp-filter-nivel" style={labelStyle}>Nivel</label>
+          <input id="rp-filter-nivel" className="rp-input" type="text" inputMode="numeric" name="nivel" value={filters.nivel} placeholder="Todos" onChange={handleFilterChange} style={inputStyle} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 180 }}>
           <label htmlFor="rp-filter-situacion" style={labelStyle}>Situación</label>
           <select id="rp-filter-situacion" className="rp-input" name="situacion" value={filters.situacion} onChange={handleFilterChange} style={inputStyle}>
             {SITUACIONES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -272,21 +321,18 @@ export const ResourcesPage = () => {
         </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38, fontSize: 13, color: C.muted, cursor: 'pointer' }}>
-          <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} />
+          <input type="checkbox" checked={filters.estado === 'Todos'} onChange={e => updateFilters({ estado: e.target.checked ? 'Todos' : 'Activo' })} />
           <span>Incluir inactivos</span>
         </label>
-        <button className="rp-btn" onClick={() => setFilters(INITIAL_FILTERS)} style={{ height: 38, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: C.primary }}>
+        <button className="rp-btn" onClick={() => { setFilters(INITIAL_FILTERS); setPage(1); }} style={{ height: 38, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: C.primary }}>
           Limpiar filtros
         </button>
       </div>
 
-      {/* ERROR (BUG-02) */}
-      {error && (
-        <div style={{ backgroundColor: '#FEF2F2', color: C.danger, padding: '10px 16px', borderRadius: 6, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #FECACA', fontSize: 13 }}>
-          <span>⚠️ {error} (mostrando datos de prueba locales)</span>
-          <button onClick={fetchData} style={{ fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', color: C.danger }}>Reintentar</button>
-        </div>
-      )}
+      {/* ERRORES (BUG-02): nunca se muestran datos de ejemplo en su lugar */}
+      {error && <ErrorBanner message={error} onRetry={() => void fetchData()} />}
+      {catalogError && <ErrorBanner message="No se pudieron cargar las opciones de los filtros." onRetry={() => void loadCatalogos()} />}
+      {exportError && <ErrorBanner message={exportError} onRetry={() => void handleExport()} />}
 
       {/* TABLA + TIMELINE */}
       <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, display: 'flex', overflowX: 'auto', minHeight: 400 }}>
@@ -301,6 +347,9 @@ export const ResourcesPage = () => {
           </div>
 
           {loading && <div style={{ padding: 20, textAlign: 'center', color: C.muted, fontSize: 13 }}>Cargando…</div>}
+          {!loading && !error && recursos.length === 0 && (
+            <div style={{ padding: 20, textAlign: 'center', color: C.muted, fontSize: 13 }}>Ningún colaborador cumple los filtros.</div>
+          )}
 
           {Object.entries(groupedRecursos).map(([cliente, recs], groupIndex) => (
             <div key={cliente}>
@@ -354,7 +403,7 @@ export const ResourcesPage = () => {
               <div key={cliente}>
                 <div style={{ height: 33, borderBottom: `1px solid ${C.border}`, backgroundColor: C.groupRow }} />
                 {recs.map((rec, index) => {
-                  const bar = getBarStyle(rec.fechaInicio, rec.fechaFin, index);
+                  const bar = rec.fechaInicio ? getBarStyle(rec.fechaInicio, rec.fechaFin, index) : null;
                   return (
                     <button
                       key={rec.id}
@@ -365,7 +414,7 @@ export const ResourcesPage = () => {
                       style={{ height: 43, borderBottom: `1px solid ${C.borderSoft}`, position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     >
                       {WEEKS.map(w => (<span key={w} style={{ display: 'block', minWidth: 80, flex: 1, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
-                      <span style={{ display: 'block', position: 'absolute', left: bar.left, width: bar.width, height: 16, backgroundColor: bar.backgroundColor, border: `1px solid ${bar.borderColor}`, borderRadius: 3, zIndex: 6 }} />
+                      {bar && <span style={{ display: 'block', position: 'absolute', left: bar.left, width: bar.width, height: 16, backgroundColor: bar.backgroundColor, border: `1px solid ${bar.borderColor}`, borderRadius: 3, zIndex: 6 }} />}
                     </button>
                   );
                 })}
@@ -377,9 +426,10 @@ export const ResourcesPage = () => {
 
       {/* PAGINACIÓN */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 12, color: C.muted }}>
-        <span>{recursos.length} de {recursos.length} colaboradores</span>
-        <button className="rp-btn" style={{ border: `1px solid ${C.border}`, background: C.surface, borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}>◀</button>
-        <button className="rp-btn" style={{ border: `1px solid ${C.border}`, background: C.surface, borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}>▶</button>
+        <span>{pageRangeText(page, recursos.length, pageInfo.totalElements)}</span>
+        <button className="rp-btn" aria-label="Página anterior" disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)} style={pagerStyle}>◀</button>
+        <span>Página {Math.min(page, Math.max(pageInfo.totalPages, 1))} de {Math.max(pageInfo.totalPages, 1)}</span>
+        <button className="rp-btn" aria-label="Página siguiente" disabled={page >= pageInfo.totalPages || loading} onClick={() => setPage(p => p + 1)} style={pagerStyle}>▶</button>
       </div>
 
       {/* CA-14 */}
@@ -391,17 +441,14 @@ export const ResourcesPage = () => {
         </div>
       )}
 
-      {/* BUG-03 */}
-      {recursoAEditar && isAdmin && (
-        <EditarRecursoModal recurso={recursoAEditar} onClose={() => setRecursoAEditar(null)} onSave={() => { void fetchData(); setRecursoAEditar(null); }} />
-      )}
       {recursoSeleccionado && (
         <ResourceDetailDrawer
           resource={recursoSeleccionado}
           onClose={() => setRecursoSeleccionado(null)}
           onEdit={(resource) => {
-            setRecursoAEditar(resource);
+            // BUG-03: se edita con el formulario completo (GET + PUT con version)
             setRecursoSeleccionado(null);
+            navigate(`/recursos/${resource.id}/editar`);
           }}
         />
       )}
@@ -409,10 +456,21 @@ export const ResourcesPage = () => {
   );
 };
 
-function statusLabel(status: RecursoApi['status']): string {
-  if (typeof status !== 'string') return status.label;
-  return status === 'ACTIVO' ? 'Activo' : status;
+const pagerStyle: CSSProperties = { border: `1px solid ${C.border}`, background: C.surface, borderRadius: 4, padding: '2px 8px', cursor: 'pointer' };
+
+/** «26–50 de 112 colaboradores» */
+function pageRangeText(page: number, shown: number, total: number): string {
+  if (total === 0 || shown === 0) return `0 de ${total} colaboradores`;
+  const first = (page - 1) * PAGE_SIZE + 1;
+  return `${first}–${first + shown - 1} de ${total} colaboradores`;
 }
+
+const ErrorBanner = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  <div role="alert" style={{ backgroundColor: '#FEF2F2', color: C.danger, padding: '10px 16px', borderRadius: 6, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #FECACA', fontSize: 13 }}>
+    <span>⚠️ {message}</span>
+    <button onClick={onRetry} style={{ fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', color: C.danger }}>Reintentar</button>
+  </div>
+);
 
 export const RowAction = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -12,9 +12,11 @@ export default defineConfig({
     setupFiles: './src/setupTests.ts',
 
     include: [
+      'src/pages/Recursos/**/*.test.ts',
       'src/pages/Recursos/**/*.test.tsx',
       'src/pages/Auditoria/**/*.test.ts',
       'src/pages/Auditoria/**/*.test.tsx',
+      'src/components/recursos/**/*.test.ts',
       'src/components/recursos/**/*.test.tsx',
       'src/components/auditoria/**/*.test.ts',
       'src/components/auditoria/**/*.test.tsx',

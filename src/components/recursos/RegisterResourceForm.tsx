@@ -13,6 +13,8 @@ import {
   EMPTY_RESOURCE_FORM,
   FIELD_LABELS,
   fieldId,
+  fieldsToFixErrors,
+  fromResourceResponse,
   orderedErrorFields,
   PROBATION_DAYS,
   previewSituation,
@@ -27,9 +29,14 @@ import './RegisterResourcePage.css'
 
 interface RegisterResourceFormProps {
   canCreateProjects: boolean
-  onCreated: (resource: ResourceResponse) => void
+  /** With an id the form edits that resource (HU-02): GET to prefill and PUT to save */
+  resourceId?: number | string
+  /** Called with the saved record, after registering or editing it */
+  onSaved: (resource: ResourceResponse) => void
   onCancel: () => void
 }
+
+type FormMode = 'create' | 'edit'
 
 /** API path whose error is cleared when the form value changes */
 const ERROR_PATH: Partial<Record<keyof ResourceFormValues, string>> = {
@@ -63,15 +70,23 @@ interface ApiErrorOutcome {
   errors?: FieldErrors
   duplicate?: { id: number; name: string }
   generalError?: string
+  /** Someone saved the record after it was read: the form must be reloaded (HU-02 CA-04) */
+  stale?: boolean
+}
+
+function staleMessage(updatedBy: string | undefined): string {
+  const who = updatedBy ? `${updatedBy} lo guardó` : 'Otra persona lo guardó'
+  return `${who} después de que lo abriste. Recarga el registro para ver sus cambios; los tuyos no se guardaron.`
 }
 
 function duplicateOf(id: number | undefined, name: string | undefined) {
   return id === undefined ? undefined : { id, name: name ?? '' }
 }
 
-/** Translates a failed create into field errors, the duplicate link or a general message */
-function describeApiError(cause: unknown): ApiErrorOutcome {
+/** Translates a failed save into field errors, the duplicate link or a general message */
+function describeApiError(cause: unknown, mode: FormMode): ApiErrorOutcome {
   if (!(cause instanceof ApiRequestError)) return { generalError: SAVE_FAILED }
+  if (cause.code === 'CONCURRENT_MODIFICATION') return { generalError: staleMessage(cause.updatedBy), stale: true }
   if (cause.code === 'EMPLOYEE_NUMBER_TAKEN') {
     return {
       errors: { employeeNumber: cause.detail },
@@ -86,7 +101,10 @@ function describeApiError(cause: unknown): ApiErrorOutcome {
       duplicate: duplicateOf(taken?.existingResourceId, taken?.existingResourceName),
     }
   }
-  if (cause.status === 403) return { generalError: 'Tu perfil no tiene permiso para registrar recursos.' }
+  if (cause.status === 403) {
+    const action = mode === 'edit' ? 'editar' : 'registrar'
+    return { generalError: `Tu perfil no tiene permiso para ${action} recursos.` }
+  }
   // 400 INVALID_REQUEST and 503 SERVICE_UNAVAILABLE bring a detail ready to show; nothing was saved
   const detailReady = cause.status === 400 || cause.status === 503
   return { generalError: detailReady ? cause.detail : SAVE_FAILED }
@@ -111,7 +129,8 @@ function ErrorSummary({
   errorFields,
   generalError,
   summaryRef,
-}: Readonly<{ errorFields: string[]; generalError: string; summaryRef: RefObject<HTMLDivElement | null> }>) {
+  onReload,
+}: Readonly<{ errorFields: string[]; generalError: string; summaryRef: RefObject<HTMLDivElement | null>; onReload?: () => void }>) {
   let detail: ReactNode = generalError
   if (errorFields.length > 0) {
     const intro = errorFields.length === 1 ? 'Corrige el campo marcado: ' : `Corrige los ${errorFields.length} campos marcados: `
@@ -143,8 +162,14 @@ function ErrorSummary({
         <strong>No se guardó el registro.</strong>{' '}
         {detail}
       </p>
+      {onReload && <Button variant="secondary" onClick={onReload}>Recargar registro</Button>}
     </div>
   )
+}
+
+function submitLabel(editing: boolean, saving: boolean): string {
+  if (editing) return saving ? 'Guardando…' : 'Guardar cambios'
+  return saving ? 'Registrando…' : 'Registrar recurso'
 }
 
 function listSeparator(index: number, total: number): string {
@@ -202,8 +227,68 @@ function AssignmentPanel({
   )
 }
 
-export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }: Readonly<RegisterResourceFormProps>) {
+type LoadState = 'loading' | 'ready' | 'error'
+
+/**
+ * Edit mode (HU-02): reads the record from GET /planner/resources/{id} and hands it to `onLoaded`.
+ * `reload` discards unsaved changes, as «Recargar registro» asks.
+ */
+function useResourceRecord(resourceId: number | string | undefined, onLoaded: (resource: ResourceResponse) => void) {
+  const [loadState, setLoadState] = useState<LoadState>(resourceId === undefined ? 'ready' : 'loading')
+
+  const reload = useCallback(async () => {
+    if (resourceId === undefined) return
+    setLoadState('loading')
+    try {
+      const resource = await (await getResourcesApi()).getResource(resourceId)
+      onLoaded(resource)
+      setLoadState('ready')
+    } catch {
+      setLoadState('error')
+    }
+  }, [resourceId, onLoaded])
+
+  useEffect(() => {
+    const load = async () => { await reload() }
+    void load()
+  }, [reload])
+
+  return { loadState, reload }
+}
+
+function RecordLoadState({ loadState, onRetry }: Readonly<{ loadState: LoadState; onRetry: () => void }>) {
+  if (loadState === 'loading') {
+    return <output className="resource-form__note">Cargando el registro…</output>
+  }
+  return (
+    <div className="resource-form__summary" role="alert">
+      <AlertIcon />
+      <p>No se pudo cargar el registro del recurso.</p>
+      <Button variant="secondary" onClick={onRetry}>Reintentar</Button>
+    </div>
+  )
+}
+
+/** CA-08: tells which imported «No especificado» values must be replaced before saving */
+function NotSpecifiedNotice({ fields }: Readonly<{ fields: string[] }>) {
+  if (fields.length === 0) return null
+  return (
+    <output className="resource-form__summary">
+      <AlertIcon />
+      <p>
+        Este registro viene del import con valores «No especificado» en{' '}
+        {fields.map((path) => FIELD_LABELS[path] ?? path).join(' y ')}. Elige el valor real para poder guardar.
+      </p>
+    </output>
+  )
+}
+
+export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, onCancel }: Readonly<RegisterResourceFormProps>) {
+  const mode: FormMode = resourceId === undefined ? 'create' : 'edit'
   const [values, setValues] = useState<ResourceFormValues>(EMPTY_RESOURCE_FORM)
+  const [version, setVersion] = useState<number>()
+  const [toFix, setToFix] = useState<string[]>([])
+  const [stale, setStale] = useState(false)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [showSummary, setShowSummary] = useState(false)
   const [generalError, setGeneralError] = useState('')
@@ -238,6 +323,19 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
     loadCatalogs()
     loadClients()
   }, [loadCatalogs, loadClients])
+
+  /** Edit mode: prefills the form with the record and the version the PUT will send */
+  const applyRecord = useCallback((resource: ResourceResponse) => {
+    setValues(fromResourceResponse(resource))
+    setVersion(resource.version)
+    setToFix(resource.fieldsToFix)
+    setErrors(fieldsToFixErrors(resource.fieldsToFix))
+    setGeneralError('')
+    setShowSummary(false)
+    setStale(false)
+  }, [])
+  const { loadState, reload } = useResourceRecord(resourceId, applyRecord)
+  const reloadRecord = () => { void reload() }
 
   useEffect(() => {
     if (!values.clientId) return
@@ -304,8 +402,12 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
 
     setSaving(true)
     try {
-      const resource = await (await getResourcesApi()).createResource(toResourceRequest(values, todayIso()))
-      onCreated(resource)
+      const api = await getResourcesApi()
+      const request = toResourceRequest(values, todayIso())
+      const resource = resourceId === undefined
+        ? await api.createResource(request)
+        : await api.updateResource(resourceId, { ...request, version: version ?? 0 })
+      onSaved(resource)
     } catch (cause) {
       handleApiError(cause)
       window.setTimeout(() => setShowSummary(true), 0)
@@ -315,10 +417,11 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
   }
 
   function handleApiError(cause: unknown): void {
-    const outcome = describeApiError(cause)
+    const outcome = describeApiError(cause, mode)
     if (outcome.errors) setErrors(outcome.errors)
     if (outcome.duplicate) setDuplicate(outcome.duplicate)
     if (outcome.generalError) setGeneralError(outcome.generalError)
+    setStale(Boolean(outcome.stale))
   }
 
   const fieldProps = (path: string) => ({
@@ -334,12 +437,21 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
   const situation = previewSituation(values)
   const selectedProject = clientProjects.find((project) => project.id === values.projectId)
   const visibleProjects = values.clientId ? clientProjects : []
+  const editing = mode === 'edit'
+
+  if (loadState !== 'ready') return <RecordLoadState loadState={loadState} onRetry={reloadRecord} />
 
   return (
     <>
       {showSummary && (errorFields.length > 0 || generalError) && (
-        <ErrorSummary errorFields={errorFields} generalError={generalError} summaryRef={summaryRef} />
+        <ErrorSummary
+          errorFields={stale ? [] : errorFields}
+          generalError={generalError}
+          summaryRef={summaryRef}
+          onReload={stale ? reloadRecord : undefined}
+        />
       )}
+      {editing && !showSummary && <NotSpecifiedNotice fields={toFix} />}
       {catalogsError && (
         <div className="resource-form__summary" role="alert">
           <AlertIcon />
@@ -349,7 +461,7 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
       )}
 
       <div className="resource-form__layout">
-        <form className="resource-form__card" noValidate onSubmit={(event) => void handleSubmit(event)} aria-label="Registrar recurso">
+        <form className="resource-form__card" noValidate onSubmit={(event) => void handleSubmit(event)} aria-label={editing ? 'Editar recurso' : 'Registrar recurso'}>
           <section className="resource-form__section" aria-labelledby="resource-form-collaborator">
             <h2 id="resource-form-collaborator">Colaborador</h2>
             <p className="resource-form__hint">Datos de la persona en Infosgroup. No cambian al pasar de un proyecto a otro.</p>
@@ -357,7 +469,7 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
               <div>
                 <Field {...fieldProps('employeeNumber')} label="N° de empleado *" value={values.employeeNumber} onChange={(event) => update('employeeNumber', event.target.value)} />
                 {duplicate && (
-                  <a className="resource-form__duplicate" href={`/recursos/${duplicate.id}`}>Abrir su registro</a>
+                  <a className="resource-form__duplicate" href={`/recursos/${duplicate.id}/editar`}>Abrir su registro</a>
                 )}
               </div>
               <div className="resource-form__span-2">
@@ -451,7 +563,7 @@ export function RegisterResourceForm({ canCreateProjects, onCreated, onCancel }:
             <p>Cada cambio queda en la auditoría con tu usuario, la fecha y los valores.</p>
             <div>
               <Button variant="secondary" onClick={onCancel}>Cancelar</Button>
-              <Button type="submit" disabled={saving}>{saving ? 'Registrando…' : 'Registrar recurso'}</Button>
+              <Button type="submit" disabled={saving}>{submitLabel(editing, saving)}</Button>
             </div>
           </footer>
         </form>

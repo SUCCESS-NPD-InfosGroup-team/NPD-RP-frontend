@@ -56,6 +56,11 @@ export interface ResourceRequest {
   assignment: AssignmentRequest | null
 }
 
+/** PUT /planner/resources/{id}: the whole record plus the `version` that was read */
+export interface ResourceUpdateRequest extends ResourceRequest {
+  version: number
+}
+
 export interface ResourceResponse {
   id: number
   employeeNumber: string
@@ -69,6 +74,7 @@ export interface ResourceResponse {
   gender: CatalogItem | null
   talentReview: CatalogItem | null
   hireDate: string
+  onProbation: boolean
   probationEndDate: string | null
   status: StatusOption<ResourceStatusCode>
   situation: StatusOption<ResourceSituationCode>

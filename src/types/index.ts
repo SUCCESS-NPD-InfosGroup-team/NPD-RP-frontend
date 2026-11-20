@@ -53,7 +53,8 @@ export interface RecursoApi {
   id: number;
   employeeNumber: string;
   name: string;
-  level: number;
+  /** Opcional en el registro (smallint nullable) */
+  level: number | null;
   clientRole: string | null;
   leader: { id: number; name: string } | null;
   status: string | { code: string; label: string };
