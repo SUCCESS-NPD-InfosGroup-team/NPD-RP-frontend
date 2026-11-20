@@ -4,7 +4,7 @@ import {
   canAccessNavigationItem,
   NAVIGATION_ITEMS,
 } from './components/layout/roleNavigation'
-import { NoAccess, RegisterResourceRoute } from './components/layout/AccessGuard'
+import { EditResourceRoute, NoAccess, RegisterResourceRoute } from './components/layout/AccessGuard'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
@@ -88,6 +88,7 @@ export default function App({
           ))}
           <Route path="auditoria/:resourceId" element={<AuditoriaPage />} />
           <Route path="recursos/nuevo" element={<RegisterResourceRoute roles={roles} />} />
+          <Route path="recursos/:resourceId/editar" element={<EditResourceRoute roles={roles} />} />
           <Route
             path="*"
             element={

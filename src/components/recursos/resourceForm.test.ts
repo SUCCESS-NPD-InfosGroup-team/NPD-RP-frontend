@@ -1,6 +1,9 @@
 import {
   apiFieldErrors,
   EMPTY_RESOURCE_FORM,
+  fieldsToFixErrors,
+  fromResourceResponse,
+  NOT_SPECIFIED_MESSAGE,
   orderedErrorFields,
   previewSituation,
   probationInfo,
@@ -8,6 +11,7 @@ import {
   validateResourceForm,
   type ResourceFormValues,
 } from './resourceForm'
+import { buildResourceResponse } from '../../test/fixtures/resourceDetail'
 
 const TODAY = '2026-10-24'
 
@@ -160,5 +164,73 @@ describe('helpers', () => {
     expect(errors['assignment.endDate']).toBe('Ya pasó.')
     expect(orderedErrorFields(errors)).toEqual(['employeeNumber', 'assignment.endDate', 'unknown'])
     expect(apiFieldErrors(undefined)).toEqual({})
+  })
+})
+
+describe('fromResourceResponse (HU-02, BUG-03)', () => {
+  it('prefills the form with the stored record, dates as dd/mm/aaaa', () => {
+    const values = fromResourceResponse(buildResourceResponse())
+
+    expect(values).toMatchObject({
+      employeeNumber: '1045',
+      name: 'Ana Torres',
+      email: 'ana.torres@infosgroup.com',
+      jobTitleId: '1',
+      positionId: '4',
+      level: '3',
+      workModeId: '1',
+      genderId: '1',
+      talentReviewId: '',
+      hireDate: '03/11/2025',
+      onProbation: false,
+      status: 'ACTIVO',
+      withProject: true,
+      clientId: '3',
+      projectId: '41',
+      leaderId: '755',
+      clientRoleId: '7',
+      endDate: '',
+      indefinite: true,
+    })
+  })
+
+  it('round-trips into the same request the API stored', () => {
+    const values = fromResourceResponse(buildResourceResponse())
+
+    expect(toResourceRequest(values, TODAY)).toMatchObject({
+      employeeNumber: '1045',
+      positionId: 4,
+      level: 3,
+      workModeId: 1,
+      hireDate: '2025-11-03',
+      onProbation: false,
+      assignment: { projectId: 41, leaderId: 755, clientRoleId: 7, indefinite: true, endDate: null },
+    })
+  })
+
+  it('leaves the «No especificado» fields empty so the real value has to be chosen (CA-08)', () => {
+    const values = fromResourceResponse(buildResourceResponse({ fieldsToFix: ['workModeId', 'assignment.projectId'] }))
+
+    expect(values.workModeId).toBe('')
+    expect(values.clientId).toBe('')
+    expect(values.projectId).toBe('')
+    expect(values.leaderId).toBe('755')
+    expect(validateResourceForm(values, TODAY)).toMatchObject({
+      workModeId: expect.any(String),
+      'assignment.projectId': expect.any(String),
+    })
+    expect(fieldsToFixErrors(['workModeId'])).toEqual({ workModeId: NOT_SPECIFIED_MESSAGE })
+  })
+
+  it('maps a resource without project and a terminated one', () => {
+    expect(fromResourceResponse(buildResourceResponse({ assignment: null, level: null, email: null })))
+      .toMatchObject({ withProject: false, clientId: '', projectId: '', level: '', email: '', indefinite: false })
+
+    const terminated = fromResourceResponse(buildResourceResponse({
+      status: { code: 'BAJA', label: 'Baja' },
+      assignment: null,
+      termination: { date: '2026-10-31', reason: { id: 2, name: 'Renuncia' } },
+    }))
+    expect(terminated).toMatchObject({ status: 'BAJA', terminationDate: '31/10/2026', terminationReasonId: '2' })
   })
 })

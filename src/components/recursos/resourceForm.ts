@@ -1,6 +1,6 @@
 import type { ApiError } from '../../services/projects.types'
-import type { ResourceRequest, ResourceSituationCode, ResourceStatusCode, StatusOption } from '../../services/resources.types'
-import { addDaysIso, todayIso, toIsoDate } from '../../utils/dates'
+import type { ResourceRequest, ResourceResponse, ResourceSituationCode, ResourceStatusCode, StatusOption } from '../../services/resources.types'
+import { addDaysIso, fromIsoDate, todayIso, toIsoDate } from '../../utils/dates'
 
 /** Probation ends on day 90 counted from the contract start date (generated column in the DB) */
 export const PROBATION_DAYS = 90
@@ -241,4 +241,52 @@ export function previewSituation(values: ResourceFormValues): StatusOption<Resou
 
 export function apiFieldErrors(errors: ApiError['errors']): FieldErrors {
   return Object.fromEntries((errors ?? []).map(({ field, message }) => [field, message]))
+}
+
+/** Message for a field that still holds an imported «No especificado» value (HU-02 CA-08) */
+export const NOT_SPECIFIED_MESSAGE = 'Tiene «No especificado» del import. Elige el valor real.'
+
+const idText = (item: { id: number } | null | undefined) => (item ? String(item.id) : '')
+const dateText = (iso: string | null | undefined) => (iso ? fromIsoDate(iso) : '')
+
+/**
+ * Prefills the edit form with the record from GET /planner/resources/{id} (HU-02).
+ * Fields listed in `fieldsToFix` start empty: their «No especificado» value is inactive, so it is
+ * not among the options and the API rejects it until the real value is chosen (CA-08).
+ */
+export function fromResourceResponse(resource: ResourceResponse): ResourceFormValues {
+  const fix = new Set(resource.fieldsToFix)
+  const assignment = resource.assignment
+  const projectToFix = fix.has('assignment.projectId')
+  return {
+    employeeNumber: resource.employeeNumber,
+    name: resource.name,
+    email: resource.email ?? '',
+    jobTitleId: idText(resource.jobTitle),
+    positionId: idText(resource.position),
+    level: resource.level == null ? '' : String(resource.level),
+    businessUnitId: idText(resource.businessUnit),
+    workModeId: fix.has('workModeId') ? '' : idText(resource.workMode),
+    genderId: idText(resource.gender),
+    talentReviewId: idText(resource.talentReview),
+    hireDate: dateText(resource.hireDate),
+    onProbation: resource.onProbation,
+    status: resource.status.code,
+    terminationDate: dateText(resource.termination?.date),
+    terminationReasonId: idText(resource.termination?.reason),
+    withProject: assignment !== null,
+    clientId: assignment && !projectToFix ? idText(assignment.client) : '',
+    projectId: assignment && !projectToFix ? idText(assignment.project) : '',
+    leaderId: idText(assignment?.leader),
+    clientRoleId: idText(assignment?.clientRole),
+    equipmentId: idText(assignment?.equipment),
+    endDate: dateText(assignment?.endDate),
+    indefinite: assignment?.indefinite ?? false,
+    clientContactEmail: assignment?.clientContactEmail ?? '',
+  }
+}
+
+/** Field errors that point at the «No especificado» values to fix */
+export function fieldsToFixErrors(fieldsToFix: readonly string[]): FieldErrors {
+  return Object.fromEntries(fieldsToFix.map((path) => [path, NOT_SPECIFIED_MESSAGE]))
 }
