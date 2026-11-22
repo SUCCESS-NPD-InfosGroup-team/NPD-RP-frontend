@@ -110,7 +110,7 @@ describe('BulkAssignmentPanel · project step', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Copa Airlines - Comercial/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
 
-    expect(screen.getByText('Datos de la asignación')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Datos de la asignación' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Atrás' }))
     expect(screen.getByText('Copa Airlines - Comercial')).toBeInTheDocument()
     rerender(<Harness open={false} />)

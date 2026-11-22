@@ -256,6 +256,186 @@
   gap: var(--space-2);
 }
 
+.bulk-assignment-data {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.bulk-assignment-data__project {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--surface-header);
+}
+
+.bulk-assignment-data__project strong {
+  font-size: 15px;
+}
+
+.bulk-assignment-data__project span,
+.bulk-assignment-data__section-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.bulk-assignment-data__common,
+.bulk-assignment-data__members {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.bulk-assignment-data__section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.bulk-assignment-data__section-heading h3,
+.bulk-assignment-data__members h3 {
+  margin: 0 0 var(--space-1);
+  font: 700 16px / 1.2 var(--font-display);
+}
+
+.bulk-assignment-data__common-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.bulk-assignment-data__field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bulk-assignment-data__field select,
+.bulk-assignment-data__field input {
+  width: 100%;
+  min-width: 0;
+  height: var(--control-h);
+  padding-inline: var(--space-2);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: 400 13px / 1.2 var(--font-body);
+}
+
+.bulk-assignment-data__field select:focus-visible,
+.bulk-assignment-data__field input:focus-visible {
+  outline: var(--focus-width) solid var(--brand-navy);
+  outline-offset: var(--focus-offset);
+}
+
+.bulk-assignment-data__field [aria-invalid='true'] {
+  border-color: var(--state-danger);
+  background: var(--surface-error);
+}
+
+.bulk-assignment-data__field-error {
+  color: var(--state-danger);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.bulk-assignment-data__date-field {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.bulk-assignment-data__checkbox {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.bulk-assignment-data__checkbox input {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  accent-color: var(--brand-navy);
+}
+
+.bulk-assignment-data__help {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.bulk-assignment-data__notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.bulk-assignment-data__notice--error {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--state-danger-tint);
+  color: var(--state-danger);
+}
+
+.bulk-assignment-data__table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.bulk-assignment-data__table-wrap table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.bulk-assignment-data__table-wrap th,
+.bulk-assignment-data__table-wrap td {
+  padding: var(--space-2);
+  border-bottom: var(--border-width) solid var(--border-default);
+  vertical-align: top;
+}
+
+.bulk-assignment-data__table-wrap thead th {
+  background: var(--surface-header);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bulk-assignment-data__table-wrap tbody th {
+  min-width: 140px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bulk-assignment-data__table-wrap tbody th small {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.bulk-assignment-data__table-wrap tbody th .bulk-assignment-data__source {
+  color: var(--brand-brown);
+  font-weight: 600;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -270,5 +450,9 @@
 @media (max-width: 720px) {
   .bulk-assignment-panel__project-toolbar {
     flex-direction: column;
+  }
+
+  .bulk-assignment-data__common-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

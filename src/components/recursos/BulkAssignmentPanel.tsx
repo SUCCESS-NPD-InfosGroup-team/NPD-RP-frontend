@@ -4,6 +4,7 @@ import { getProjectsApi } from '../../services/projects'
 import type { Client, ClientProject, Project } from '../../services/projects.types'
 import { formatShortDate } from '../../utils/dates'
 import { useBulkAssign, type BulkAssignProject } from '../../hooks/useBulkAssign'
+import { BulkAssignmentDataStep } from './BulkAssignmentDataStep'
 import { NewProjectModal } from '../proyectos/NewProjectModal'
 import { Button } from '../ui/Button'
 import './BulkAssignmentPanel.css'
@@ -316,9 +317,7 @@ export function BulkAssignmentPanel({
                 ))}
               </div>
             </>
-          ) : (
-            <p className="bulk-assignment-panel__empty">Datos de la asignación</p>
-          )}
+          ) : <BulkAssignmentDataStep assignment={assignment} />}
         </main>
 
         <footer className="bulk-assignment-panel__footer">

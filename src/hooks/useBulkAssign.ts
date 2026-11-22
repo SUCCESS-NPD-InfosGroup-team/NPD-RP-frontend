@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { bulkAssignmentApi, BulkAssignmentApiError } from '../services/bulkAssignment.api'
+import { todayIso } from '../utils/dates'
 import type {
   BulkAssignmentConflictMember,
   BulkAssignmentDefaults,
@@ -22,6 +23,8 @@ export interface BulkAssignResource {
   leaderId?: number | null
   clientRoleName?: string | null
   equipmentId?: number | null
+  currentClientName?: string | null
+  currentProjectName?: string | null
 }
 
 export interface BulkAssignPerson extends Omit<BulkAssignResource, 'version'> {
@@ -78,7 +81,7 @@ function toPerson(resource: BulkAssignResource): BulkAssignPerson | undefined {
   return { ...resource, version: resource.version }
 }
 
-function rowsFor(resources: BulkAssignResource[], project: BulkAssignProject): BulkAssignRow[] {
+function rowsFor(resources: BulkAssignResource[]): BulkAssignRow[] {
   return resources.flatMap((resource) => {
     const person = toPerson(resource)
     if (!person) return []
@@ -91,7 +94,6 @@ function rowsFor(resources: BulkAssignResource[], project: BulkAssignProject): B
       ...(person.leaderId == null ? {} : { leaderId: person.leaderId }),
       ...(person.clientRoleName === undefined ? {} : { clientRoleName: person.clientRoleName }),
       ...(person.equipmentId == null ? {} : { equipmentId: person.equipmentId }),
-      ...(project.contractEndDate === null ? {} : { endDate: project.contractEndDate }),
     }]
   })
 }
@@ -227,7 +229,7 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
 
   const chooseProject = useCallback((target: BulkAssignProject) => {
     setProject(target)
-    setRows(rowsFor([...selectionRef.current.values()], target))
+    setRows(rowsFor([...selectionRef.current.values()]))
     setErrors(emptyErrors())
     setSubmitError(undefined)
     setConflicts([])
@@ -302,6 +304,60 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
     }
     if (rows.length !== selectedPeople.length) {
       setSubmitError({ code: 'ASSIGNMENT_ROWS_MISMATCH', message: 'No se pudieron preparar todos los colaboradores seleccionados.' })
+      return
+    }
+
+    const validationErrors = emptyErrors()
+    for (const row of rows) {
+      if (row.leaderId === undefined && defaults.leaderId === undefined) {
+        validationErrors.rows[row.employeeId] = [{
+          field: 'leaderId',
+          code: 'REQUIRED',
+          message: 'Selecciona un líder NPD para esta persona o en los valores para todos.',
+          employeeId: row.employeeId,
+        }]
+      }
+      if (row.indefinite && row.endDate) {
+        validationErrors.rows[row.employeeId] = [
+          ...(validationErrors.rows[row.employeeId] ?? []),
+          {
+            field: 'endDate',
+            code: 'CONFLICTING_VALUES',
+            message: 'Elige una fecha final o indefinido, no ambos.',
+            employeeId: row.employeeId,
+          },
+        ]
+      } else if (row.endDate && row.endDate <= todayIso()) {
+        validationErrors.rows[row.employeeId] = [
+          ...(validationErrors.rows[row.employeeId] ?? []),
+          {
+            field: 'endDate',
+            code: 'DATE_IN_PAST',
+            message: 'La fecha final debe ser futura.',
+            employeeId: row.employeeId,
+          },
+        ]
+      }
+    }
+    if (defaults.indefinite && defaults.endDate) {
+      validationErrors.defaults.push({
+        field: 'defaults.endDate',
+        code: 'CONFLICTING_VALUES',
+        message: 'Elige una fecha final o indefinido, no ambos.',
+      })
+    } else if (defaults.endDate && defaults.endDate <= todayIso()) {
+      validationErrors.defaults.push({
+        field: 'defaults.endDate',
+        code: 'DATE_IN_PAST',
+        message: 'La fecha final debe ser futura.',
+      })
+    }
+    if (Object.keys(validationErrors.rows).length || validationErrors.defaults.length) {
+      setErrors(validationErrors)
+      setSubmitError({
+        code: 'VALIDATION_FAILED',
+        message: 'Corrige los campos marcados antes de asignar.',
+      })
       return
     }
 

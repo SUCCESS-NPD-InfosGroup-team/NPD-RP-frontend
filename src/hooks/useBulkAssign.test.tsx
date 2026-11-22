@@ -90,7 +90,7 @@ describe('useBulkAssign', () => {
     expect(result.current.selectionError).toContain('hasta 100')
   })
 
-  it('prepares assignment rows from selected people and the project contract end', () => {
+  it('prepares assignment rows without replacing the project contract fallback', () => {
     const { result } = renderHook(() => useBulkAssign({ assignMembers }))
     act(() => result.current.togglePerson(person(890)))
     act(() => result.current.chooseProject(project))
@@ -105,9 +105,24 @@ describe('useBulkAssign', () => {
       version: 2,
       leaderId: 755,
       clientRoleName: 'QA Funcional',
-      endDate: '2027-03-31',
     }])
     expect(result.current.rows[0]).not.toHaveProperty('equipmentId')
+    expect(result.current.rows[0]).not.toHaveProperty('endDate')
+  })
+
+  it('blocks submission when no common or per-person leader is selected', async () => {
+    const { result } = renderHook(() => useBulkAssign({ assignMembers }))
+    act(() => result.current.togglePerson(person(890, { leaderId: null })))
+    act(() => result.current.chooseProject(project))
+
+    await act(async () => result.current.submit())
+
+    expect(assignMembers).not.toHaveBeenCalled()
+    expect(result.current.errors.rows[890]?.[0]).toMatchObject({
+      field: 'leaderId',
+      code: 'REQUIRED',
+    })
+    expect(result.current.submitError?.code).toBe('VALIDATION_FAILED')
   })
 
   it('blocks submission when a selected resource has no version', async () => {
@@ -189,7 +204,6 @@ describe('useBulkAssign', () => {
         employeeId: 890,
         version: 2,
         leaderId: 755,
-        endDate: '2027-03-31',
       }],
     })
     expect(result.current.result).toEqual(response)
