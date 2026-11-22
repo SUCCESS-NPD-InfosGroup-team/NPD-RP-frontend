@@ -27,6 +27,7 @@ export const resourceSearchResponse = {
       project: { id: 1, name: 'DEYEL' },
       client: { id: 1, name: 'BANESCO' },
       projectActive: true,
+      version: 3,
     },
   ],
   groups: [

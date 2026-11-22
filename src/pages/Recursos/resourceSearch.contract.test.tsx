@@ -17,7 +17,7 @@ const GROUP_FIELDS = ['type', 'projectId', 'project', 'client', 'contractEndDate
 const ITEM_FIELDS = [
   'id', 'employeeNumber', 'name', 'level', 'clientRole', 'leader', 'status', 'situation',
   'hireDate', 'onProbation', 'probationEndDate', 'projectId', 'assignmentStart',
-  'assignmentEnd', 'indefinite', 'daysToAssignmentEnd', 'project', 'client', 'projectActive',
+  'assignmentEnd', 'indefinite', 'daysToAssignmentEnd', 'project', 'client', 'projectActive', 'version',
 ]
 
 const sorted = (keys: string[]) => [...keys].sort((a, b) => a.localeCompare(b))
