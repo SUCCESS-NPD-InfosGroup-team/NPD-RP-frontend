@@ -203,7 +203,6 @@ export const ResourcesPage = () => {
   const [recursoSeleccionado, setRecursoSeleccionado] = useState<Recurso | null>(null);
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
   const [page, setPage] = useState(1);
-  const [groupTotals, setGroupTotals] = useState<Record<string, number>>({});
   const [pageInfo, setPageInfo] = useState<PageInfo>(EMPTY_PAGE);
   const [catalogError, setCatalogError] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -318,27 +317,6 @@ useEffect(() => {
     void load();
   }, [fetchData]);
 
-  //BUG-30
-  useEffect(() => {
-    let active = true;
-    const loadGroupTotals = async () => {
-      try{
-        const all = await searchAllRecursos(filters);
-        if (!active) return;
-        const counts: Record<string, number> = {};
-        for (const item of all){
-          const rec = toRecurso(item);
-          const key = `${rec.cliente}||${rec.proyecto}`;
-          counts[key] = (counts[key] ?? 0) + 1;
-        }
-        setGroupTotals(counts);
-      }catch{
-        if(active) setGroupTotals({});
-      }
-    };
-    void loadGroupTotals();
-    return () => { active  = false; };
-  }, [filters]);
 
   /** Un filtro nuevo vuelve a la página 1; otro cliente limpia el proyecto */
   const updateFilters = (changes: Partial<Filters>) => {
@@ -739,21 +717,11 @@ useEffect(() => {
               <div style={{ textAlign: 'right' }}>Niv.</div>
             </div>
 
-          {!loading && !error && recursos.length === 0 && (
-              <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-          <p style={{ margin: 0, color: C.text, fontWeight: 600 }}>
-               Ningún colaborador cumple los filtros.
-            </p>
-    <button
-      type="button"
-      className="rp-btn"
-      onClick={resetFilters}
-      style={{ height: 32, padding: '0 12px', border: `1px solid ${C.primary}`, background: C.surface, borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: C.primary }}
-    >
-      Limpiar filtros
-    </button>
-  </div>
-)}
+{!loading && !error && recursos.length === 0 && (
+            <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
+              Ningún colaborador cumple los filtros.
+            </div>
+          )}
 
             {grupos.map(({ cliente, proyecto, kind, recs }) => (
               <div key={`${cliente}||${proyecto}`}>
@@ -764,7 +732,7 @@ useEffect(() => {
                   )}
                   {kind !== 'normal' && <span style={{ flex: 1 }} />}
                   <span style={{ fontSize: 11, color: C.muted, whiteSpace: 'nowrap' }}>
-                    {countText(recs.length, groupTotals[`${cliente}||${proyecto}`], page)}
+                    {countText(recs.length, undefined, page)}
                     </span>
                 </div>
 
@@ -917,14 +885,11 @@ useEffect(() => {
         ) : (
           /* VISTA TABLA DE 22 COLUMNAS CON NOMBRE FIJO */
           <div style={{ overflowX: 'auto', minHeight: 400 }}>
-            {loading && <div style={{ padding: 20, textAlign: 'center', color: C.muted, fontSize: 13 }}>Cargando…</div>}
-            {!loading && !error && recursos.length === 0 && (
-              <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
-                {(filters.search ?? '').trim()
-                  ? `Ningún recurso coincide con «${(filters.search ?? '').trim()}»`
-                  : 'Ningún recurso coincide con los filtros seleccionados'}
-              </div>
-            )}
+{!loading && !error && recursos.length === 0 && (
+  <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
+    Ningún colaborador cumple los filtros.
+  </div>
+)}
             {!loading && recursos.length > 0 && (
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
@@ -1100,7 +1065,7 @@ const Pager = ({ page, totalPages, shown, total, loading, onPrev, onNext, showRa
 const Chip = ({ text, onRemove }: { text: string; onRemove: () => void }) => (
   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: C.chipBg, color: C.link, borderRadius: 4, padding: '3px 8px', fontSize: 11, fontWeight: 600 }}>
     {text}
-    <button type="button" onClick={onRemove} aria-label={`Quitar filtro ${text}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, padding: 0, fontSize: 13, fontWeight: 700, lineHeight: 1 }}>×</button>
+    <button type="button" onClick={onRemove} title={`Quitar filtro ${text}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, padding: 0, fontSize: 13, fontWeight: 700, lineHeight: 1 }}>×</button>
   </span>
 );
 
