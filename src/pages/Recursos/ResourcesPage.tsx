@@ -270,31 +270,24 @@ export const ResourcesPage = () => {
 
   // BUG-01: proyectos del cliente elegido
   const clienteElegido = Boolean(filters.cliente && filters.cliente !== 'Todos');
-  useEffect(() => {
-    let current = true;
-    const loadProyectos = async () =>{
-      try {
-        const projectsApi = await getProjectsApi();
-        let proyectos: CatalogoItem[] = [];
-
-        if(clienteElegido){
-          proyectos = await projectsApi.listClientProjects(filters.cliente as string);
-        }else if (catalogos.clientes.length > 0){
-          const porCliente = await Promise.all(
-            catalogos.clientes.map(c => projectsApi.listClientProjects(String(c.id)))
-          );
-          const unicos = new Map<string, CatalogoItem>();
-          porCliente.flat().forEach(p => unicos.set(String(p.id), p));
-          proyectos = Array.from(unicos.values());
-        }
-        if (current) setCatalogos(prev => ({ ...prev, proyectos}));
-      }catch{
-        if (current) setCatalogError(true);
-      }
-    };
-    void loadProyectos();
-    return () => {current = false; };
-  }, [filters.cliente, clienteElegido, catalogos.clientes]);
+useEffect(() => {
+  let current = true;
+  const loadProyectos = async () => {
+    if (!clienteElegido) {
+      setCatalogos(prev => ({ ...prev, proyectos: [] }));
+      return;
+    }
+    try {
+      const projectsApi = await getProjectsApi();
+      const proyectos = await projectsApi.listClientProjects(filters.cliente as string);
+      if (current) setCatalogos(prev => ({ ...prev, proyectos }));
+    } catch {
+      if (current) setCatalogError(true);
+    }
+  };
+  void loadProyectos();
+  return () => { current = false; };
+}, [filters.cliente, clienteElegido]);
 
   // BUG-01 y BUG-02: API real, paginada en el servidor.
   // Solo se aplica la respuesta de la última búsqueda: con la red lenta, una respuesta vieja que
@@ -458,7 +451,7 @@ export const ResourcesPage = () => {
       left,
       width,
       label: start <RANGE_START ? fmtDesde(inicio) : fmtDia(inicio),
-      endLabel: indefinite ? 'Indefinido' : (hasEnd && end <= RANGE_END ? fmtDia(fin) : null),
+      endLabel: hasEnd && end <= RANGE_END ? fmtDia(fin) : null,
       expired,
       ending,
       daysLeft,
@@ -494,7 +487,7 @@ export const ResourcesPage = () => {
         <div>
           <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Recursos</h1>
           <p style={{ fontSize: 14, color: C.muted, margin: '8px 0 0' }}>
-            {pageInfo.totalElements} colaboradores, una fila por colaborador, {PAGE_SIZE} por página.
+            {pageInfo.totalElements} colaboradores, {PAGE_SIZE} por página.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -557,7 +550,7 @@ export const ResourcesPage = () => {
       <ArrivalsStrip />
 
       {/* PANEL DE FILTROS CON CATÁLOGOS */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 0.7fr 0.8fr 1.2fr', gap: 10, alignItems: 'end' }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'grid', gridTemplateColumns: '1.55fr 1fr 1fr 1fr 1fr 0.6fr 0.7fr 1.05fr auto', gap: 10, alignItems: 'end' }}>
         <div>
           <label htmlFor="rp-filter-search" style={labelStyle}>Buscar</label>
           <input id="rp-filter-search" className="rp-input" type="text" name="search" value={filters.search} placeholder="Nombre, N° empleado, proyecto..." onChange={handleFilterChange} style={inputStyle} />
@@ -613,6 +606,15 @@ export const ResourcesPage = () => {
             {SITUACIONES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
+
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, fontSize: 13, fontWeight: 500, color: C.text, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        <input
+         type="checkbox"
+         checked={filters.estado === 'Todos'}
+         onChange={(e) => updateFilters({ estado: e.target.checked ? 'Todos' : 'Activo' })}
+       />
+       Incluir inactivos
+       </label>
       </div>
 
       {/* ERRORES (BUG-02): nunca se muestran datos de ejemplo en su lugar */}
@@ -737,36 +739,21 @@ export const ResourcesPage = () => {
               <div style={{ textAlign: 'right' }}>Niv.</div>
             </div>
 
-            {loading && <div style={{ padding: 20, textAlign: 'center', color: C.muted, fontSize: 13 }}>Cargando…</div>}
-{!loading && !error && recursos.length === 0 && (
-            <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-              <p style={{ margin: 0, color: C.text, fontWeight: 600 }}>
-                {(filters.search ?? '').trim()
-                  ? `Ningún recurso coincide con «${(filters.search ?? '').trim()}»`
-                  : 'Ningún recurso coincide con los filtros seleccionados'}
-              </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {(filters.search ?? '').trim() && (
-                  <button
-                    type="button"
-                    className="rp-btn"
-                    onClick={() => updateFilters({ search: '' })}
-                    style={{ height: 32, padding: '0 12px', border: `1px solid ${C.border}`, background: C.surface, borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: C.text }}
-                  >
-                    Limpiar búsqueda
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="rp-btn"
-                  onClick={resetFilters}
-                  style={{ height: 32, padding: '0 12px', border: `1px solid ${C.primary}`, background: C.surface, borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: C.primary }}
-                >
-                  Quitar todos los filtros
-                </button>
-              </div>
-            </div>
-          )}
+          {!loading && !error && recursos.length === 0 && (
+              <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <p style={{ margin: 0, color: C.text, fontWeight: 600 }}>
+               Ningún colaborador cumple los filtros.
+            </p>
+    <button
+      type="button"
+      className="rp-btn"
+      onClick={resetFilters}
+      style={{ height: 32, padding: '0 12px', border: `1px solid ${C.primary}`, background: C.surface, borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: C.primary }}
+    >
+      Limpiar filtros
+    </button>
+  </div>
+)}
 
             {grupos.map(({ cliente, proyecto, kind, recs }) => (
               <div key={`${cliente}||${proyecto}`}>
@@ -873,12 +860,6 @@ export const ResourcesPage = () => {
                             />
                           );
                         })}
-
-                        {/* Sin asignación: el texto reemplaza a la barra */}
-                        {!rec.fechaInicio && rec.proyecto === 'Sin proyecto' && (
-                          <span style={{ position: 'absolute', top: 11, left: 8, fontSize: 10, color: C.muted, zIndex: 6 }}>Sin proyecto</span>
-                        )}
-
                         {bar && (
                           <>
                             <span style={{ position: 'absolute', top: 8, left: `${bar.left}%`, width: `${bar.width}%`, height: 20, backgroundColor: bar.bg, border: `1px solid ${bar.border}`, borderRadius: 3, padding: '0 8px', fontSize: 10, fontWeight: 600, color: C.text, display: 'flex', alignItems: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textAlign: 'left', zIndex: 6 }}>
@@ -928,7 +909,7 @@ export const ResourcesPage = () => {
                       </button>
                     );
                   })}
-</div>
+              </div>
               ))}
             </div>
           </div>
@@ -1022,13 +1003,8 @@ export const ResourcesPage = () => {
         )}
       </div>
 
-      {/* PAGINACIÓN INFERIOR (a la izquierda) */}
-      <div style={{ marginTop: 12, marginBottom: 12 }}>
-        <Pager {...pagerProps} />
-      </div>
-
       {/* CA-14 */}
-{isAdmin && selectedIds.size > 0 && (
+      {isAdmin && selectedIds.size > 0 && (
         <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: '#2B1810', color: 'white', borderRadius: 8, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
           <span style={{ fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: 600, marginRight: 4 }}>{selectedIds.size} seleccionados</span>
           <button
@@ -1103,18 +1079,20 @@ interface PagerProps {
   loading: boolean;
   onPrev: () => void;
   onNext: () => void;
+  showRange?: boolean;
 }
 
 /** Botones Atrás / Siguiente + rango; se usa arriba y abajo de la tabla, alineado a la izquierda */
-const Pager = ({ page, totalPages, shown, total, loading, onPrev, onNext }: PagerProps) => {
+const Pager = ({ page, totalPages, shown, total, loading, onPrev, onNext, showRange = true }: PagerProps) => {
   const prevOff = page <= 1 || loading;
   const nextOff = page >= totalPages || loading;
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 8, fontSize: 12, color: C.muted }}>
       <button type="button" className="rp-btn" aria-label="Página anterior" disabled={prevOff} onClick={onPrev} style={pagerBtn(prevOff)}><ChevronLeft size={20} strokeWidth={2.5} /></button>
       <button type="button" className="rp-btn" aria-label="Página siguiente" disabled={nextOff} onClick={onNext} style={pagerBtn(nextOff)}><ChevronRight size={20} strokeWidth={2.5} /></button>
-      <strong style={{ color: C.text }}>{pageRangeText(page, shown, total)}</strong>
-      <span>· Página {Math.min(page, Math.max(totalPages, 1))} de {Math.max(totalPages, 1)}</span>
+      {showRange && <strong style={{ color: C.text }}>{pageRangeText(page, shown, total)}</strong>}
+      {showRange && <span>·</span>}
+      <span>Página {Math.min(page, Math.max(totalPages, 1))} de {Math.max(totalPages, 1)}</span>
     </div>
   );
 };

@@ -248,8 +248,12 @@ function OperationsBar({ status }: Readonly<{ status?: ExtendedOperationsStatus 
       <span className="operations-status-item">
         <strong>{effective.activeResources ?? '—'}</strong>{' '}
         <span>recursos activos ·</span>{' '}
-        <strong>{effective.projectCount ?? '—'}</strong>{' '}
-        <span>proyectos ·</span>{' '}
+        {effective.projectCount !== undefined && (
+          <>
+            <strong>{effective.projectCount}</strong>{' '}
+            <span>proyectos ·</span>{' '}
+          </>
+        )}
         <strong>{effective.clientCount ?? '—'}</strong>{' '}
         <span>clientes</span>
       </span>
@@ -260,6 +264,17 @@ function OperationsBar({ status }: Readonly<{ status?: ExtendedOperationsStatus 
             ? formatDateTime(effective.nextNotificationAt)
             : '—'}
         </strong>
+      </span>
+<span className="operations-status-item">
+        <span>La sesión expira en</span>{' '}
+        <strong>
+          {typeof effective.sessionExpiresAt === 'string'
+            ? effective.sessionExpiresAt
+            : isValidDate(effective.sessionExpiresAt)
+              ? formatTime(effective.sessionExpiresAt)
+              : '—'}
+        </strong>{' '}
+        <span>sin actividad</span>
       </span>
     </footer>
   )
@@ -282,6 +297,15 @@ function formatDateTime(value: Date): string {
   }).format(value)
 
   return `${datePart} · ${timePart}`
+}
+
+function formatTime(value: Date): string {
+  if (!isValidDate(value)) {
+    return '—'
+  }
+  const hh = String(value.getUTCHours()).padStart(2, '0')
+  const mm = String(value.getUTCMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
 }
 
 function isValidDate(value?: Date): value is Date {

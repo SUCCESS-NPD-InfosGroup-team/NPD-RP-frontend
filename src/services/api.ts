@@ -67,10 +67,11 @@ export function buildSearchParams(filters: Filters, page = 1, size = 25): URLSea
   return params
 }
 
-function matchesSituation(item: RecursoApi, situacion?: string) : boolean{
-  if (!situacion || situacion == 'Todos') return true
-  const code = (item as RecursoApi & {situation?: {code?: string} }).situation?.code
-  return code === situacion
+function matchesSituation(item: RecursoApi, situacion?: string): boolean {
+  if (!situacion || situacion === 'Todos') return true
+  const raw = item as RecursoApi & { situation?: { code?: string } | null }
+  if (!raw.situation || typeof raw.situation !== 'object' || !raw.situation.code) return true
+  return raw.situation.code === situacion
 }
 
 async function fetchRawPage(
@@ -126,8 +127,8 @@ export const MAX_PAGE_SIZE = 100
  * El backend recorta cualquier `size` mayor a 100, así que no basta con pedir una página grande.
  */
 export async function searchAllRecursos(filters: Filters): Promise<RecursoApi[]> {
-  const first = await searchRecursos(filters, 1, MAX_PAGE_SIZE)
+  const first = await fetchRawPage(filters, 1, MAX_PAGE_SIZE)
   const remaining = Array.from({ length: Math.max(first.page.totalPages - 1, 0) }, (_, index) => index + 2)
-  const rest = await Promise.all(remaining.map((page) => searchRecursos(filters, page, MAX_PAGE_SIZE)))
+  const rest = await Promise.all(remaining.map((page) => fetchRawPage(filters, page, MAX_PAGE_SIZE)))
   return [first, ...rest].flatMap((response) => response.items)
 }
