@@ -392,5 +392,9 @@ export class FakeApi {
     },
     { method: 'GET', path: /^\/planner\/upcoming-events\/summary$/, reply: () => ({ status: 200, body: { windowDays: 30, total: 0, nearest: [] } }) },
     { method: 'GET', path: /^\/history\/resources\/\d+\/last-change$/, reply: () => ({ status: 204, body: undefined }) },
+    { method: 'GET', path: /^\/planner\/upcoming-events\/summary$/, reply: () => ({ status: 200, body: { windowDays: 30, total: 0, nearest: [] } }) },
+    { method: 'GET', path: /^\/planner\/projects\/kpis$/, reply: () => ({ status: 200, body: { activeResources: 130, activeProjects: 3, activeClients: 2, endingSoon: 0 } }) },
+    { method: 'GET', path: /^\/history\/resources\/\d+\/last-change$/, reply: () => ({ status: 204, body: undefined }) },
+    { method: 'GET', path: /^\/planner\/operations-status$/, reply: () => ({ status: 200, body: {} }) },
   ]
 }

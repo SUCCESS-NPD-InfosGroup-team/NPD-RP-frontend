@@ -2,7 +2,8 @@ import { test, expect } from './support/test'
 
 /** HU-03 (SCRUM-52) · BUG-01 (SCRUM-149) · BUG-02 (SCRUM-150) */
 test.describe('Recursos · roster con la API real', () => {
-  const lastSearch = (api: import('./support/fakeApi').FakeApi) => api.callsTo('GET', /^\/planner\/resources$/).at(-1)!.params
+  const lastSearch = (api: import('./support/fakeApi').FakeApi) =>
+    api.callsTo('GET', /^\/planner\/resources$/).filter((c) => c.params.get('size') !== '1').at(-1)!.params
 
   test('E2E-RES-01 carga el roster de la API con el filtro por defecto Activo (CA-10)', async ({ page, open, api }) => {
     await open('/recursos')
