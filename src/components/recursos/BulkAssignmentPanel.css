@@ -1,0 +1,274 @@
+.bulk-assignment-panel__layer {
+  position: fixed;
+  z-index: 1100;
+  inset-block: var(--topbar-h) var(--opsbar-h);
+  inset-inline: 0;
+  background: var(--surface-overlay);
+}
+
+.bulk-assignment-panel__backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.bulk-assignment-panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: flex;
+  width: min(720px, 100%);
+  max-width: none;
+  max-height: none;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-inline-start: var(--border-width) solid var(--border-default);
+  background: var(--surface-card);
+  box-shadow: var(--drawer-shadow);
+  color: var(--text-primary);
+}
+
+.bulk-assignment-panel__header {
+  display: flex;
+  min-height: 84px;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: var(--border-width) solid var(--border-default);
+}
+
+.bulk-assignment-panel__header h2 {
+  margin: 0;
+  font: 700 20px / 1.2 var(--font-display);
+}
+
+.bulk-assignment-panel__steps {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bulk-assignment-panel__steps li {
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-header);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bulk-assignment-panel__steps li.is-current {
+  background: var(--brand-brown);
+  color: var(--text-on-brand);
+}
+
+.bulk-assignment-panel__close {
+  display: grid;
+  width: var(--control-h);
+  height: var(--control-h);
+  flex: 0 0 var(--control-h);
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.bulk-assignment-panel__close svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.bulk-assignment-panel__close:focus-visible,
+.bulk-assignment-panel__backdrop:focus-visible {
+  outline: var(--focus-width) solid var(--brand-orange-deep);
+  outline-offset: var(--focus-offset);
+}
+
+.bulk-assignment-panel__body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4);
+}
+
+.bulk-assignment-panel__people {
+  display: flex;
+  min-height: var(--chip-h);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: 12px;
+}
+
+.bulk-assignment-panel__person-chip {
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-chip-neutral);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.bulk-assignment-panel__project-toolbar {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.bulk-assignment-panel__search {
+  display: flex;
+  min-width: 0;
+  height: 36px;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-2);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.bulk-assignment-panel__search:focus-within {
+  outline: var(--focus-width) solid var(--brand-orange-deep);
+  outline-offset: var(--focus-offset);
+}
+
+.bulk-assignment-panel__search svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+
+.bulk-assignment-panel__search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: 400 var(--fs-body) / 1.2 var(--font-body);
+}
+
+.bulk-assignment-panel__loading,
+.bulk-assignment-panel__empty {
+  margin: var(--space-4) 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.bulk-assignment-panel__project-group {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.bulk-assignment-panel__project-group h3 {
+  margin: var(--space-1) 0 0;
+  color: var(--text-secondary);
+  font: 700 var(--fs-tag) / 1.2 var(--font-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bulk-assignment-panel__project-option {
+  display: flex;
+  min-height: 60px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.bulk-assignment-panel__project-option.is-selected {
+  border-color: var(--brand-orange-deep);
+  background: var(--brand-orange-tint);
+}
+
+.bulk-assignment-panel__project-option input {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: 0 0 auto;
+  accent-color: var(--brand-navy);
+}
+
+.bulk-assignment-panel__project-option span {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.bulk-assignment-panel__project-option strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bulk-assignment-panel__project-option small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.bulk-assignment-panel__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--state-danger-tint);
+  color: var(--state-danger);
+}
+
+.bulk-assignment-panel__error-text {
+  color: var(--state-danger);
+}
+
+.bulk-assignment-panel__footer {
+  display: flex;
+  min-height: 59px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-top: var(--border-width) solid var(--border-default);
+  background: var(--surface-card);
+}
+
+.bulk-assignment-panel__footer p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.bulk-assignment-panel__footer-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 720px) {
+  .bulk-assignment-panel__project-toolbar {
+    flex-direction: column;
+  }
+}
