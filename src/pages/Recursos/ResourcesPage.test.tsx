@@ -208,9 +208,9 @@ describe('ResourcesPage · BUG-01 real search API', () => {
     expect(screen.getAllByText('No especificado').length).toBeGreaterThan(0);
     expect(screen.getByText('—')).toBeInTheDocument();
     const withoutProject = screen.getByRole('button', { name: 'Ver detalle de Sin asignar' });
-    expect(withoutProject.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(0);
+    expect(withoutProject.parentElement!.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(0);
     const indefinite = screen.getByRole('button', { name: 'Ver detalle de Importado' });
-    expect(indefinite.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(1);
+    expect(indefinite.parentElement!.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(1);
   });
 
   it('ignores a slow response of an older search that arrives after the current one', async () => {

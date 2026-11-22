@@ -789,94 +789,99 @@ useEffect(() => {
                     {GROUP_STYLE[kind].msg}
                   </div>
 {recs.map(rec => {
-                    const ext = rec as ReturnType<typeof toRecurso>;
-                    const bar = rec.fechaInicio ? getBar(rec.fechaInicio, rec.fechaFin, ext.indefinite) : null;
-                    const probation = getProbationPct(ext.probationEndDate);
-                    return (
-                      <button
-                        key={rec.id}
-                        type="button"
-                        className="rp-timeline-row"
-                        onClick={() => openResourceDetail(rec)}
-                        aria-label={`Ver detalle de ${rec.nombre}`}
-                        style={{ height: ROW_H, borderBottom: `1px solid ${C.borderSoft}`, position: 'relative', display: 'flex', cursor: 'pointer' }}
-                      >
-                        {MONTHS.map(m => (<span key={m.label} style={{ display: 'block', flex: m.days, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
+  const ext = rec as ReturnType<typeof toRecurso>;
+  const bar = rec.fechaInicio ? getBar(rec.fechaInicio, rec.fechaFin, ext.indefinite) : null;
+  const probation = getProbationPct(ext.probationEndDate);
+  return (
+    <div key={rec.id} style={{ height: ROW_H, borderBottom: `1px solid ${C.borderSoft}`, position: 'relative' }}>
+      <button
+        type="button"
+        className="rp-timeline-row"
+        onClick={() => openResourceDetail(rec)}
+        aria-label={`Ver detalle de ${rec.nombre}`}
+        style={{ height: '100%', display: 'flex', cursor: 'pointer' }}
+      >
+        {MONTHS.map(m => (<span key={m.label} style={{ display: 'block', flex: m.days, height: '100%', borderRight: `1px solid ${C.borderSoft}` }} />))}
+      </button>
 
-                        {/* Vacaciones rayadas */}
-                        {(ext.vacations ?? []).map((v, idx) => {
-                          const vStart = Math.max(new Date(v.startDate).getTime(), RANGE_START);
-                          const vEnd = Math.min(new Date(v.endDate).getTime(), RANGE_END);
-                          if (vEnd <= vStart) return null;
-                          const vLeft = pctInRange(vStart);
-                          const vWidth = Math.max(1, pctInRange(vEnd) - vLeft);
-                          return (
-                            <span
-                              key={idx}
-                              title={`Vacaciones: ${fmtDia(v.startDate)} – ${fmtDia(v.endDate)}`}
-                              style={{
-                                position: 'absolute',
-                                top: 6,
-                                left: `${vLeft}%`,
-                                width: `${vWidth}%`,
-                                height: 24,
-                                backgroundImage: 'repeating-linear-gradient(45deg, rgba(11,58,122,0.14), rgba(11,58,122,0.14) 4px, transparent 4px, transparent 8px)',
-                                border: '1px dashed #60A5FA',
-                                borderRadius: 3,
-                                zIndex: 5,
-                              }}
-                            />
-                          );
-                        })}
-                        {bar && (
-                          <>
-                            <span style={{ position: 'absolute', top: 8, left: `${bar.left}%`, width: `${bar.width}%`, height: 20, backgroundColor: bar.bg, border: `1px solid ${bar.border}`, borderRadius: 3, padding: '0 8px', fontSize: 10, fontWeight: 600, color: C.text, display: 'flex', alignItems: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textAlign: 'left', zIndex: 6 }}>
-                              {bar.label}
-                              {bar.marks.map(mk => (
-                                <span
-                                  key={mk.label}
-                                  title={`Faltan ${mk.label}`}
-                                  style={{ position: 'absolute', left: `${mk.pct}%`, top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(31,31,31,0.35)' }}
-                                />
-                              ))}
-                            </span>
+      {/* Capa visual: fuera del botón, no captura clics */}
+      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        {/* Vacaciones rayadas */}
+        {(ext.vacations ?? []).map((v, idx) => {
+          const vStart = Math.max(new Date(v.startDate).getTime(), RANGE_START);
+          const vEnd = Math.min(new Date(v.endDate).getTime(), RANGE_END);
+          if (vEnd <= vStart) return null;
+          const vLeft = pctInRange(vStart);
+          const vWidth = Math.max(1, pctInRange(vEnd) - vLeft);
+          return (
+            <span
+              key={idx}
+              title={`Vacaciones: ${fmtDia(v.startDate)} – ${fmtDia(v.endDate)}`}
+              style={{
+                position: 'absolute',
+                top: 6,
+                left: `${vLeft}%`,
+                width: `${vWidth}%`,
+                height: 24,
+                backgroundImage: 'repeating-linear-gradient(45deg, rgba(11,58,122,0.14), rgba(11,58,122,0.14) 4px, transparent 4px, transparent 8px)',
+                border: '1px dashed #60A5FA',
+                borderRadius: 3,
+                zIndex: 5,
+              }}
+            />
+          );
+        })}
 
-                            {bar.expired ? (
-                              <span style={{ position: 'absolute', top: 9, left: `calc(${bar.left + bar.width}% + 6px)`, backgroundColor: C.danger, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, whiteSpace: 'nowrap', zIndex: 7 }}>
-                                Venció · confirmar
-                              </span>
-                            ) : bar.ending ? (
-                              <span style={{ position: 'absolute', top: 9, left: `calc(${bar.left + bar.width}% + 6px)`, backgroundColor: C.danger, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, whiteSpace: 'nowrap', zIndex: 7 }}>
-                                D-{bar.daysLeft}
-                              </span>
-                            ) : bar.endLabel && (
-                              <span style={{ position: 'absolute', top: 12, left: `calc(${bar.left + bar.width}% + 8px)`, fontSize: 10, color: C.muted, whiteSpace: 'nowrap', zIndex: 6 }}>
-                                {bar.endLabel}
-                              </span>
-                            )}
-                          </>
-                        )}
+        {bar && (
+          <>
+            <span style={{ position: 'absolute', top: 8, left: `${bar.left}%`, width: `${bar.width}%`, height: 20, backgroundColor: bar.bg, border: `1px solid ${bar.border}`, borderRadius: 3, padding: '0 8px', fontSize: 10, fontWeight: 600, color: C.text, display: 'flex', alignItems: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textAlign: 'left', zIndex: 6 }}>
+              {bar.label}
+              {bar.marks.map(mk => (
+                <span
+                  key={mk.label}
+                  title={`Faltan ${mk.label}`}
+                  style={{ position: 'absolute', left: `${mk.pct}%`, top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(31,31,31,0.35)' }}
+                />
+              ))}
+            </span>
 
-                        {/* Rombo de período de prueba (día 90) */}
-                        {probation && (
-                          <span
-                            title={probation.label}
-                            style={{
-                              position: 'absolute',
-                              top: 13,
-                              left: `${probation.pct}%`,
-                              width: 10,
-                              height: 10,
-                              backgroundColor: C.link,
-                              border: '1.5px solid #fff',
-                              transform: 'translateX(-50%) rotate(45deg)',
-                              zIndex: 9,
-                            }}
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
+            {bar.expired ? (
+              <span style={{ position: 'absolute', top: 9, left: `calc(${bar.left + bar.width}% + 6px)`, backgroundColor: C.danger, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, whiteSpace: 'nowrap', zIndex: 7 }}>
+                Venció · confirmar
+              </span>
+            ) : bar.ending ? (
+              <span style={{ position: 'absolute', top: 9, left: `calc(${bar.left + bar.width}% + 6px)`, backgroundColor: C.danger, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, whiteSpace: 'nowrap', zIndex: 7 }}>
+                D-{bar.daysLeft}
+              </span>
+            ) : bar.endLabel && (
+              <span style={{ position: 'absolute', top: 12, left: `calc(${bar.left + bar.width}% + 8px)`, fontSize: 10, color: C.muted, whiteSpace: 'nowrap', zIndex: 6 }}>
+                {bar.endLabel}
+              </span>
+            )}
+          </>
+        )}
+
+        {/* Rombo de período de prueba (día 90) */}
+        {probation && (
+          <span
+            title={probation.label}
+            style={{
+              position: 'absolute',
+              top: 13,
+              left: `${probation.pct}%`,
+              width: 10,
+              height: 10,
+              backgroundColor: C.link,
+              border: '1.5px solid #fff',
+              transform: 'translateX(-50%) rotate(45deg)',
+              zIndex: 9,
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+})}
               </div>
               ))}
             </div>
