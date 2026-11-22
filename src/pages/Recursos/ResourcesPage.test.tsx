@@ -5,12 +5,18 @@ import { ResourcesPage } from './ResourcesPage';
 import { searchAllRecursos, searchRecursos } from '../../services/api';
 import { getProjectsApi, type ProjectsApi } from '../../services/projects';
 import { getResourcesApi, type ResourcesApi } from '../../services/resources';
+import { bulkAssignmentApi } from '../../services/bulkAssignment.api';
+import type { BulkAssignmentResponse } from '../../services/bulkAssignment.types';
 import { buildResource, buildResourceSearchResponse, resourceSearchResponse } from '../../test/fixtures/resourceSearch';
 import type { ResourceSearchResponse } from '../../types';
 
 vi.mock('../../services/api', () => ({ searchRecursos: vi.fn(), searchAllRecursos: vi.fn() }));
 vi.mock('../../services/projects', () => ({ getProjectsApi: vi.fn() }));
 vi.mock('../../services/resources', () => ({ getResourcesApi: vi.fn() }));
+vi.mock('../../services/bulkAssignment.api', () => ({
+  bulkAssignmentApi: { assignMembers: vi.fn() },
+  BulkAssignmentApiError: class BulkAssignmentApiError extends Error {},
+}));
 
 const xlsx = vi.hoisted(() => ({
   json_to_sheet: vi.fn(() => ({})),
@@ -46,6 +52,22 @@ const mockedSearch = vi.mocked(searchRecursos);
 const mockedSearchAll = vi.mocked(searchAllRecursos);
 let listClients: ReturnType<typeof vi.fn>;
 let listClientProjects: ReturnType<typeof vi.fn>;
+const mockedAssignMembers = vi.mocked(bulkAssignmentApi.assignMembers);
+const assignmentResult: BulkAssignmentResponse = {
+  project: { id: 41, name: 'Programa de automatización (DEYEL)' },
+  client: { id: 3, name: 'BANESCO' },
+  assigned: 1,
+  added: 0,
+  moved: 1,
+  members: [{
+    id: 1,
+    name: 'Ana Torres',
+    previousProject: { id: 21, name: 'DEYEL' },
+    endDate: '2026-12-31',
+    indefinite: false,
+    version: 4,
+  }],
+};
 
 beforeEach(() => {
   auth.isAdmin = true;
@@ -59,7 +81,21 @@ beforeEach(() => {
   vi.mocked(getResourcesApi).mockResolvedValue({
     getNpdLeads: vi.fn().mockResolvedValue([{ id: 755, name: 'Lorena Batista' }]),
     getClientRoles: vi.fn().mockResolvedValue([{ id: 7, name: 'QA Funcional' }]),
+    getCatalogs: vi.fn().mockResolvedValue({
+      jobTitles: [],
+      positions: [],
+      businessUnits: [],
+      workModes: [],
+      genders: [],
+      talentReviews: [],
+      clientRoles: [{ id: 7, name: 'QA Funcional' }],
+      equipment: [],
+      terminationReasons: [],
+      npdLeads: [{ id: 1, name: 'Lorena' }, { id: 755, name: 'Lorena Batista' }],
+      statuses: [],
+    }),
   } as unknown as ResourcesApi);
+  mockedAssignMembers.mockReset().mockResolvedValue(assignmentResult);
 });
 
 const renderPage = () => render(
@@ -113,6 +149,69 @@ describe('ResourcesPage (HU-03)', () => {
     renderPage();
     await screen.findByText('#1045');
     expect(screen.queryByRole('button', { name: /Registrar recurso/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Seleccionar Ana Torres' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Asignar a proyecto' })).not.toBeInTheDocument();
+  });
+
+  it('selects only eligible visible group members and shows inactive bulk actions', async () => {
+    mockedSearch.mockResolvedValue(buildResourceSearchResponse([
+      buildResource({ id: 1, name: 'Activa uno' }),
+      buildResource({ id: 2, name: 'Baja', status: { code: 'BAJA', label: 'Baja' } }),
+      buildResource({ id: 3, employeeNumber: '1047', name: 'Activa dos' }),
+    ]));
+    renderPage();
+    await screen.findByText('Activa uno');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar grupo BANESCO' }));
+
+    expect(screen.getByText('2 seleccionados')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Seleccionar Activa uno' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Seleccionar Activa dos' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Seleccionar Baja' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Quitar de proyecto' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Limpiar selección' })).toBeEnabled();
+  });
+
+  it('preserves selected people while changing roster pages', async () => {
+    const first = buildResourceSearchResponse(
+      [buildResource({ id: 1, name: 'Página uno' })],
+      { number: 0, totalElements: 2, totalPages: 2 },
+    );
+    const second = buildResourceSearchResponse(
+      [buildResource({ id: 2, employeeNumber: '1046', name: 'Página dos' })],
+      { number: 1, totalElements: 2, totalPages: 2 },
+    );
+    mockedSearch.mockImplementation(async (_filters, page) => page === 2 ? second : first);
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Seleccionar Página uno' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+
+    expect(await screen.findByText('Página dos')).toBeInTheDocument();
+    expect(screen.getByText('1 seleccionados')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar Página dos' }));
+    expect(screen.getByText('2 seleccionados')).toBeInTheDocument();
+  });
+
+  it('assigns the selected roster model version and reports the result after refreshing', async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Seleccionar Ana Torres' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Asignar a proyecto' }));
+
+    fireEvent.click(await screen.findByRole('radio', { name: /DEYEL/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    await screen.findByRole('region', { name: 'Datos de la asignación' });
+    fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      '0 a Programa de automatización (DEYEL) · 1 cambia de proyecto',
+    );
+    expect(mockedAssignMembers).toHaveBeenCalledWith(41, expect.objectContaining({
+      members: [expect.objectContaining({ employeeId: 1, version: 3 })],
+    }));
+    await waitFor(() => expect(mockedSearch).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('button', { name: 'Asignar a proyecto' })).not.toBeInTheDocument();
   });
 });
 

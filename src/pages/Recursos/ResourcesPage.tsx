@@ -7,11 +7,15 @@ import { getProjectsApi } from '../../services/projects';
 import { getResourcesApi } from '../../services/resources';
 import { useAuth } from '../../context/AuthContext';
 import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDrawer';
-import { Download, Plus, UserPlus } from 'lucide-react';
+import { BulkAssignmentPanel } from '../../components/recursos/BulkAssignmentPanel';
+import { useBulkAssign, type BulkAssignResource } from '../../hooks/useBulkAssign';
+import type { BulkAssignmentResponse } from '../../services/bulkAssignment.types';
+import { Download, Plus, UserPlus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
 import { exportFileName, toExportRows } from './resourceExport';
 import { toRecurso } from './resourceMapper';
+import './ResourcesPage.css';
 
 
 // ==========================================
@@ -65,9 +69,68 @@ interface PageInfo {
 }
 const EMPTY_PAGE: PageInfo = { totalElements: 0, totalPages: 0 };
 
+function canSelectResource(resource: Recurso): boolean {
+  const employeeId = Number(resource.id)
+  return Number.isSafeInteger(employeeId) && employeeId > 0
+    && (resource.statusCode ?? resource.estado).toUpperCase() !== 'BAJA'
+}
+
+function toBulkAssignResource(resource: Recurso): BulkAssignResource {
+  const clientName = resource.cliente === 'Sin proyecto' || resource.cliente === 'No especificado'
+    ? null
+    : resource.cliente
+  const projectName = resource.proyecto === 'Sin proyecto' ? null : resource.proyecto
+  return {
+    employeeId: Number(resource.id),
+    employeeNumber: resource.nEmpleado.replace(/^#/, ''),
+    name: resource.nombre,
+    statusCode: resource.statusCode ?? resource.estado,
+    ...(resource.version === undefined ? {} : { version: resource.version }),
+    ...(resource.leaderId === undefined ? {} : { leaderId: resource.leaderId }),
+    ...(resource.rol === 'Sin rol' ? {} : { clientRoleName: resource.rol }),
+    currentClientName: clientName,
+    currentProjectName: projectName,
+  }
+}
+
+function GroupSelectionCheckbox({
+  groupName,
+  resources,
+  selectedIds,
+  onToggle,
+}: {
+  groupName: string
+  resources: Recurso[]
+  selectedIds: Set<string>
+  onToggle: (resources: Recurso[]) => void
+}) {
+  const checkboxRef = useRef<HTMLInputElement>(null)
+  const eligible = resources.filter(canSelectResource)
+  const selectedCount = eligible.filter((resource) => selectedIds.has(resource.id)).length
+  const checked = eligible.length > 0 && selectedCount === eligible.length
+  const indeterminate = selectedCount > 0 && !checked
+
+  useEffect(() => {
+    if (checkboxRef.current) checkboxRef.current.indeterminate = indeterminate
+  }, [indeterminate])
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={checked}
+      aria-checked={indeterminate ? 'mixed' : checked}
+      aria-label={`Seleccionar grupo ${groupName}`}
+      disabled={!eligible.length}
+      onChange={() => onToggle(eligible)}
+    />
+  )
+}
+
 export const ResourcesPage = () => {
   const { hasRole } = useAuth();
   const isAdmin = hasRole('operations-administrator');
+  const assignment = useBulkAssign();
   const navigate = useNavigate();
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,8 +142,9 @@ export const ResourcesPage = () => {
   const [catalogError, setCatalogError] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  // CA-14: selección múltiple
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [assignmentPanelOpen, setAssignmentPanelOpen] = useState(false);
+  const [assignmentToast, setAssignmentToast] = useState('');
+  const allSelectionRef = useRef<HTMLInputElement>(null);
   const gridCols = isAdmin ? `32px ${GRID_COLS}` : GRID_COLS;
   // BUG-01: Catálogos tipados
   const [catalogos, setCatalogos] = useState<{
@@ -91,12 +155,6 @@ export const ResourcesPage = () => {
   }>({
     clientes: [], proyectos: [], lideres: [], roles: []
   });
-  const toggleOne = (id: string) => setSelectedIds(prev => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
-  });
-  const clearSelection = () => setSelectedIds(new Set());
   const openResourceDetail = (resource: Recurso) => setRecursoSeleccionado(resource);
   // BUG-01: opciones de los filtros desde la API; si fallan se avisa (BUG-02)
   const loadCatalogos = useCallback(async () => {
@@ -151,7 +209,6 @@ export const ResourcesPage = () => {
       if (!isCurrent()) return;
       setRecursos(res.items.map(toRecurso));
       setPageInfo({ totalElements: res.page.totalElements, totalPages: res.page.totalPages });
-      setSelectedIds(new Set());
     } catch {
       if (!isCurrent()) return;
       setError('No se pudieron cargar los recursos.');
@@ -197,8 +254,25 @@ export const ResourcesPage = () => {
       setExporting(false);
     }
   };
-  const allSelected = recursos.length > 0 && selectedIds.size === recursos.length;
-  const toggleAll = () => setSelectedIds(allSelected ? new Set() : new Set(recursos.map(r => r.id)));
+  const selectedIds = new Set(assignment.selectedPeople.map((person) => String(person.employeeId)));
+  const selectableRecursos = recursos.filter(canSelectResource);
+  const selectedVisibleCount = selectableRecursos.filter((resource) => selectedIds.has(resource.id)).length;
+  const allSelected = selectableRecursos.length > 0 && selectedVisibleCount === selectableRecursos.length;
+  const someSelected = selectedVisibleCount > 0 && !allSelected;
+  useEffect(() => {
+    if (allSelectionRef.current) allSelectionRef.current.indeterminate = someSelected;
+  }, [someSelected]);
+
+  const toggleVisibleGroup = (group: Recurso[]) => {
+    assignment.toggleGroup(group.map(toBulkAssignResource));
+  };
+  const handleAssigned = (result: BulkAssignmentResponse) => {
+    const changeText = result.moved === 1 ? 'cambia de proyecto' : 'cambian de proyecto';
+    setAssignmentToast(`${result.added} a ${result.project.name} · ${result.moved} ${changeText}`);
+    assignment.clearSelection();
+    setAssignmentPanelOpen(false);
+    void fetchData();
+  };
   const groupedRecursos = recursos.reduce((acc, rec) => {
     if (!acc[rec.cliente]) acc[rec.cliente] = [];
     acc[rec.cliente].push(rec);
@@ -318,7 +392,19 @@ export const ResourcesPage = () => {
         {/* IZQUIERDA */}
         <div style={{ width: '45%', minWidth: 460, borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 35, alignItems: 'center', backgroundColor: C.headRow, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 10, ...thStyle }}>
-            {isAdmin && (<div><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Seleccionar todos" /></div>)}
+            {isAdmin && (
+              <div>
+                <input
+                  ref={allSelectionRef}
+                  type="checkbox"
+                  checked={allSelected}
+                  aria-checked={someSelected ? 'mixed' : allSelected}
+                  onChange={() => toggleVisibleGroup(selectableRecursos)}
+                  aria-label="Seleccionar todos"
+                  disabled={!selectableRecursos.length}
+                />
+              </div>
+            )}
             <div>Colaborador</div>
             <div>Proyecto / Cliente</div>
             <div>Líder NPD</div>
@@ -333,6 +419,14 @@ export const ResourcesPage = () => {
           {Object.entries(groupedRecursos).map(([cliente, recs], groupIndex) => (
             <div key={cliente}>
               <div style={{ height: 33, padding: '0 16px', backgroundColor: C.groupRow, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {isAdmin && (
+                  <GroupSelectionCheckbox
+                    groupName={cliente}
+                    resources={recs}
+                    selectedIds={selectedIds}
+                    onToggle={toggleVisibleGroup}
+                  />
+                )}
                 <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: DOT_COLORS[groupIndex % DOT_COLORS.length] }} />
                 <span style={{ fontFamily: FONT_DISPLAY, fontSize: 15, fontWeight: 700, textTransform: 'uppercase' }}>{cliente}</span>
                 <span style={{ fontSize: 12, color: C.muted }}>{recs.length} colaboradores</span>
@@ -344,7 +438,17 @@ export const ResourcesPage = () => {
                   className="rp-row"
                   style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 43, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, backgroundColor: C.surface }}
                 >
-                  {isAdmin && (<div><input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} /></div>)}
+                  {isAdmin && (
+                    <div>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(rec.id)}
+                        disabled={!canSelectResource(rec)}
+                        onChange={() => assignment.togglePerson(toBulkAssignResource(rec))}
+                        aria-label={`Seleccionar ${rec.nombre}`}
+                      />
+                    </div>
+                  )}
                   <button
                     type="button"
                     className="rp-row-button"
@@ -411,13 +515,42 @@ export const ResourcesPage = () => {
         <button className="rp-btn" aria-label="Página siguiente" disabled={page >= pageInfo.totalPages || loading} onClick={() => setPage(p => p + 1)} style={pagerStyle}>▶</button>
       </div>
 
-      {/* CA-14 */}
-      {isAdmin && selectedIds.size > 0 && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: '#2B1810', color: 'white', borderRadius: 8, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
-          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: 600 }}>{selectedIds.size} seleccionados</span>
-          <button className="rp-btn-primary" disabled title="Disponible en HU-08" style={{ height: 34, padding: '0 14px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'not-allowed', opacity: 0.7 }}>Asignar a proyecto…</button>
-          <button onClick={clearSelection} style={{ background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}>Limpiar selección</button>
+      {isAdmin && assignment.selectionError && (
+        <p className="resource-selection-error" role="alert" aria-live="assertive">{assignment.selectionError}</p>
+      )}
+      {isAdmin && assignment.selectedCount > 0 && (
+        <div className="resource-selection-bar" role="toolbar" aria-label="Acciones de selección">
+          <span>{assignment.selectedCount} seleccionados</span>
+          <button type="button" className="resource-selection-bar__primary" onClick={() => setAssignmentPanelOpen(true)}>
+            Asignar a proyecto
+          </button>
+          <button type="button" disabled title="No disponible" aria-disabled="true">Quitar de proyecto</button>
+          <button type="button" disabled title="No disponible" aria-disabled="true">Exportar selección</button>
+          <button
+            type="button"
+            className="resource-selection-bar__close"
+            aria-label="Limpiar selección"
+            onClick={assignment.clearSelection}
+          >
+            <X aria-hidden="true" />
+          </button>
         </div>
+      )}
+      {assignmentToast && (
+        <div className="resource-assignment-toast" role="status" aria-live="polite">
+          <span>{assignmentToast}</span>
+          <button type="button" aria-label="Cerrar notificación" onClick={() => setAssignmentToast('')}>
+            <X aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      {isAdmin && (
+        <BulkAssignmentPanel
+          open={assignmentPanelOpen}
+          assignment={assignment}
+          onClose={() => setAssignmentPanelOpen(false)}
+          onAssigned={handleAssigned}
+        />
       )}
 
       {recursoSeleccionado && (
