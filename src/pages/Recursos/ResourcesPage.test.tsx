@@ -115,6 +115,7 @@ describe('ResourcesPage (HU-03)', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Recursos' })).toBeInTheDocument();
     expect(await screen.findByText('#1045')).toBeInTheDocument();
+    expect(screen.queryByRole('toolbar', { name: 'Acciones de selección' })).not.toBeInTheDocument();
   });
 
   it('shows the upcoming events strip instead of fixed numbers (HU-06 CA-01)', async () => {
@@ -137,11 +138,26 @@ describe('ResourcesPage (HU-03)', () => {
   });
 
   it('selects a row with its checkbox without opening the detail drawer', async () => {
-    renderPage();
+    const { container } = renderPage();
 
     fireEvent.click(await screen.findByRole('checkbox', { name: 'Seleccionar Ana Torres' }));
     expect(screen.getByText('1 seleccionados')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    const selectionBar = screen.getByRole('toolbar', { name: 'Acciones de selección' });
+    expect(selectionBar).toHaveStyle({
+      insetBlockEnd: 'calc(var(--opsbar-h) + var(--space-3))',
+    });
+
+    const roster = container.querySelector<HTMLElement>('.resource-roster')!;
+    Object.defineProperty(selectionBar, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 500, 52),
+    });
+    fireEvent(window, new Event('resize'));
+    await waitFor(() => expect(roster).toHaveStyle({
+      paddingBottom: 'calc(52px + var(--space-3))',
+    }));
   });
 
   it('hides "Registrar recurso" from roles that cannot register', async () => {
@@ -151,6 +167,7 @@ describe('ResourcesPage (HU-03)', () => {
     expect(screen.queryByRole('button', { name: /Registrar recurso/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'Seleccionar Ana Torres' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Asignar a proyecto' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('toolbar', { name: 'Acciones de selección' })).not.toBeInTheDocument();
   });
 
   it('selects only eligible visible group members and shows inactive bulk actions', async () => {
@@ -200,7 +217,7 @@ describe('ResourcesPage (HU-03)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Asignar a proyecto' }));
 
     fireEvent.click(await screen.findByRole('radio', { name: /DEYEL/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
     await screen.findByRole('region', { name: 'Datos de la asignación' });
     fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }));
 

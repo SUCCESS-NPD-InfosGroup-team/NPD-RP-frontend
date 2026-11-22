@@ -131,6 +131,8 @@ export const ResourcesPage = () => {
   const { hasRole } = useAuth();
   const isAdmin = hasRole('operations-administrator');
   const assignment = useBulkAssign();
+  const selectionBarRef = useRef<HTMLDivElement>(null);
+  const [selectionBarHeight, setSelectionBarHeight] = useState(0);
   const navigate = useNavigate();
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(false);
@@ -146,6 +148,28 @@ export const ResourcesPage = () => {
   const [assignmentToast, setAssignmentToast] = useState('');
   const allSelectionRef = useRef<HTMLInputElement>(null);
   const gridCols = isAdmin ? `32px ${GRID_COLS}` : GRID_COLS;
+
+  useEffect(() => {
+    const selectionBar = selectionBarRef.current;
+    if (!isAdmin || assignment.selectedCount === 0 || !selectionBar) {
+      setSelectionBarHeight(0);
+      return;
+    }
+
+    const updateHeight = () => {
+      const height = selectionBar.getBoundingClientRect().height;
+      setSelectionBarHeight(currentHeight => currentHeight === height ? currentHeight : height);
+    };
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateHeight);
+
+    updateHeight();
+    resizeObserver?.observe(selectionBar);
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [assignment.selectedCount, isAdmin]);
   // BUG-01: Catálogos tipados
   const [catalogos, setCatalogos] = useState<{
     clientes: CatalogoItem[];
@@ -388,7 +412,18 @@ export const ResourcesPage = () => {
       {exportError && <ErrorBanner message={exportError} onRetry={() => void handleExport()} />}
 
       {/* TABLA + TIMELINE */}
-      <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, display: 'flex', overflowX: 'auto', minHeight: 400 }}>
+      <div
+        className="resource-roster"
+        style={{
+          backgroundColor: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 6,
+          display: 'flex',
+          overflowX: 'auto',
+          minHeight: 400,
+          paddingBottom: selectionBarHeight > 0 ? `calc(${selectionBarHeight}px + var(--space-3))` : undefined,
+        }}
+      >
         {/* IZQUIERDA */}
         <div style={{ width: '45%', minWidth: 460, borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '0 16px', height: 35, alignItems: 'center', backgroundColor: C.headRow, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 10, ...thStyle }}>
@@ -516,10 +551,25 @@ export const ResourcesPage = () => {
       </div>
 
       {isAdmin && assignment.selectionError && (
-        <p className="resource-selection-error" role="alert" aria-live="assertive">{assignment.selectionError}</p>
+        <p
+          className="resource-selection-error"
+          role="alert"
+          aria-live="assertive"
+          style={assignment.selectedCount > 0 ? {
+            insetBlockEnd: `calc(var(--opsbar-h) + var(--space-3) + ${selectionBarHeight}px + var(--space-3))`,
+          } : undefined}
+        >
+          {assignment.selectionError}
+        </p>
       )}
       {isAdmin && assignment.selectedCount > 0 && (
-        <div className="resource-selection-bar" role="toolbar" aria-label="Acciones de selección">
+        <div
+          ref={selectionBarRef}
+          className="resource-selection-bar"
+          role="toolbar"
+          aria-label="Acciones de selección"
+          style={{ insetBlockEnd: 'calc(var(--opsbar-h) + var(--space-3))' }}
+        >
           <span>{assignment.selectedCount} seleccionados</span>
           <button type="button" className="resource-selection-bar__primary" onClick={() => setAssignmentPanelOpen(true)}>
             Asignar a proyecto

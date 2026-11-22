@@ -146,6 +146,18 @@ describe('BulkAssignmentPanel · project step', () => {
     const { rerender } = render(<Harness />)
     await screen.findByText('Programa de automatización (DEYEL)')
 
+    const panel = screen.getByRole('dialog', { name: 'Asignar a proyecto' })
+    const body = panel.querySelector('.bulk-assignment-panel__body')
+    const footer = panel.querySelector('.bulk-assignment-panel__footer')
+    const nextButton = screen.getByRole('button', { name: 'Siguiente' })
+
+    expect(panel).toHaveClass('bulk-assignment-panel--right-720')
+    expect(body).toHaveClass('bulk-assignment-panel__body')
+    expect(body).not.toContainElement(footer)
+    expect(body?.nextElementSibling).toBe(footer)
+    expect(nextButton).toBeDisabled()
+    expect(screen.getByText('Elige un proyecto para 1 colaboradores')).toBeInTheDocument()
+
     expect(api.listClients).toHaveBeenCalledTimes(1)
     expect(api.listClientProjects).toHaveBeenCalledTimes(2)
     expect(screen.getByText(/fin de contrato 31 dic 2026/)).toBeInTheDocument()
@@ -154,12 +166,24 @@ describe('BulkAssignmentPanel · project step', () => {
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar proyecto' }), { target: { value: 'copa' } })
     expect(screen.queryByText('Programa de automatización (DEYEL)')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('radio', { name: /Copa Airlines - Comercial/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    expect(nextButton).toBeEnabled()
+    expect(screen.getByText('1 a Copa Airlines - Comercial')).toBeInTheDocument()
+    fireEvent.click(nextButton)
 
     expect(screen.getByRole('region', { name: 'Datos de la asignación' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Atrás' }))
     expect(screen.getByText('Copa Airlines - Comercial')).toBeInTheDocument()
     rerender(<Harness open={false} />)
+  })
+
+  it('cancels the project step without advancing when no project is selected', async () => {
+    const onClose = vi.fn()
+    render(<Harness onClose={onClose} />)
+    await screen.findByText('Programa de automatización (DEYEL)')
+
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('shows loading and empty states, and reuses the loaded project cache when reopened', async () => {
@@ -227,7 +251,7 @@ describe('BulkAssignmentPanel · project step', () => {
     await screen.findByText('Programa de automatización (DEYEL)')
 
     fireEvent.click(screen.getByRole('radio', { name: /Programa de automatización/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
     await screen.findByRole('region', { name: 'Datos de la asignación' })
     fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }))
 
@@ -251,7 +275,7 @@ describe('BulkAssignmentPanel · project step', () => {
     await screen.findByText('Programa de automatización (DEYEL)')
 
     fireEvent.click(screen.getByRole('radio', { name: /Programa de automatización/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
     await screen.findByRole('region', { name: 'Datos de la asignación' })
     fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }))
 
@@ -267,7 +291,7 @@ describe('BulkAssignmentPanel · project step', () => {
     await screen.findByText('Programa de automatización (DEYEL)')
 
     fireEvent.click(screen.getByRole('radio', { name: /Programa de automatización/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
     await screen.findByRole('region', { name: 'Datos de la asignación' })
     fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }))
     const alert = await screen.findByRole('alert')

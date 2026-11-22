@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Search, X } from 'lucide-react'
+import { ArrowRight, Search, X } from 'lucide-react'
 import { getProjectsApi } from '../../services/projects'
 import type { Client, ClientProject, Project } from '../../services/projects.types'
 import type { BulkAssignmentResponse } from '../../services/bulkAssignment.types'
@@ -212,7 +212,7 @@ export function BulkAssignmentPanel({
       />
       <dialog
         ref={dialogRef}
-        className="bulk-assignment-panel"
+        className="bulk-assignment-panel bulk-assignment-panel--right-720"
         open
         aria-modal="true"
         aria-labelledby="bulk-assignment-title"
@@ -356,13 +356,21 @@ export function BulkAssignmentPanel({
         <footer className="bulk-assignment-panel__footer">
           <p aria-live="polite">
             {isProjectStep
-              ? (selectedProject ? `Proyecto: ${selectedProject.name}` : 'Elige un proyecto')
+              ? (selectedProject
+                ? `${assignment.selectedCount} a ${selectedProject.name}`
+                : `Elige un proyecto para ${assignment.selectedCount} colaboradores`)
               : `${assignment.selectedCount} colaboradores · ${assignment.project?.name ?? ''}`}
           </p>
           {isProjectStep ? (
             <div className="bulk-assignment-panel__footer-actions">
               <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-              <Button onClick={continueToAssignment} disabled={!selectedProject}>Continuar</Button>
+              <Button
+                icon={<ArrowRight aria-hidden="true" />}
+                onClick={continueToAssignment}
+                disabled={!selectedProject}
+              >
+                Siguiente
+              </Button>
             </div>
           ) : (
             <div className="bulk-assignment-panel__footer-actions">
