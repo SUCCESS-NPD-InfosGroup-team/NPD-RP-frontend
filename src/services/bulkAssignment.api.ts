@@ -40,6 +40,7 @@ function isConflictMember(value: unknown): value is NonNullable<BulkAssignmentPr
     && typeof value.currentVersion === 'number'
     && typeof value.updatedBy === 'string'
     && typeof value.updatedAt === 'string'
+    && (value.employeeId === undefined || (typeof value.employeeId === 'number' && Number.isSafeInteger(value.employeeId)))
 }
 
 function parseProblemDetails(value: unknown): BulkAssignmentProblemDetails | undefined {

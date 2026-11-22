@@ -3,6 +3,7 @@ import type { BulkAssignRow, useBulkAssign } from '../../hooks/useBulkAssign'
 import { getResourcesApi } from '../../services/resources'
 import type { CatalogItem, Catalogs } from '../../services/resources.types'
 import { addDaysIso, todayIso } from '../../utils/dates'
+import { formatResourceDateTime } from './resourceDetailView'
 import { Button } from '../ui/Button'
 
 type BulkAssignmentController = ReturnType<typeof useBulkAssign>
@@ -34,6 +35,10 @@ function parseCatalogId(value: string): number | undefined {
   if (!value) return undefined
   const id = Number(value)
   return Number.isSafeInteger(id) && id > 0 ? id : undefined
+}
+
+function formatConflictDate(value: string): string {
+  return Number.isNaN(Date.parse(value)) ? value : formatResourceDateTime(value, 'UTC')
 }
 
 function SelectControl({
@@ -151,6 +156,15 @@ export function BulkAssignmentDataStep({ assignment }: Readonly<BulkAssignmentDa
   const equipmentOptions = useMemo(() => options(catalogs?.equipment ?? []), [catalogs])
   const controlsDisabled = loading || Boolean(loadError)
   const { rows, updateRow } = assignment
+  const canIdentifyConflicts = assignment.conflicts.length > 0
+    && assignment.conflicts.every((conflict) => conflict.employeeId !== undefined
+      && assignment.selectedPeople.some((person) => person.employeeId === conflict.employeeId))
+  const conflictsByEmployeeId = new Map<number, (typeof assignment.conflicts)[number]>()
+  if (canIdentifyConflicts) {
+    assignment.conflicts.forEach((conflict) => {
+      if (conflict.employeeId !== undefined) conflictsByEmployeeId.set(conflict.employeeId, conflict)
+    })
+  }
 
   useEffect(() => {
     if (!catalogs) return
@@ -181,6 +195,33 @@ export function BulkAssignmentDataStep({ assignment }: Readonly<BulkAssignmentDa
         <strong>{assignment.project?.name}</strong>
         <span>{assignment.project?.client.name}</span>
       </div>
+
+      {assignment.conflicts.length > 0 && !canIdentifyConflicts && (
+        <div className="bulk-assignment-data__conflict" role="alert">
+          <p>
+            El servidor no indicó a qué persona corresponde cada cambio. No se marcaron filas.
+            Recarga los registros seleccionados antes de reintentar.
+          </p>
+          <ul>
+            {assignment.conflicts.map((conflict, index) => (
+              <li key={`${conflict.updatedAt}-${index}`}>
+                Modificado por {conflict.updatedBy} · {formatConflictDate(conflict.updatedAt)}
+                {' · '}versión actual {conflict.currentVersion}
+              </li>
+            ))}
+          </ul>
+          <Button
+            variant="secondary"
+            disabled={assignment.isReloadingConflicts}
+            onClick={() => void assignment.reloadConflictMember()}
+          >
+            {assignment.isReloadingConflicts ? 'Recargando…' : 'Recargar registro'}
+          </Button>
+        </div>
+      )}
+      {assignment.conflictReloadError && (
+        <p className="bulk-assignment-data__conflict-error" role="alert">{assignment.conflictReloadError}</p>
+      )}
 
       <section className="bulk-assignment-data__common" aria-labelledby="bulk-assignment-common-title">
         <div className="bulk-assignment-data__section-heading">
@@ -287,12 +328,29 @@ export function BulkAssignmentDataStep({ assignment }: Readonly<BulkAssignmentDa
                 const source = person?.currentClientName && person.currentProjectName
                   ? `Sale de ${person.currentClientName} · ${person.currentProjectName}`
                   : undefined
+                const conflict = conflictsByEmployeeId.get(row.employeeId)
                 return (
-                  <tr key={row.employeeId}>
+                  <tr className={conflict ? 'is-conflict' : undefined} key={row.employeeId}>
                     <th scope="row">
                       <strong>{row.name}</strong>
                       <small>{row.employeeNumber}</small>
                       {source && <small className="bulk-assignment-data__source">{source}</small>}
+                      {conflict && (
+                        <>
+                          <small className="bulk-assignment-data__conflict-detail">
+                            Modificado por {conflict.updatedBy} · {formatConflictDate(conflict.updatedAt)}
+                            {' · '}versión actual {conflict.currentVersion}
+                          </small>
+                          <Button
+                            variant="secondary"
+                            aria-label={`Recargar registro de ${row.name}`}
+                            disabled={assignment.isReloadingConflicts}
+                            onClick={() => void assignment.reloadConflictMember(row.employeeId)}
+                          >
+                            {assignment.isReloadingConflicts ? 'Recargando…' : 'Recargar registro'}
+                          </Button>
+                        </>
+                      )}
                     </th>
                     <td>
                       <SelectControl

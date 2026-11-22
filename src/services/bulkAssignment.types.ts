@@ -73,6 +73,8 @@ export interface BulkAssignmentValidationError {
 }
 
 export interface BulkAssignmentConflictMember {
+  /** pendiente de confirmar con backend (SCRUM-127) */
+  employeeId?: number
   currentVersion: number
   updatedBy: string
   updatedAt: string

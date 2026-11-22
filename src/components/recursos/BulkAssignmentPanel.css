@@ -391,6 +391,34 @@
   color: var(--state-danger);
 }
 
+.bulk-assignment-data__conflict,
+.bulk-assignment-data__conflict-error {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--state-warn-tint);
+  color: var(--text-primary);
+}
+
+.bulk-assignment-data__conflict p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bulk-assignment-data__conflict ul {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+  padding-inline-start: var(--space-4);
+  font-size: 12px;
+}
+
+.bulk-assignment-data__conflict-error {
+  background: var(--state-danger-tint);
+  color: var(--state-danger);
+}
+
 .bulk-assignment-data__table-wrap {
   max-width: 100%;
   overflow-x: auto;
@@ -433,6 +461,15 @@
 
 .bulk-assignment-data__table-wrap tbody th .bulk-assignment-data__source {
   color: var(--brand-brown);
+  font-weight: 600;
+}
+
+.bulk-assignment-data__table-wrap tr.is-conflict {
+  background: var(--state-warn-tint);
+}
+
+.bulk-assignment-data__table-wrap tbody th .bulk-assignment-data__conflict-detail {
+  color: var(--state-danger);
   font-weight: 600;
 }
 

@@ -3,6 +3,9 @@ import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Client, ClientProject } from '../../services/projects.types'
 import { getProjectsApi } from '../../services/projects'
+import { bulkAssignmentApi, BulkAssignmentApiError } from '../../services/bulkAssignment.api'
+import { getResourcesApi } from '../../services/resources'
+import type { BulkAssignmentResponse } from '../../services/bulkAssignment.types'
 import { useBulkAssign } from '../../hooks/useBulkAssign'
 import { BulkAssignmentPanel } from './BulkAssignmentPanel'
 
@@ -10,7 +13,24 @@ vi.mock('../../services/projects', () => ({ getProjectsApi: vi.fn() }))
 vi.mock('../../services/resources', () => ({ getResourcesApi: vi.fn() }))
 vi.mock('../../services/bulkAssignment.api', () => ({
   bulkAssignmentApi: { assignMembers: vi.fn() },
-  BulkAssignmentApiError: class BulkAssignmentApiError extends Error {},
+  BulkAssignmentApiError: class BulkAssignmentApiError extends Error {
+    readonly status: number
+    readonly code: string
+    readonly problem?: { code: string; errors?: Array<{ field: string; code: string; message: string; employeeId?: number; index?: number }> }
+
+    constructor(status: number, problem?: { code: string; errors?: Array<{
+      field: string
+      code: string
+      message: string
+      employeeId?: number
+      index?: number
+    }> }) {
+      super('No se pudo completar la asignación.')
+      this.status = status
+      this.code = problem?.code ?? 'API_ERROR'
+      this.problem = problem
+    }
+  },
 }))
 vi.mock('../proyectos/NewProjectModal', () => ({
   NewProjectModal: ({
@@ -70,8 +90,25 @@ const api = {
   listClients: vi.fn<() => Promise<Client[]>>(),
   listClientProjects: vi.fn<(clientId: string) => Promise<ClientProject[]>>(),
 }
+const assignmentResult: BulkAssignmentResponse = {
+  project: { id: 41, name: 'Programa de automatización (DEYEL)' },
+  client: { id: 3, name: 'BANESCO' },
+  assigned: 1,
+  added: 0,
+  moved: 1,
+  members: [],
+}
+const assignMembers = vi.mocked(bulkAssignmentApi.assignMembers)
 
-function Harness({ open = true, onClose = vi.fn() }: { open?: boolean; onClose?: () => void }) {
+function Harness({
+  open = true,
+  onClose = vi.fn(),
+  onAssigned,
+}: {
+  open?: boolean
+  onClose?: () => void
+  onAssigned?: (result: BulkAssignmentResponse) => void
+}) {
   const assignment = useBulkAssign()
   const { togglePerson } = assignment
   useEffect(() => {
@@ -81,9 +118,10 @@ function Harness({ open = true, onClose = vi.fn() }: { open?: boolean; onClose?:
       name: 'Ana Torres',
       statusCode: 'ACTIVO',
       version: 3,
+      leaderId: 755,
     })
   }, [togglePerson])
-  return <BulkAssignmentPanel open={open} assignment={assignment} onClose={onClose} />
+  return <BulkAssignmentPanel open={open} assignment={assignment} onClose={onClose} onAssigned={onAssigned} />
 }
 
 describe('BulkAssignmentPanel · project step', () => {
@@ -94,6 +132,14 @@ describe('BulkAssignmentPanel · project step', () => {
       clientId === '3' ? banescoProjects : copaProjects
     ))
     vi.mocked(getProjectsApi).mockResolvedValue(api as never)
+    vi.mocked(getResourcesApi).mockResolvedValue({
+      getCatalogs: vi.fn().mockResolvedValue({
+        npdLeads: [{ id: 755, name: 'María Pérez' }],
+        clientRoles: [],
+        equipment: [],
+      }),
+    } as never)
+    assignMembers.mockResolvedValue(assignmentResult)
   })
 
   it('loads clients and their projects, filters the list and selects a project', async () => {
@@ -172,5 +218,63 @@ describe('BulkAssignmentPanel · project step', () => {
     fireEvent.click(within(alert).getByRole('button', { name: 'Reintentar' }))
     expect(await screen.findByText('Programa de automatización (DEYEL)')).toBeInTheDocument()
     expect(api.listClients).toHaveBeenCalledTimes(2)
+  })
+
+  it('submits once, reports the result and closes the panel on success', async () => {
+    const onAssigned = vi.fn()
+    const onClose = vi.fn()
+    render(<Harness onAssigned={onAssigned} onClose={onClose} />)
+    await screen.findByText('Programa de automatización (DEYEL)')
+
+    fireEvent.click(screen.getByRole('radio', { name: /Programa de automatización/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await screen.findByRole('region', { name: 'Datos de la asignación' })
+    fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }))
+
+    await waitFor(() => expect(onAssigned).toHaveBeenCalledWith(assignmentResult))
+    expect(assignMembers).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the panel open and shows mapped validation errors', async () => {
+    assignMembers.mockRejectedValueOnce(new BulkAssignmentApiError(400, {
+      code: 'VALIDATION_FAILED',
+      errors: [{
+        field: 'leaderId',
+        code: 'REQUIRED',
+        message: 'Required field.',
+        employeeId: 890,
+      }],
+    }))
+    const onClose = vi.fn()
+    render(<Harness onClose={onClose} />)
+    await screen.findByText('Programa de automatización (DEYEL)')
+
+    fireEvent.click(screen.getByRole('radio', { name: /Programa de automatización/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await screen.findByRole('region', { name: 'Datos de la asignación' })
+    fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Corrige los campos marcados')
+    expect(screen.getByText('Este campo es obligatorio.')).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('offers retry for a network failure and completes the same assignment', async () => {
+    assignMembers.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(assignmentResult)
+    const onAssigned = vi.fn()
+    render(<Harness onAssigned={onAssigned} />)
+    await screen.findByText('Programa de automatización (DEYEL)')
+
+    fireEvent.click(screen.getByRole('radio', { name: /Programa de automatización/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await screen.findByRole('region', { name: 'Datos de la asignación' })
+    fireEvent.click(screen.getByRole('button', { name: 'Asignar 1' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Revisa tu conexión')
+    fireEvent.click(within(alert).getByRole('button', { name: 'Reintentar' }))
+
+    await waitFor(() => expect(onAssigned).toHaveBeenCalledWith(assignmentResult))
+    expect(assignMembers).toHaveBeenCalledTimes(2)
   })
 })

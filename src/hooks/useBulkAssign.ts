@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { bulkAssignmentApi, BulkAssignmentApiError } from '../services/bulkAssignment.api'
+import { getResourcesApi } from '../services/resources'
+import type { ResourceResponse } from '../services/resources.types'
 import { todayIso } from '../utils/dates'
 import type {
   BulkAssignmentConflictMember,
@@ -21,11 +23,13 @@ export interface BulkAssignResource {
   statusCode: string
   version?: number
   leaderId?: number | null
+  clientRoleId?: number | null
   clientRoleName?: string | null
   equipmentId?: number | null
   currentClientName?: string | null
   currentProjectName?: string | null
 }
+const CONCURRENT_MODIFICATION_MESSAGE = 'Algunos recursos cambiaron desde que se cargaron. Recarga los registros antes de confirmar.'
 
 export interface BulkAssignPerson extends Omit<BulkAssignResource, 'version'> {
   version: number
@@ -66,10 +70,30 @@ export interface BulkAssignSubmitError {
 
 export interface UseBulkAssignOptions {
   assignMembers?: typeof bulkAssignmentApi.assignMembers
+  loadResource?: (employeeId: number) => Promise<ResourceResponse>
+}
+
+const VALIDATION_MESSAGES: Record<string, string> = {
+  REQUIRED: 'Este campo es obligatorio.',
+  UNKNOWN_ID: 'El valor seleccionado no existe.',
+  TERMINATED: 'No se puede asignar una persona en Baja.',
+  ALREADY_IN_PROJECT: 'La persona ya pertenece a este proyecto.',
+  DUPLICATED: 'La persona está duplicada en la solicitud.',
+  INACTIVE_LEADER: 'El líder NPD seleccionado está inactivo.',
+  SELF_LEADER: 'Una persona no puede ser su propio líder.',
+  DATE_IN_PAST: 'La fecha fin debe ser futura.',
+  CONFLICTING_VALUES: 'Elige una fecha fin o indefinido, no ambos.',
+  TOO_MANY: 'No se pueden asignar más de 100 colaboradores.',
+  INACTIVE_PROJECT: 'El proyecto seleccionado está inactivo.',
 }
 
 function emptyErrors(): BulkAssignErrors {
   return { request: [], defaults: [], rows: {} }
+}
+
+async function loadResourceById(employeeId: number): Promise<ResourceResponse> {
+  const api = await getResourcesApi()
+  return api.getResource(employeeId)
 }
 
 function isValidVersion(version: number | undefined): version is number {
@@ -92,6 +116,7 @@ function rowsFor(resources: BulkAssignResource[]): BulkAssignRow[] {
       name: person.name,
       version: person.version,
       ...(person.leaderId == null ? {} : { leaderId: person.leaderId }),
+      ...(person.clientRoleId == null ? {} : { clientRoleId: person.clientRoleId }),
       ...(person.clientRoleName === undefined ? {} : { clientRoleName: person.clientRoleName }),
       ...(person.equipmentId == null ? {} : { equipmentId: person.equipmentId }),
     }]
@@ -115,7 +140,10 @@ function assignProblemErrors(
   rows: BulkAssignRow[],
 ): BulkAssignErrors {
   const result = emptyErrors()
-  for (const error of problem?.errors ?? []) {
+  for (const originalError of problem?.errors ?? []) {
+    const error = VALIDATION_MESSAGES[originalError.code]
+      ? { ...originalError, message: VALIDATION_MESSAGES[originalError.code] }
+      : originalError
     const employeeId = error.employeeId ?? (error.index === undefined ? undefined : rows[error.index]?.employeeId)
     if (employeeId !== undefined) {
       result.rows[employeeId] = [...(result.rows[employeeId] ?? []), error]
@@ -131,11 +159,33 @@ function assignProblemErrors(
 function submitMessage(error: BulkAssignmentApiError): string {
   if (error.status === 403) return 'No tienes permiso para asignar colaboradores.'
   if (error.status === 404) return 'El proyecto seleccionado ya no existe.'
-  if (error.status === 409) return 'Algunos recursos cambiaron desde que se cargaron. Recarga los registros antes de confirmar.'
+  if (error.status === 409) return CONCURRENT_MODIFICATION_MESSAGE
+  if (error.code === 'INACTIVE_PROJECT') return VALIDATION_MESSAGES.INACTIVE_PROJECT
+  if (error.code === 'TOO_MANY') return VALIDATION_MESSAGES.TOO_MANY
+  if (error.code === 'VALIDATION_FAILED') return 'Corrige los campos marcados antes de asignar.'
   return error.message
 }
 
-export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers }: UseBulkAssignOptions = {}) {
+function resourceToBulkAssign(resource: ResourceResponse, previous: BulkAssignResource): BulkAssignResource {
+  return {
+    ...previous,
+    employeeNumber: resource.employeeNumber,
+    name: resource.name,
+    statusCode: resource.status.code,
+    version: resource.version,
+    leaderId: resource.assignment?.leader?.id,
+    clientRoleId: resource.assignment?.clientRole?.id,
+    clientRoleName: resource.assignment?.clientRole?.name,
+    equipmentId: resource.assignment?.equipment?.id,
+    currentClientName: resource.assignment?.client.name ?? null,
+    currentProjectName: resource.assignment?.project.name ?? null,
+  }
+}
+
+export function useBulkAssign({
+  assignMembers = bulkAssignmentApi.assignMembers,
+  loadResource = loadResourceById,
+}: UseBulkAssignOptions = {}) {
   const [selection, setSelection] = useState<Map<number, BulkAssignResource>>(() => new Map())
   const [selectionError, setSelectionError] = useState<string>()
   const [step, setStep] = useState<BulkAssignStep>('project')
@@ -145,6 +195,8 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
   const [errors, setErrors] = useState<BulkAssignErrors>(emptyErrors)
   const [submitError, setSubmitError] = useState<BulkAssignSubmitError>()
   const [conflicts, setConflicts] = useState<BulkAssignmentConflictMember[]>([])
+  const [isReloadingConflicts, setIsReloadingConflicts] = useState(false)
+  const [conflictReloadError, setConflictReloadError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<BulkAssignmentResponse>()
   const selectionRef = useRef(selection)
@@ -159,6 +211,8 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
     setErrors(emptyErrors())
     setSubmitError(undefined)
     setConflicts([])
+    setIsReloadingConflicts(false)
+    setConflictReloadError('')
     setResult(undefined)
   }, [])
 
@@ -171,7 +225,7 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
   const togglePerson = useCallback((person: BulkAssignResource) => {
     if (person.statusCode.toUpperCase() === 'BAJA') {
       setSelectionError(`${person.name} está en Baja y no se puede seleccionar.`)
-      return
+      return undefined
     }
 
     const currentSelection = selectionRef.current
@@ -274,15 +328,61 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
     })))
   }, [defaults])
 
-  const submit = useCallback(async () => {
-    if (submittingRef.current) return
+  const reloadConflictMember = useCallback(async (employeeId?: number) => {
+    const targetPeople = employeeId === undefined
+      ? selectedPeople
+      : selectedPeople.filter((person) => person.employeeId === employeeId)
+    if (!targetPeople.length) {
+      setConflictReloadError('No se encontró el colaborador que se debe recargar. Actualiza el roster e inténtalo de nuevo.')
+      return
+    }
+
+    setIsReloadingConflicts(true)
+    setConflictReloadError('')
+    try {
+      const updatedResources = await Promise.all(targetPeople.map(async (person) => ({
+        previous: person,
+        resource: await loadResource(person.employeeId),
+      })))
+      const updatedById = new Map(updatedResources.map(({ previous, resource }) => [
+        previous.employeeId,
+        resourceToBulkAssign(resource, previous),
+      ]))
+      updateSelection((current) => {
+        const next = new Map(current)
+        updatedById.forEach((person, id) => next.set(id, person))
+        return next
+      })
+      setRows((current) => current.map((row) => {
+        const updated = updatedById.get(row.employeeId)
+        return updated?.version === undefined ? row : { ...row, version: updated.version }
+      }))
+      const remainingConflicts = employeeId === undefined
+        ? []
+        : conflicts.filter((conflict) => conflict.employeeId !== employeeId)
+      setConflicts(remainingConflicts)
+      setErrors(emptyErrors())
+      setSubmitError(remainingConflicts.length
+        ? { code: 'CONCURRENT_MODIFICATION', message: CONCURRENT_MODIFICATION_MESSAGE }
+        : undefined)
+    } catch (cause) {
+      setConflictReloadError(cause instanceof Error
+        ? `No se pudo recargar el registro: ${cause.message}`
+        : 'No se pudo recargar el registro. Intenta de nuevo.')
+    } finally {
+      setIsReloadingConflicts(false)
+    }
+  }, [conflicts, loadResource, selectedPeople, updateSelection])
+
+  const submit = useCallback(async (): Promise<BulkAssignmentResponse | undefined> => {
+    if (submittingRef.current) return undefined
     if (!project) {
       setSubmitError({ code: 'PROJECT_REQUIRED', message: 'Selecciona un proyecto antes de continuar.' })
-      return
+      return undefined
     }
     if (selectedPeople.length === 0) {
       setSubmitError({ code: 'MEMBERS_REQUIRED', message: 'Selecciona al menos un colaborador.' })
-      return
+      return undefined
     }
 
     const missingVersion = selectedPeople.filter((person) => !isValidVersion(person.version))
@@ -300,11 +400,11 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
         code: 'VERSION_REQUIRED',
         message: 'No se pudo enviar la asignación porque faltan versiones en uno o más registros.',
       })
-      return
+      return undefined
     }
     if (rows.length !== selectedPeople.length) {
       setSubmitError({ code: 'ASSIGNMENT_ROWS_MISMATCH', message: 'No se pudieron preparar todos los colaboradores seleccionados.' })
-      return
+      return undefined
     }
 
     const validationErrors = emptyErrors()
@@ -373,6 +473,7 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
         members: rows.map(toMember),
       })
       setResult(response)
+      return response
     } catch (cause) {
       if (cause instanceof BulkAssignmentApiError) {
         setErrors(assignProblemErrors(cause.problem, rows))
@@ -381,7 +482,7 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
       } else {
         setSubmitError({
           code: 'UNEXPECTED_ERROR',
-          message: cause instanceof Error ? cause.message : 'No se pudo completar la asignación.',
+          message: 'No se pudo completar la asignación. Revisa tu conexión e inténtalo de nuevo.',
         })
       }
     } finally {
@@ -401,6 +502,8 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
     errors,
     submitError,
     conflicts,
+    isReloadingConflicts,
+    conflictReloadError,
     isSubmitting,
     result,
     togglePerson,
@@ -411,6 +514,7 @@ export function useBulkAssign({ assignMembers = bulkAssignmentApi.assignMembers 
     setDefaults,
     updateRow,
     applyDefaultsToAll,
+    reloadConflictMember,
     submit,
   }
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { getProjectsApi } from '../../services/projects'
 import type { Client, ClientProject, Project } from '../../services/projects.types'
+import type { BulkAssignmentResponse } from '../../services/bulkAssignment.types'
 import { formatShortDate } from '../../utils/dates'
 import { useBulkAssign, type BulkAssignProject } from '../../hooks/useBulkAssign'
 import { BulkAssignmentDataStep } from './BulkAssignmentDataStep'
@@ -15,6 +16,7 @@ interface BulkAssignmentPanelProps {
   open: boolean
   assignment: BulkAssignmentController
   onClose: () => void
+  onAssigned?: (result: BulkAssignmentResponse) => void
 }
 
 interface ProjectGroup {
@@ -26,6 +28,7 @@ export function BulkAssignmentPanel({
   open,
   assignment,
   onClose,
+  onAssigned,
 }: Readonly<BulkAssignmentPanelProps>) {
   const [clients, setClients] = useState<Client[]>([])
   const [projectsByClient, setProjectsByClient] = useState<Map<string, ClientProject[]>>(() => new Map())
@@ -185,6 +188,13 @@ export function BulkAssignmentPanel({
     assignment.chooseProject(selectedProject)
   }
 
+  async function handleAssign(): Promise<void> {
+    const result = await assignment.submit()
+    if (!result) return
+    onAssigned?.(result)
+    onClose()
+  }
+
   if (!open) return null
 
   const isProjectStep = assignment.step === 'project'
@@ -317,12 +327,37 @@ export function BulkAssignmentPanel({
                 ))}
               </div>
             </>
-          ) : <BulkAssignmentDataStep assignment={assignment} />}
+          ) : (
+            <>
+              {assignment.submitError && (
+                <div className="bulk-assignment-panel__error" role="alert" aria-live="assertive">
+                  <div>
+                    <p>{assignment.submitError.message}</p>
+                    {assignment.errors.request.map((error, index) => (
+                      <p key={`${error.field}-${error.code}-${index}`}>{error.message}</p>
+                    ))}
+                  </div>
+                  {(assignment.submitError.status === undefined || assignment.submitError.status >= 500) && (
+                    <Button
+                      variant="secondary"
+                      disabled={assignment.isSubmitting}
+                      onClick={() => void handleAssign()}
+                    >
+                      Reintentar
+                    </Button>
+                  )}
+                </div>
+              )}
+              <BulkAssignmentDataStep assignment={assignment} />
+            </>
+          )}
         </main>
 
         <footer className="bulk-assignment-panel__footer">
           <p aria-live="polite">
-            {isProjectStep ? (selectedProject ? `Proyecto: ${selectedProject.name}` : 'Elige un proyecto') : ''}
+            {isProjectStep
+              ? (selectedProject ? `Proyecto: ${selectedProject.name}` : 'Elige un proyecto')
+              : `${assignment.selectedCount} colaboradores · ${assignment.project?.name ?? ''}`}
           </p>
           {isProjectStep ? (
             <div className="bulk-assignment-panel__footer-actions">
@@ -332,6 +367,9 @@ export function BulkAssignmentPanel({
           ) : (
             <div className="bulk-assignment-panel__footer-actions">
               <Button variant="secondary" onClick={assignment.backToProjectStep}>Atrás</Button>
+              <Button disabled={assignment.isSubmitting || assignment.selectedCount === 0} onClick={() => void handleAssign()}>
+                {assignment.isSubmitting ? 'Asignando…' : `Asignar ${assignment.selectedCount}`}
+              </Button>
             </div>
           )}
         </footer>

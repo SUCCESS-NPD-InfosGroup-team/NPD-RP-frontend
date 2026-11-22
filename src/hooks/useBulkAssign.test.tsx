@@ -167,7 +167,7 @@ describe('useBulkAssign', () => {
         {
           field: 'leaderId',
           code: 'REQUIRED',
-          message: 'Selecciona el líder NPD.',
+          message: 'Required field.',
           employeeId: 890,
           index: 0,
         },
@@ -182,6 +182,7 @@ describe('useBulkAssign', () => {
     await act(async () => result.current.submit())
 
     expect(result.current.errors.rows[890]?.[0]).toMatchObject({ field: 'leaderId', index: 0 })
+    expect(result.current.errors.rows[890]?.[0].message).toBe('Este campo es obligatorio.')
     expect(result.current.errors.rows[744]).toBeUndefined()
     expect(result.current.errors.defaults[0]).toMatchObject({ field: 'defaults.endDate' })
     expect(result.current.submitError?.code).toBe('VALIDATION_FAILED')
@@ -232,5 +233,31 @@ describe('useBulkAssign', () => {
     assignMembers.mockRejectedValue(new BulkAssignmentApiError(403, { code: 'FORBIDDEN' }))
     await act(async () => result.current.submit())
     expect(result.current.submitError?.message).toContain('No tienes permiso')
+  })
+
+  it('localizes inactive-project errors without dropping the request field', async () => {
+    const { result } = renderHook(() => useBulkAssign({ assignMembers }))
+    act(() => result.current.togglePerson(person(890)))
+    act(() => result.current.chooseProject(project))
+    assignMembers.mockRejectedValue(new BulkAssignmentApiError(400, {
+      code: 'INACTIVE_PROJECT',
+      field: 'projectId',
+    }))
+
+    await act(async () => result.current.submit())
+
+    expect(result.current.submitError?.message).toBe('El proyecto seleccionado está inactivo.')
+    expect(result.current.errors.request).toEqual([])
+  })
+
+  it('explains when a selected project no longer exists', async () => {
+    const { result } = renderHook(() => useBulkAssign({ assignMembers }))
+    act(() => result.current.togglePerson(person(890)))
+    act(() => result.current.chooseProject(project))
+    assignMembers.mockRejectedValue(new BulkAssignmentApiError(404, { code: 'NOT_FOUND' }))
+
+    await act(async () => result.current.submit())
+
+    expect(result.current.submitError?.message).toBe('El proyecto seleccionado ya no existe.')
   })
 })

@@ -133,11 +133,19 @@ describe('bulkAssignmentApi', () => {
   it('preserves concurrent modification details from ProblemDetails', async () => {
     const conflict = {
       code: 'CONCURRENT_MODIFICATION',
-      members: [{
-        currentVersion: 3,
-        updatedBy: 'María Pérez',
-        updatedAt: '2026-10-07T09:12:00Z',
-      }],
+      members: [
+        {
+          employeeId: 890,
+          currentVersion: 3,
+          updatedBy: 'María Pérez',
+          updatedAt: '2026-10-07T09:12:00Z',
+        },
+        {
+          currentVersion: 4,
+          updatedBy: 'lbatista',
+          updatedAt: '2026-10-08T10:15:00Z',
+        },
+      ],
     }
     fetchMock.mockResolvedValue(jsonResponse(conflict, 409))
 
