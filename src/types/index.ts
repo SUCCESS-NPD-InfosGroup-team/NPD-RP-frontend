@@ -114,6 +114,8 @@ export interface Recurso {
   fechaInicio: string;
   fechaFin: string;
   version?: number;
+  statusCode?: string;
+  leaderId?: number;
 }
 
 export interface Vacacion {

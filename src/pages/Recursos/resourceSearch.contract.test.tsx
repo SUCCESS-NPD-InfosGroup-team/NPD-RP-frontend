@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { searchRecursos } from '../../services/api'
 import { resourceSearchResponse } from '../../test/fixtures/resourceSearch'
+import type { RecursoApi } from '../../types'
+import { toRecurso } from './resourceMapper'
 
 vi.mock('../../auth/keycloak', async () => (await import('../../test/keycloakMock')).fakeAuthModule)
 
@@ -82,5 +84,14 @@ describe('GET /planner/resources contract', () => {
       expect(item).not.toHaveProperty('endDate')
       expect(item.status).toEqual({ code: expect.any(String), label: expect.any(String) })
     }
+  })
+
+  it('maps the optional API version into the roster model only when provided', () => {
+    const resource = resourceSearchResponse.items[0]
+    expect(toRecurso(resource).version).toBe(3)
+
+    const resourceWithoutVersion: RecursoApi = { ...resource }
+    delete resourceWithoutVersion.version
+    expect(toRecurso(resourceWithoutVersion)).not.toHaveProperty('version')
   })
 })

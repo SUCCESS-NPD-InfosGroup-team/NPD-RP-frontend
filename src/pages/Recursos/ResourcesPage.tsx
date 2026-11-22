@@ -1,7 +1,7 @@
 // src/pages/Recursos/ResourcesPage.tsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import type { Filters, Recurso, RecursoApi } from '../../types';
+import type { Filters, Recurso } from '../../types';
 import { searchAllRecursos, searchRecursos } from '../../services/api';
 import { getProjectsApi } from '../../services/projects';
 import { getResourcesApi } from '../../services/resources';
@@ -10,7 +10,8 @@ import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDr
 import { Download, Plus, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
-import { exportFileName, statusText, toExportRows } from './resourceExport';
+import { exportFileName, toExportRows } from './resourceExport';
+import { toRecurso } from './resourceMapper';
 
 
 // ==========================================
@@ -64,28 +65,6 @@ interface PageInfo {
 }
 const EMPTY_PAGE: PageInfo = { totalElements: 0, totalPages: 0 };
 
-/** Grupo de la fila: el cliente, «No especificado» si el proyecto está inactivo o «Sin proyecto» */
-function groupLabel(item: RecursoApi): string {
-  if (item.projectActive === false) return 'No especificado';
-  return item.client?.name ?? 'Sin proyecto';
-}
-
-function toRecurso(item: RecursoApi): Recurso {
-  return {
-    id: item.id.toString(),
-    nEmpleado: `#${item.employeeNumber}`,
-    nombre: item.name,
-    rol: item.clientRole ?? 'Sin rol',
-    cliente: groupLabel(item),
-    proyecto: item.project?.name ?? 'Sin proyecto',
-    liderNPD: item.leader?.name ?? 'Sin líder',
-    nivel: item.level == null ? '—' : `N${item.level}`,
-    estado: statusText(item.status),
-    // Sin datos falsos (BUG-02): sin proyecto no hay barra; sin fin es indefinido
-    fechaInicio: item.assignmentStart ?? '',
-    fechaFin: item.assignmentEnd ?? '',
-  };
-}
 export const ResourcesPage = () => {
   const { hasRole } = useAuth();
   const isAdmin = hasRole('operations-administrator');
