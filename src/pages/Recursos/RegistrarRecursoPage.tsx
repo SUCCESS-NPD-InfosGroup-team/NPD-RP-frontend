@@ -1,53 +1,53 @@
 // src/pages/Recursos/RegistrarRecursoPage.tsx
+import { useNavigate, useParams } from 'react-router-dom'
+import { RegisterResourceForm } from '../../components/recursos/RegisterResourceForm'
 
-export const RegistrarRecursoPage = () => {
+interface ResourceFormPageProps {
+  title: string
+  description: string
+  resourceId?: string
+}
+
+/**
+ * Pantalla del formulario de recurso. Registrar (HU-01) y editar (HU-02) usan el mismo
+ * formulario: con `resourceId` lo precarga con GET y guarda con PUT.
+ * Las rutas solo la abren para el Operations administrator (ver AccessGuard).
+ */
+function ResourceFormPage({ title, description, resourceId }: Readonly<ResourceFormPageProps>) {
+  const navigate = useNavigate()
+  const backToRoster = () => navigate('/recursos')
+
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '22px' }}>Registrar Recurso</h2>
-        <p style={{ color: '#666', fontSize: '14px' }}>
-          Completa el formulario para añadir un nuevo colaborador al sistema.
-        </p>
+        <h2 style={{ fontSize: '22px' }}>{title}</h2>
+        <p style={{ color: '#666', fontSize: '14px' }}>{description}</p>
       </div>
-
-      <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '8px', maxWidth: '600px' }}>
-        <form style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div>
-            <label htmlFor="emp-number" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>N° Empleado</label>
-            <input id="emp-number" type="text" placeholder="Ej. 1102" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-          </div>
-          
-          <div>
-            <label htmlFor="full-name" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nombre Completo</label>
-            <input id="full-name" type="text" placeholder="Ej. Laura Gómez" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-          </div>
-
-          <div>
-            <label htmlFor="email" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Email</label>
-            <input id="email" type="email" placeholder="laura.gomez@infosgroup.com" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <div style={{ flex: 1 }}>
-              <label htmlFor="level" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Nivel</label>
-              <input id="level" type="number" min="1" max="5" placeholder="1" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label htmlFor="hire-date" style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Fecha de Ingreso</label>
-              <input id="hire-date" type="date" style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-            <button type="button" style={{ padding: '8px 16px', border: '1px solid #ddd', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
-              Cancelar
-            </button>
-            <button type="submit" style={{ padding: '8px 16px', border: 'none', background: '#E85D04', color: 'white', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Guardar Recurso
-            </button>
-          </div>
-        </form>
-      </div>
+      <RegisterResourceForm
+        canCreateProjects
+        resourceId={resourceId}
+        onSaved={backToRoster}
+        onCancel={backToRoster}
+      />
     </div>
-  );
-};
+  )
+}
+
+export const RegistrarRecursoPage = () => (
+  <ResourceFormPage
+    title="Registrar Recurso"
+    description="Completa el formulario para añadir un nuevo colaborador al sistema."
+  />
+)
+
+/** /recursos/:resourceId/editar (BUG-03, HU-02) */
+export const EditarRecursoPage = () => {
+  const { resourceId } = useParams<{ resourceId: string }>()
+  return (
+    <ResourceFormPage
+      title="Editar Recurso"
+      description="Cada cambio queda en la auditoría con tu usuario, la fecha y los valores anteriores."
+      resourceId={resourceId}
+    />
+  )
+}

@@ -30,6 +30,14 @@ function previewWindow(hireDate: string, today: string): { start: number; end: n
   return { start, end: Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + WINDOW_MONTHS, 1) }
 }
 
+function noticesLabel(noticeDates: string[], project: NonNullable<RosterPreviewProps['project']>): string {
+  if (noticeDates.length === 0) {
+    return project.indefinite ? 'Sin avisos: la asignación es indefinida' : 'Se calculan con la fecha final'
+  }
+  const dates = noticeDates.join(' y ')
+  return project.name ? `${dates} · ${project.name}` : dates
+}
+
 export function RosterPreview({ today, hireDate, probationEnd, onProbation, project }: Readonly<RosterPreviewProps>) {
   if (!hireDate) {
     return (
@@ -105,9 +113,7 @@ export function RosterPreview({ today, hireDate, probationEnd, onProbation, proj
         {project && (
           <li>
             <span className="roster-preview__chip roster-preview__chip--danger">Avisos fin</span>
-            {notices.length > 0
-              ? `${notices.map((notice) => shortDate(notice)).join(' y ')}${project.name ? ` · ${project.name}` : ''}`
-              : project.indefinite ? 'Sin avisos: la asignación es indefinida' : 'Se calculan con la fecha final'}
+            {noticesLabel(notices.map((notice) => shortDate(notice)), project)}
           </li>
         )}
       </ul>

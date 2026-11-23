@@ -124,6 +124,7 @@ describe('App routes', () => {
     ['customer-success', '/avisos'],
     ['npd-leader', '/tablero'],
     ['npd-leader', '/auditoria'],
+    ['npd-leader', '/auditoria/1045'],
   ] as const)('denies direct access for %s at %s', (role, path) => {
     renderAtPath(role, path)
 
@@ -138,6 +139,26 @@ describe('App routes', () => {
 
       expect(screen.getByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
         .toBeInTheDocument()
+    },
+  )
+
+  it('opens the register form for the operations administrator', () => {
+    renderAtPath('operations-administrator', '/recursos/nuevo')
+
+    expect(screen.getByRole('heading', { name: 'Registrar Recurso' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
+      .not.toBeInTheDocument()
+  })
+
+  it.each(['guest', 'customer-success', 'npd-leader', 'unknown-role'])(
+    'denies the register form to %s',
+    (role) => {
+      renderAtPath(role, '/recursos/nuevo')
+
+      expect(screen.getByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
+        .toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'Registrar Recurso' }))
+        .not.toBeInTheDocument()
     },
   )
 

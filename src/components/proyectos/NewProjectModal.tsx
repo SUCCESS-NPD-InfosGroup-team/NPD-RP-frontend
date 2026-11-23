@@ -31,9 +31,9 @@ function getApiErrorMessage(cause: unknown): string {
 
 function getDuplicateProjectId(cause: unknown): string | undefined {
   if (!cause || typeof cause !== 'object' || !('code' in cause) || cause.code !== 'PROJECT_NAME_TAKEN') return undefined
-  return 'existingProjectId' in cause && cause.existingProjectId !== undefined
-    ? String(cause.existingProjectId)
-    : undefined
+  if (!('existingProjectId' in cause)) return undefined
+  const id = cause.existingProjectId
+  return typeof id === 'number' || typeof id === 'string' ? String(id) : undefined
 }
 
 export function NewProjectModal({ open, clients, onCreated, onClose, onDuplicateProject }: Readonly<NewProjectModalProps>) {
@@ -116,7 +116,7 @@ export function NewProjectModal({ open, clients, onCreated, onClose, onDuplicate
           <Field id="new-project-client-name" label="Nombre del cliente *" value={newClientName} onChange={(event) => setNewClientName(event.target.value)} />
           <label className="new-project-modal__checkbox">
             <input type="checkbox" checked={newClientInternal} onChange={(event) => setNewClientInternal(event.target.checked)} />
-            Cliente interno
+            <span>Cliente interno</span>
           </label>
         </>
       )}

@@ -10,7 +10,7 @@ interface ChipProps {
 
 export function Chip({ children, className = '', tone = 'neutral' }: Readonly<ChipProps>) {
   return (
-    <span className={`ui-chip ui-chip--${tone}${className ? ` ${className}` : ''}`}>
+    <span className={['ui-chip', `ui-chip--${tone}`, className].filter(Boolean).join(' ')}>
       {children}
     </span>
   )

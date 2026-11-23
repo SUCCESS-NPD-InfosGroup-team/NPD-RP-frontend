@@ -81,6 +81,9 @@ export interface ApiError {
   existingProjectId?: number
   existingResourceId?: number
   existingResourceName?: string
+  /** Only on 409 CONCURRENT_MODIFICATION: who saved the record after it was read */
+  updatedBy?: string
+  updatedAt?: string
 }
 
 export class ApiRequestError extends Error implements ApiError {
@@ -89,9 +92,11 @@ export class ApiRequestError extends Error implements ApiError {
   readonly detail: string
   readonly field?: string
   readonly existingProjectId?: number
-  readonly errors?: ApiError['errors']
+  readonly errors?: NonNullable<ApiError['errors']>
   readonly existingResourceId?: number
   readonly existingResourceName?: string
+  readonly updatedBy?: string
+  readonly updatedAt?: string
 
   constructor(error: ApiError) {
     super(error.detail)
@@ -104,5 +109,7 @@ export class ApiRequestError extends Error implements ApiError {
     this.errors = error.errors
     this.existingResourceId = error.existingResourceId
     this.existingResourceName = error.existingResourceName
+    this.updatedBy = error.updatedBy
+    this.updatedAt = error.updatedAt
   }
 }

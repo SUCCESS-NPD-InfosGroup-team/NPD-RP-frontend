@@ -49,8 +49,10 @@ describe('ProjectsPage', () => {
         { id: 1, name: 'Noel Vega' },
         { id: 2, name: 'Mara Sol' },
       ]),
+      getClientRoles: vi.fn(),
       getCatalogs: vi.fn(),
       createResource: vi.fn(),
+      updateResource: vi.fn(),
       getResource: vi.fn(),
       fetchLastChange: vi.fn(),
     })

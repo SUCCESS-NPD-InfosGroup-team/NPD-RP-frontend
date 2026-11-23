@@ -6,6 +6,7 @@ import type {
   ResourceLastChange,
   ResourceRequest,
   ResourceResponse,
+  ResourceUpdateRequest,
 } from './resources.types'
 
 /** Each form list has its own endpoint in the planner module; all of them answer { items: [...] } */
@@ -45,6 +46,9 @@ export const resourcesApi = {
   async getNpdLeads(): Promise<CatalogItem[]> {
     return listItems<CatalogItem>(CATALOG_PATHS.npdLeads)
   },
+  async getClientRoles(): Promise<CatalogItem[]> {
+    return listItems<CatalogItem>(CATALOG_PATHS.clientRoles)
+  },
   /** Requests every form list in parallel */
   async getCatalogs(): Promise<Catalogs> {
     const keys = Object.keys(CATALOG_PATHS) as (keyof Catalogs)[]
@@ -54,6 +58,14 @@ export const resourcesApi = {
   async createResource(input: ResourceRequest): Promise<ResourceResponse> {
     return read<ResourceResponse>(await apiFetch('planner', '/resources', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    }))
+  },
+  /** Replaces the record (HU-02). A stale `version` answers 409 CONCURRENT_MODIFICATION */
+  async updateResource(id: number | string, input: ResourceUpdateRequest): Promise<ResourceResponse> {
+    return read<ResourceResponse>(await apiFetch('planner', `/resources/${encodeURIComponent(String(id))}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     }))

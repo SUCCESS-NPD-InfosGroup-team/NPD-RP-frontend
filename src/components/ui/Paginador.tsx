@@ -21,7 +21,7 @@ export function Paginador({
   const isSinglePage = totalPages <= 1
 
   return (
-    <nav className={`ui-paginador${className ? ` ${className}` : ''}`} aria-label="Paginación">
+    <nav className={['ui-paginador', className].filter(Boolean).join(' ')} aria-label="Paginación">
       <span className="ui-paginador__range">{range}</span>
       <button
         className="ui-paginador__button"

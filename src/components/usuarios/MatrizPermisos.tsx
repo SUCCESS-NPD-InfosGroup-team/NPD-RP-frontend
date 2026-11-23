@@ -1,5 +1,6 @@
 // src/components/usuarios/MatrizPermisos.tsx
 
+import { Fragment } from 'react';
 import type { PermissionLevel, PermissionRow } from '../../types';
 
 const PERMISSIONS: PermissionRow[] = [
@@ -133,9 +134,9 @@ export const MatrizPermisos = () => {
               const isNewModule = i === 0 || PERMISSIONS[i - 1].module !== row.module;
 
               return (
-                <>
+                <Fragment key={row.submodule}>
                   {isNewModule && (
-                    <tr key={`module-${i}`} style={{ backgroundColor: '#FFF7ED' }}>
+                    <tr style={{ backgroundColor: '#FFF7ED' }}>
                       <td colSpan={5} style={{ padding: '10px 16px', fontWeight: 'bold', fontSize: '12px', color: '#9A3412', letterSpacing: '0.5px', borderTop: '2px solid #E5E7EB' }}>
                         {row.module.toUpperCase()}
                       </td>
@@ -158,7 +159,7 @@ export const MatrizPermisos = () => {
                       {getLevelStyle(row.guest).symbol} {row.guest !== 'Completo' && row.guest !== 'Sin acceso' ? row.guest : ''}
                     </td>
                   </tr>
-                </>
+                </Fragment>
               );
             })}
           </tbody>

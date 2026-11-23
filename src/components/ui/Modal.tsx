@@ -12,7 +12,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, isOpen, title, children, onClose, className = '' }: Readonly<ModalProps>) {
-  const dialogRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
   
   // Unificamos: si 'open' es undefined, usamos 'isOpen'
   const isModalOpen = open ?? isOpen;
@@ -48,10 +48,10 @@ export function Modal({ open, isOpen, title, children, onClose, className = '' }
         return
       }
       const first = elements[0]
-      const last = elements[elements.length - 1]
+      const last = elements.at(-1)
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
-        last.focus()
+        last?.focus()
       } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault()
         first.focus()
@@ -66,13 +66,12 @@ export function Modal({ open, isOpen, title, children, onClose, className = '' }
   if (!isModalOpen) return null
 
   return (
-    <div className="ui-modal__overlay" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose()
-    }}>
-      <div
+    <div className="ui-modal__overlay">
+      <button className="ui-modal__backdrop" type="button" tabIndex={-1} aria-hidden="true" aria-label="Cerrar" onClick={onClose} />
+      <dialog
         ref={dialogRef}
-        className={`ui-modal${className ? ` ${className}` : ''}`}
-        role="dialog"
+        open
+        className={['ui-modal', className].filter(Boolean).join(' ')}
         aria-modal="true"
         aria-labelledby={title ? 'ui-modal-title' : undefined}
         tabIndex={-1}
@@ -84,7 +83,7 @@ export function Modal({ open, isOpen, title, children, onClose, className = '' }
           </div>
         )}
         {children}
-      </div>
+      </dialog>
     </div>
   )
 }

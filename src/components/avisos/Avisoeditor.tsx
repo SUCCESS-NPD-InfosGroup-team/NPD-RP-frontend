@@ -11,15 +11,15 @@ interface AvisoEditorProps {
 // 1. Función auxiliar (sin duplicados)
 const reemplazarVariables = (texto: string, data: AvisoConfig['previewData']): string => {
   return texto
-    .replace(/{cliente}/g, data.cliente)
-    .replace(/{proyecto}/g, data.proyecto)
-    .replace(/{fecha_fin}/g, data.fechaFin)
-    .replace(/{dias_restantes}/g, String(data.diasRestantes))
-    .replace(/{recurso}/g, 'Ana Torres')
-    .replace(/{n_empleado}/g, '#1045')
-    .replace(/{lider_npd}/g, 'Lorena Batista')
-    .replace(/{tabla_recursos}/g, '(3 recursos asignados)')
-    .replace(/{tabla_vacaciones}/g, '(5 colaboradores de vacaciones)');
+    .replaceAll('{cliente}', data.cliente)
+    .replaceAll('{proyecto}', data.proyecto)
+    .replaceAll('{fecha_fin}', data.fechaFin)
+    .replaceAll('{dias_restantes}', String(data.diasRestantes))
+    .replaceAll('{recurso}', 'Ana Torres')
+    .replaceAll('{n_empleado}', '#1045')
+    .replaceAll('{lider_npd}', 'Lorena Batista')
+    .replaceAll('{tabla_recursos}', '(3 recursos asignados)')
+    .replaceAll('{tabla_vacaciones}', '(5 colaboradores de vacaciones)');
 };
 
 // 2. Componente reutilizable para inputs (evita duplicación de estilos)
@@ -67,10 +67,14 @@ export const AvisoEditor = ({ aviso, onSave }: AvisoEditorProps) => {
 
   const agregarDestinatario = (tipo: 'para' | 'cc') => {
     if (tipo === 'para' && destinatarioNuevo.trim()) {
-      handleChange('destinatariosPara', [...formData.destinatariosPara, destinatarioNuevo.trim()]);
+      if (!formData.destinatariosPara.includes(destinatarioNuevo.trim())) {
+        handleChange('destinatariosPara', [...formData.destinatariosPara, destinatarioNuevo.trim()]);
+      }
       setDestinatarioNuevo('');
     } else if (tipo === 'cc' && ccNuevo.trim()) {
-      handleChange('destinatariosCC', [...formData.destinatariosCC, ccNuevo.trim()]);
+      if (!formData.destinatariosCC.includes(ccNuevo.trim())) {
+        handleChange('destinatariosCC', [...formData.destinatariosCC, ccNuevo.trim()]);
+      }
       setCcNuevo('');
     }
   };
@@ -98,7 +102,7 @@ export const AvisoEditor = ({ aviso, onSave }: AvisoEditorProps) => {
         </label>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px', minHeight: '30px' }}>
           {list.map((d, i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#F3F4F6', color: '#333', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
+            <span key={d} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#F3F4F6', color: '#333', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
               {d}
               <button onClick={() => eliminarDestinatario(tipo, i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', fontSize: '14px', lineHeight: 1 }}>
                 ×
@@ -143,7 +147,7 @@ export const AvisoEditor = ({ aviso, onSave }: AvisoEditorProps) => {
         )}
 
         {/* Umbrales */}
-        <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', display: 'block', marginTop: '16px' }}>UMBRALES (DÍAS ANTES)</label>
+        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', margin: '16px 0 0' }}>UMBRALES (DÍAS ANTES)</p>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '6px' }}>
           <div style={{ flex: 1 }}>
             {/* 4. Uso de Number.parseInt */}
@@ -180,7 +184,7 @@ export const AvisoEditor = ({ aviso, onSave }: AvisoEditorProps) => {
         {renderDestinatarios('cc')}
 
         {/* Plantilla */}
-        <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', display: 'block', marginTop: '16px' }}>PLANTILLA DEL CORREO</label>
+        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', letterSpacing: '0.5px', margin: '16px 0 0' }}>PLANTILLA DEL CORREO</p>
         <p style={{ fontSize: '12px', color: '#666', marginTop: '2px', marginBottom: '8px' }}>
           En español. Usa marcadores entre llaves; se reemplazan con los datos de cada cliente.
         </p>

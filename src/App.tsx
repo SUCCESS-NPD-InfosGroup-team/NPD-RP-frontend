@@ -4,13 +4,14 @@ import {
   canAccessNavigationItem,
   NAVIGATION_ITEMS,
 } from './components/layout/roleNavigation'
+import { EditResourceRoute, NoAccess, RegisterResourceRoute } from './components/layout/AccessGuard'
 import { MainLayout } from './components/layout/MainLayout'
 import type { OperationsStatus } from './types'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
-import { RegistrarRecursoPage } from './pages/Recursos/RegistrarRecursoPage'
 import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
 import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
+import { AuditoriaPage } from './pages/Auditoria/AuditoriaPage'
 
 export interface AppProps {
   onRegisterResource?: () => void
@@ -26,12 +27,7 @@ interface ScreenProps {
 
 function Screen({ roles, item }: Readonly<ScreenProps>) {
   if (!canAccessNavigationItem(roles, item.id)) {
-    return (
-      <section className="no-access" role="alert">
-        <h1>No tienes acceso a esta pantalla</h1>
-        <p>Tu perfil no tiene permiso para consultar esta sección.</p>
-      </section>
-    )
+    return <NoAccess />
   }
 
   if (item.id === 'resources') {
@@ -45,6 +41,9 @@ function Screen({ roles, item }: Readonly<ScreenProps>) {
   }
   if (item.id === 'users') {
     return <UsuariosPage />
+  }
+  if (item.id === 'audit') {
+    return <AuditoriaPage />
   }
 
   return (
@@ -87,8 +86,9 @@ export default function App({
               element={<Screen roles={roles} item={item} />}
             />
           ))}
-          {/*Route Register BUG 05*/}
-          <Route path="recursos/nuevo" element={<RegistrarRecursoPage />} />
+          <Route path="auditoria/:resourceId" element={<AuditoriaPage />} />
+          <Route path="recursos/nuevo" element={<RegisterResourceRoute roles={roles} />} />
+          <Route path="recursos/:resourceId/editar" element={<EditResourceRoute roles={roles} />} />
           <Route
             path="*"
             element={

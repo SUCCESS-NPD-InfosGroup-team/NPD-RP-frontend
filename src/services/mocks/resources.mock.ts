@@ -1,6 +1,6 @@
 // TEMPORAL SCRUM-84: eliminar al conectar la API real (SCRUM-88)
 import { ApiRequestError } from '../projects.types'
-import type { Catalogs, ResourceRequest, ResourceResponse } from '../resources.types'
+import type { Catalogs, ResourceRequest, ResourceResponse, ResourceUpdateRequest } from '../resources.types'
 import { addDaysIso } from '../../utils/dates'
 
 const catalogs: Catalogs = {
@@ -24,6 +24,7 @@ const find = (items: { id: number; name: string }[], id: number | null) => items
 
 export const resourcesMock = {
   async getNpdLeads() { return catalogs.npdLeads },
+  async getClientRoles() { return catalogs.clientRoles },
   async getCatalogs(): Promise<Catalogs> { return catalogs },
   async createResource(input: ResourceRequest): Promise<ResourceResponse> {
     const taken = takenEmployeeNumbers.get(input.employeeNumber)
@@ -50,6 +51,7 @@ export const resourcesMock = {
       gender: find(catalogs.genders, input.genderId),
       talentReview: find(catalogs.talentReviews, input.talentReviewId),
       hireDate: input.hireDate,
+      onProbation: input.onProbation,
       probationEndDate: addDaysIso(input.hireDate, 90),
       status: catalogs.statuses.find((status) => status.code === input.status) ?? catalogs.statuses[0],
       situation: input.assignment ? { code: 'ASIGNADO', label: 'Asignado' } : { code: 'SIN_PROYECTO', label: 'Sin proyecto' },
@@ -63,6 +65,29 @@ export const resourcesMock = {
     resources.push(resource)
     takenEmployeeNumbers.set(input.employeeNumber, { id, name: input.name })
     return resource
+  },
+  async updateResource(id: number | string, input: ResourceUpdateRequest): Promise<ResourceResponse> {
+    const index = resources.findIndex((item) => String(item.id) === String(id))
+    if (index === -1) throw new ApiRequestError({ status: 404, code: 'NOT_FOUND', detail: 'No existe el recurso.' })
+    const current = resources[index]
+    if (current.version !== input.version) {
+      throw new ApiRequestError({ status: 409, code: 'CONCURRENT_MODIFICATION', detail: 'Otra persona guardó el registro.', updatedBy: current.updatedBy })
+    }
+    const updated: ResourceResponse = {
+      ...current,
+      employeeNumber: input.employeeNumber,
+      name: input.name,
+      email: input.email,
+      level: input.level,
+      hireDate: input.hireDate,
+      onProbation: input.onProbation,
+      status: catalogs.statuses.find((status) => status.code === input.status) ?? current.status,
+      version: current.version + 1,
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'mock',
+    }
+    resources[index] = updated
+    return updated
   },
   async getResource(id: number | string): Promise<ResourceResponse> {
     const resource = resources.find((item) => String(item.id) === String(id))
