@@ -544,8 +544,18 @@ useEffect(() => {
 
         <div>
           <label htmlFor="rp-filter-proyecto" style={labelStyle}>Proyecto</label>
-          <select id="rp-filter-proyecto" className="rp-input" name="proyecto" value={filters.proyecto} onChange={handleFilterChange} style={inputStyle}>
-            <option value="Todos">Todos</option>
+          {/* Cascada: los proyectos dependen del cliente, así que sin cliente el combo queda desactivado */}
+          <select
+            id="rp-filter-proyecto"
+            className="rp-input"
+            name="proyecto"
+            value={filters.proyecto}
+            onChange={handleFilterChange}
+            disabled={!clienteElegido}
+            title={clienteElegido ? undefined : 'Elige un cliente para ver sus proyectos'}
+            style={clienteElegido ? inputStyle : { ...inputStyle, backgroundColor: C.bg, color: C.muted, cursor: 'not-allowed' }}
+          >
+            <option value="Todos">{clienteElegido ? 'Todos' : 'Elige un cliente primero'}</option>
             {catalogos.proyectos.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
