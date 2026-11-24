@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Button } from '../ui/Button'
 import { Field } from '../ui/Field'
-import { AlertIcon, PlusIcon } from '../icons'
+import { AlertIcon, FolderIcon, PlusIcon } from '../icons'
 import { NewProjectModal } from '../proyectos/NewProjectModal'
+import { ExistingResourceModal } from './ExistingResourceModal'
 import { getProjectsApi } from '../../services/projects'
 import { getResourcesApi } from '../../services/resources'
 import { ApiRequestError, type Client, type ClientProject, type Project } from '../../services/projects.types'
@@ -21,9 +22,11 @@ import {
   probationInfo,
   toResourceRequest,
   validateResourceForm,
+  withProjectChoice,
   type FieldErrors,
   type ResourceFormValues,
 } from './resourceForm'
+import { NO_PROJECT, projectSummaryDetail, projectTitle, toProjectOption, type ProjectChoice } from './registerProject'
 import { RosterPreview } from './RosterPreview'
 import './RegisterResourcePage.css'
 
@@ -31,6 +34,15 @@ interface RegisterResourceFormProps {
   canCreateProjects: boolean
   /** With an id the form edits that resource (HU-02): GET to prefill and PUT to save */
   resourceId?: number | string
+  /**
+   * Registering (SCRUM-84): the project chosen in step 1, shown fixed. Editing ignores it and keeps
+   * the client and project selectors.
+   */
+  projectChoice?: ProjectChoice
+  /** «Cambiar proyecto» / «Elegir proyecto»: back to step 1 without losing what was typed */
+  onChangeProject?: () => void
+  /** A project made with «Crear proyecto» while registering becomes the chosen one */
+  onProjectChoice?: (choice: ProjectChoice) => void
   /** Called with the saved record, after registering or editing it */
   onSaved: (resource: ResourceResponse) => void
   onCancel: () => void
@@ -110,19 +122,27 @@ function describeApiError(cause: unknown, mode: FormMode): ApiErrorOutcome {
   return { generalError: detailReady ? cause.detail : SAVE_FAILED }
 }
 
+/** Problems that only say the person is already registered: the same N° and, often, the same email */
+const ALREADY_REGISTERED = new Set(['EMPLOYEE_NUMBER_TAKEN', 'EMAIL_TAKEN'])
+
+/**
+ * Id of the collaborator who already has the employee number, when that is all that stops the
+ * registration: a 409, or a 400 whose only errors are that N° and that email. With other errors
+ * there is still something to fix in the form, so there is nothing to assign yet.
+ */
+function existingResourceOf(cause: unknown): number | undefined {
+  if (!(cause instanceof ApiRequestError)) return undefined
+  if (cause.code === 'EMPLOYEE_NUMBER_TAKEN') return cause.existingResourceId
+  if (cause.status !== 400 || !cause.errors?.length) return undefined
+  if (!cause.errors.every((error) => ALREADY_REGISTERED.has(error.code))) return undefined
+  return cause.errors.find((error) => error.code === 'EMPLOYEE_NUMBER_TAKEN')?.existingResourceId
+}
+
 function probationText(probation: { endDate?: string; vacationMonth?: number }): string {
   if (probation.endDate && probation.vacationMonth) {
     return `Día ${PROBATION_DAYS} calculado desde el inicio de contrato: ${fromIsoDate(probation.endDate)}. El mes de vacaciones (${MONTH_NAMES[probation.vacationMonth - 1]}) también sale de esta fecha.`
   }
   return `Se calcula con la fecha de inicio de contrato: día ${PROBATION_DAYS}. Puedes marcarlo o desmarcarlo después.`
-}
-
-function projectSummary(project: ClientProject): string {
-  const team = project.teamSize === 1 ? '1 colaborador' : `${project.teamSize} colaboradores`
-  const contract = project.contractEndDate
-    ? `fin de contrato con el cliente ${fromIsoDate(project.contractEndDate)}`
-    : 'sin fin de contrato con el cliente'
-  return `${team} · ${contract}`
 }
 
 function ErrorSummary({
@@ -176,40 +196,20 @@ function listSeparator(index: number, total: number): string {
   return index === total - 1 ? ' y ' : ', '
 }
 
-interface AssignmentPanelProps {
+type FieldPropsOf = (path: string) => { id: string; state: 'error' | 'default'; error: string | undefined }
+type UpdateValue = <K extends keyof ResourceFormValues>(key: K, value: ResourceFormValues[K]) => void
+
+interface AssignmentFieldsProps {
   values: ResourceFormValues
-  update: <K extends keyof ResourceFormValues>(key: K, value: ResourceFormValues[K]) => void
-  changeClient: (clientId: string) => void
-  fieldProps: (path: string) => { id: string; state: 'error' | 'default'; error: string | undefined }
-  clients: Client[]
-  visibleProjects: ClientProject[]
-  selectedProject: ClientProject | undefined
+  update: UpdateValue
+  fieldProps: FieldPropsOf
   catalogs: Catalogs | undefined
 }
 
-function AssignmentPanel({
-  values,
-  update,
-  changeClient,
-  fieldProps,
-  clients,
-  visibleProjects,
-  selectedProject,
-  catalogs,
-}: Readonly<AssignmentPanelProps>) {
-  if (!values.withProject) {
-    return <p className="resource-form__note">Se registra sin cliente, proyecto, líder ni fecha final. Podrás asignarle un proyecto después.</p>
-  }
+/** Líder, rol, equipo, fecha final y contacto: what belongs to this person in the project */
+function AssignmentFields({ values, update, fieldProps, catalogs }: Readonly<AssignmentFieldsProps>) {
   return (
-    <div className="resource-form__panel resource-form__grid">
-      <Field {...fieldProps('assignment.clientId')} label="Cliente *" type="select" value={values.clientId} onChange={(event) => changeClient(event.target.value)} options={[{ value: '', label: 'Selecciona un cliente' }, ...clients.map((client) => ({ value: client.id, label: client.name }))]} />
-      <div className="resource-form__span-2">
-        <Field {...fieldProps('assignment.projectId')} label="Proyecto asignado *" type="select" value={values.projectId} disabled={!values.clientId} onChange={(event) => update('projectId', event.target.value)} options={[{ value: '', label: values.clientId ? 'Selecciona un proyecto' : 'Elige primero el cliente' }, ...visibleProjects.map((project) => ({ value: project.id, label: project.name }))]} />
-        {selectedProject && <p className="resource-form__help">{projectSummary(selectedProject)}</p>}
-        {values.clientId && visibleProjects.length === 0 && (
-          <p className="resource-form__help">Este cliente no tiene proyectos activos. Usa «Crear proyecto».</p>
-        )}
-      </div>
+    <>
       <Field {...fieldProps('assignment.leaderId')} label="Líder NPD *" type="select" value={values.leaderId} onChange={(event) => update('leaderId', event.target.value)} options={toOptions(catalogs?.npdLeads, 'Selecciona un líder')} />
       <Field {...fieldProps('assignment.clientRoleId')} label="Rol actual en cliente" type="select" value={values.clientRoleId} onChange={(event) => update('clientRoleId', event.target.value)} options={toOptions(catalogs?.clientRoles, 'Sin rol definido')} />
       <Field {...fieldProps('assignment.equipmentId')} label="Equipo / laptop" type="select" value={values.equipmentId} onChange={(event) => update('equipmentId', event.target.value)} options={toOptions(catalogs?.equipment, 'Sin equipo definido')} />
@@ -223,7 +223,118 @@ function AssignmentPanel({
       <div className="resource-form__span-2">
         <Field {...fieldProps('assignment.clientContactEmail')} label="Contacto por cliente" placeholder="correo@cliente.com" value={values.clientContactEmail} onChange={(event) => update('clientContactEmail', event.target.value)} />
       </div>
+    </>
+  )
+}
+
+interface EditAssignmentPanelProps extends AssignmentFieldsProps {
+  changeClient: (clientId: string) => void
+  clients: Client[]
+  visibleProjects: ClientProject[]
+  selectedProject: ClientProject | undefined
+}
+
+/** Editing (HU-02): the current project loads in the client and project selectors */
+function EditAssignmentPanel({
+  values,
+  update,
+  changeClient,
+  fieldProps,
+  clients,
+  visibleProjects,
+  selectedProject,
+  catalogs,
+}: Readonly<EditAssignmentPanelProps>) {
+  if (!values.withProject) {
+    return <p className="resource-form__note">Se registra sin cliente, proyecto, líder ni fecha final. Podrás asignarle un proyecto después.</p>
+  }
+  return (
+    <div className="resource-form__panel resource-form__grid">
+      <Field {...fieldProps('assignment.clientId')} label="Cliente *" type="select" value={values.clientId} onChange={(event) => changeClient(event.target.value)} options={[{ value: '', label: 'Selecciona un cliente' }, ...clients.map((client) => ({ value: client.id, label: client.name }))]} />
+      <div className="resource-form__span-2">
+        <Field {...fieldProps('assignment.projectId')} label="Proyecto asignado *" type="select" value={values.projectId} disabled={!values.clientId} onChange={(event) => update('projectId', event.target.value)} options={[{ value: '', label: values.clientId ? 'Selecciona un proyecto' : 'Elige primero el cliente' }, ...visibleProjects.map((project) => ({ value: project.id, label: project.name }))]} />
+        {selectedProject && <p className="resource-form__help">{projectSummaryDetail(selectedProject)}</p>}
+        {values.clientId && visibleProjects.length === 0 && (
+          <p className="resource-form__help">Este cliente no tiene proyectos activos. Usa «Crear proyecto».</p>
+        )}
+      </div>
+      <AssignmentFields values={values} update={update} fieldProps={fieldProps} catalogs={catalogs} />
     </div>
+  )
+}
+
+interface ChosenProjectSectionProps extends AssignmentFieldsProps {
+  choice: ProjectChoice
+  terminated: boolean
+  canCreateProjects: boolean
+  onChangeProject?: () => void
+  onCreateProject: () => void
+}
+
+/**
+ * Registering (SCRUM-84, CA-01): the project from step 1 as a fixed summary with «Cambiar
+ * proyecto», and the assignment of the person in it.
+ */
+function ChosenProjectSection({
+  choice,
+  terminated,
+  canCreateProjects,
+  onChangeProject,
+  onCreateProject,
+  values,
+  update,
+  fieldProps,
+  catalogs,
+}: Readonly<ChosenProjectSectionProps>) {
+  const project = choice.kind === 'project' ? choice.project : undefined
+  // A project error from the API points at «Cambiar proyecto», the only way to fix it
+  const projectError = fieldProps('assignment.projectId').error ?? fieldProps('assignment.clientId').error
+  return (
+    <section className="resource-form__section" aria-labelledby="resource-form-project">
+      <h2 id="resource-form-project">{project ? 'Asignación en este proyecto' : 'Proyecto'}</h2>
+      <p className="resource-form__hint">
+        {project
+          ? 'El líder, el rol y la fecha final son de esta persona en este proyecto, aunque comparta proyecto con otros.'
+          : 'Una persona está en un solo proyecto. Podrás asignarla después desde Proyectos o con «Asignar a proyecto».'}
+      </p>
+      <div className={`resource-form__chosen${projectError ? ' is-invalid' : ''}`}>
+        <span className="resource-form__chosen-icon"><FolderIcon /></span>
+        <div>
+          <strong>{project ? projectTitle(project) : 'Sin proyecto por ahora'}</strong>
+          <small>{project ? projectSummaryDetail(project) : 'Se registrará como Sin proyecto. Podrás asignarlo después desde Proyectos.'}</small>
+        </div>
+        {onChangeProject && (
+          <Button id={fieldId('assignment.projectId')} variant="secondary" onClick={onChangeProject}>
+            {project ? 'Cambiar proyecto' : 'Elegir proyecto'}
+          </Button>
+        )}
+      </div>
+      {projectError && <p className="resource-form__error" role="alert">{projectError}</p>}
+      {canCreateProjects && (
+        <div className="resource-form__create-project">
+          <Button variant="ghost" icon={<PlusIcon />} onClick={onCreateProject}>Crear proyecto</Button>
+        </div>
+      )}
+      {project && terminated && (
+        <p className="resource-form__warning">
+          <AlertIcon />
+          <span>
+            Con Estado = Baja la persona se registra <strong>sin proyecto</strong>: no entra a {projectTitle(project)}. Cambia el
+            estado si debe entrar al proyecto.
+          </span>
+        </p>
+      )}
+      {project && !terminated && (
+        <div className="resource-form__panel resource-form__grid">
+          <AssignmentFields values={values} update={update} fieldProps={fieldProps} catalogs={catalogs} />
+        </div>
+      )}
+      {!project && (
+        <p className="resource-form__info">
+          Se registrará como <strong>Sin proyecto</strong>. Aparecerá primero al agregar colaboradores desde Proyectos.
+        </p>
+      )}
+    </section>
   )
 }
 
@@ -283,7 +394,15 @@ function NotSpecifiedNotice({ fields }: Readonly<{ fields: string[] }>) {
   )
 }
 
-export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, onCancel }: Readonly<RegisterResourceFormProps>) {
+export function RegisterResourceForm({
+  canCreateProjects,
+  resourceId,
+  projectChoice = NO_PROJECT,
+  onChangeProject,
+  onProjectChoice,
+  onSaved,
+  onCancel,
+}: Readonly<RegisterResourceFormProps>) {
   const mode: FormMode = resourceId === undefined ? 'create' : 'edit'
   const [values, setValues] = useState<ResourceFormValues>(EMPTY_RESOURCE_FORM)
   const [version, setVersion] = useState<number>()
@@ -300,6 +419,8 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
   const [clientProjects, setClientProjects] = useState<ClientProject[]>([])
   const [projectsReload, setProjectsReload] = useState(0)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
+  /** Registering with an employee number that is already taken: whose it is */
+  const [existing, setExisting] = useState<{ id: number; employeeNumber: string }>()
   const summaryRef = useRef<HTMLDivElement>(null)
 
   const loadCatalogs = useCallback(() => {
@@ -377,6 +498,10 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
 
   function handleProjectCreated(project: Project): void {
     loadClients()
+    if (mode === 'create') {
+      onProjectChoice?.({ kind: 'project', project: toProjectOption(project) })
+      return
+    }
     setValues((previous) => ({ ...previous, withProject: true, clientId: project.client.id, projectId: project.id }))
     setErrors((previous) => {
       const next = { ...previous }
@@ -392,7 +517,7 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
     if (saving) return
     setGeneralError('')
     setDuplicate(undefined)
-    const validation = validateResourceForm(values, todayIso())
+    const validation = validateResourceForm(formValues, todayIso())
     setErrors(validation)
     setShowSummary(false)
     if (Object.keys(validation).length > 0) {
@@ -403,7 +528,7 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
     setSaving(true)
     try {
       const api = await getResourcesApi()
-      const request = toResourceRequest(values, todayIso())
+      const request = toResourceRequest(formValues, todayIso())
       const resource = resourceId === undefined
         ? await api.createResource(request)
         : await api.updateResource(resourceId, { ...request, version: version ?? 0 })
@@ -422,6 +547,9 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
     if (outcome.duplicate) setDuplicate(outcome.duplicate)
     if (outcome.generalError) setGeneralError(outcome.generalError)
     setStale(Boolean(outcome.stale))
+    // Registering: offer to assign the person who has that N° instead of a duplicate (SCRUM-84, CA-04)
+    const existingId = mode === 'create' ? existingResourceOf(cause) : undefined
+    if (existingId !== undefined) setExisting({ id: existingId, employeeNumber: formValues.employeeNumber.trim() })
   }
 
   const fieldProps = (path: string) => ({
@@ -430,14 +558,18 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
     error: errors[path],
   })
 
+  const editing = mode === 'edit'
+  // Registering: client and project come from step 1, not from the form
+  const formValues = editing ? values : withProjectChoice(values, projectChoice)
   const errorFields = orderedErrorFields(errors)
-  const terminated = values.status === 'BAJA'
+  const terminated = formValues.status === 'BAJA'
   const today = todayIso()
-  const probation = probationInfo(values, today)
-  const situation = previewSituation(values)
+  const probation = probationInfo(formValues, today)
+  const situation = previewSituation(formValues)
   const selectedProject = clientProjects.find((project) => project.id === values.projectId)
   const visibleProjects = values.clientId ? clientProjects : []
-  const editing = mode === 'edit'
+  const chosenProject = projectChoice.kind === 'project' ? projectChoice.project : undefined
+  const previewProjectName = editing ? selectedProject?.name : chosenProject?.name
 
   if (loadState !== 'ready') return <RecordLoadState loadState={loadState} onRetry={reloadRecord} />
 
@@ -529,35 +661,49 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
             </div>
           </section>
 
-          <section className="resource-form__section" aria-labelledby="resource-form-project">
-            <h2 id="resource-form-project">Proyecto</h2>
-            <p className="resource-form__hint">Una persona está en un solo proyecto. El líder, el rol y la fecha final son suyos, aunque comparta proyecto con otros.</p>
-            {terminated ? (
-              <p className="resource-form__note">Con Estado = Baja la persona se registra sin proyecto.</p>
-            ) : (
-              <>
-                <div className="resource-form__project-bar">
-                  <fieldset className="resource-form__toggle" aria-label="¿Tiene proyecto?">
-                    <button type="button" aria-pressed={values.withProject} className={values.withProject ? 'is-active' : ''} onClick={() => update('withProject', true)}>Con proyecto</button>
-                    <button type="button" aria-pressed={!values.withProject} className={values.withProject ? '' : 'is-active'} onClick={() => update('withProject', false)}>Sin proyecto por ahora</button>
-                  </fieldset>
-                  {canCreateProjects && (
-                    <Button variant="ghost" icon={<PlusIcon />} onClick={() => setNewProjectOpen(true)}>Crear proyecto</Button>
-                  )}
-                </div>
-                <AssignmentPanel
-                  values={values}
-                  update={update}
-                  changeClient={changeClient}
-                  fieldProps={fieldProps}
-                  clients={clients}
-                  visibleProjects={visibleProjects}
-                  selectedProject={selectedProject}
-                  catalogs={catalogs}
-                />
-              </>
-            )}
-          </section>
+          {editing ? (
+            <section className="resource-form__section" aria-labelledby="resource-form-project">
+              <h2 id="resource-form-project">Proyecto</h2>
+              <p className="resource-form__hint">Una persona está en un solo proyecto. El líder, el rol y la fecha final son suyos, aunque comparta proyecto con otros.</p>
+              {terminated ? (
+                <p className="resource-form__note">Con Estado = Baja la persona se registra sin proyecto.</p>
+              ) : (
+                <>
+                  <div className="resource-form__project-bar">
+                    <fieldset className="resource-form__toggle" aria-label="¿Tiene proyecto?">
+                      <button type="button" aria-pressed={values.withProject} className={values.withProject ? 'is-active' : ''} onClick={() => update('withProject', true)}>Con proyecto</button>
+                      <button type="button" aria-pressed={!values.withProject} className={values.withProject ? '' : 'is-active'} onClick={() => update('withProject', false)}>Sin proyecto por ahora</button>
+                    </fieldset>
+                    {canCreateProjects && (
+                      <Button variant="ghost" icon={<PlusIcon />} onClick={() => setNewProjectOpen(true)}>Crear proyecto</Button>
+                    )}
+                  </div>
+                  <EditAssignmentPanel
+                    values={values}
+                    update={update}
+                    changeClient={changeClient}
+                    fieldProps={fieldProps}
+                    clients={clients}
+                    visibleProjects={visibleProjects}
+                    selectedProject={selectedProject}
+                    catalogs={catalogs}
+                  />
+                </>
+              )}
+            </section>
+          ) : (
+            <ChosenProjectSection
+              choice={projectChoice}
+              terminated={terminated}
+              canCreateProjects={canCreateProjects}
+              onChangeProject={onChangeProject}
+              onCreateProject={() => setNewProjectOpen(true)}
+              values={values}
+              update={update}
+              fieldProps={fieldProps}
+              catalogs={catalogs}
+            />
+          )}
 
           <footer className="resource-form__actions">
             <p>Cada cambio queda en la auditoría con tu usuario, la fecha y los valores.</p>
@@ -572,8 +718,8 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
           hireDate={toIsoDate(values.hireDate)}
           probationEnd={probation.endDate}
           onProbation={probation.checked}
-          project={!terminated && values.withProject
-            ? { name: selectedProject?.name, endDate: toIsoDate(values.endDate), indefinite: values.indefinite }
+          project={!terminated && formValues.withProject
+            ? { name: previewProjectName, endDate: toIsoDate(values.endDate), indefinite: values.indefinite }
             : undefined}
         />
       </div>
@@ -584,6 +730,17 @@ export function RegisterResourceForm({ canCreateProjects, resourceId, onSaved, o
         onCreated={(project) => handleProjectCreated(project)}
         onClose={() => setNewProjectOpen(false)}
       />
+
+      {existing && (
+        <ExistingResourceModal
+          resourceId={existing.id}
+          employeeNumber={existing.employeeNumber}
+          choice={projectChoice}
+          assignment={toResourceRequest(formValues, today).assignment}
+          onAssigned={onSaved}
+          onClose={() => setExisting(undefined)}
+        />
+      )}
     </>
   )
 }

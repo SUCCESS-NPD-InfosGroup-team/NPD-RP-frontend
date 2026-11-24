@@ -26,9 +26,9 @@ describe('NoAccess', () => {
 
 describe('RegisterResourceRoute (BUG-05)', () => {
   it('opens the register form for the operations administrator', () => {
-    renderInRouter(<RegisterResourceRoute roles={['operations-administrator']} />)
+    renderInRouter(<RegisterResourceRoute roles={['operations-administrator']} />, '/recursos/nuevo?proyecto=ninguno')
 
-    expect(screen.getByRole('heading', { name: 'Registrar Recurso' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Registrar recurso' })).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -43,7 +43,7 @@ describe('RegisterResourceRoute (BUG-05)', () => {
 
     expect(screen.getByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
       .toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Registrar Recurso' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Registrar recurso' })).not.toBeInTheDocument()
   })
 })
 
