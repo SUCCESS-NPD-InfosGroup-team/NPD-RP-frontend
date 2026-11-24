@@ -7,6 +7,8 @@ import type {
   Page,
   Project,
   ProjectFilters,
+  ProjectOption,
+  ProjectsSummary,
 } from './projects.types'
 import { ApiRequestError } from './projects.types'
 
@@ -32,10 +34,11 @@ interface ApiProject {
   active: boolean
   startDate: string
   contractEndDate: string | null
-  daysToContractEnd: number | null
+  daysToContractEnd?: number | null
   teamSize: number
-  pendingConfirmation: number
-  leads: Array<{ id: number; name: string }>
+  /** Only in the list: GET /projects/{id} and POST /projects return a ProjectResponse without them */
+  pendingConfirmation?: number
+  leads?: Array<{ id: number; name: string }>
 }
 
 interface ApiPage<T> {
@@ -52,21 +55,35 @@ interface ApiProjectKpis {
 }
 
 function mapProject(project: ApiProject): Project {
+  const leads = project.leads ?? []
   return {
     id: String(project.id),
     name: project.name,
     client: { ...project.client, id: String(project.client.id) },
     teamSize: project.teamSize,
     members: [],
-    leads: project.leads.map((lead) => lead.name),
-    leadIds: project.leads.map((lead) => lead.id),
+    leads: leads.map((lead) => lead.name),
+    leadIds: leads.map((lead) => lead.id),
     startDate: project.startDate,
     contractEnd: project.contractEndDate,
     daysToContractEnd: project.daysToContractEnd,
-    pendingCount: project.pendingConfirmation,
+    pendingCount: project.pendingConfirmation ?? 0,
     active: project.active,
   }
 }
+
+function toProjectOption(project: ApiProject): ProjectOption {
+  return {
+    id: String(project.id),
+    name: project.name,
+    client: { id: String(project.client.id), name: project.client.name },
+    teamSize: project.teamSize,
+    contractEndDate: project.contractEndDate,
+  }
+}
+
+/** Largest page the backend serves (spring.data.web.pageable.max-page-size) */
+const MAX_PAGE_SIZE = 100
 
 export async function read<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
@@ -123,6 +140,21 @@ export const projectsApi = {
       }),
     }))
     return mapProject(response)
+  },
+  /** Every active project, ordered by client and then by project: step 1 of «Registrar recurso» */
+  async listActiveProjects(): Promise<ProjectOption[]> {
+    const projects: ProjectOption[] = []
+    for (let page = 0; ; page += 1) {
+      const params = new URLSearchParams({ page: String(page), size: String(MAX_PAGE_SIZE), includeInactive: 'false' })
+      const response = await read<ApiPage<ApiProject>>(await apiFetch('planner', `/projects?${params.toString()}`))
+      projects.push(...response.items.map(toProjectOption))
+      if (page + 1 >= response.page.totalPages) return projects
+    }
+  },
+  /** One project, to show it fixed in step 2 of «Registrar recurso» */
+  async getProject(id: string): Promise<ProjectOption & { active: boolean }> {
+    const response = await read<ApiProject>(await apiFetch('planner', `/projects/${encodeURIComponent(id)}`))
+    return { ...toProjectOption(response), active: response.active }
   },
   async listClientProjects(clientId: string): Promise<ClientProject[]> {
     const response = await read<{ items: Array<Omit<ClientProject, 'id'> & { id: number }> }>(await apiFetch('planner', `/clients/${encodeURIComponent(clientId)}/projects`))

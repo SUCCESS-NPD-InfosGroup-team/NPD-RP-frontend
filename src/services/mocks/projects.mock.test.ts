@@ -60,4 +60,13 @@ describe('projectsMock', () => {
       name: 'Atlas Norte',
     })).rejects.toMatchObject({ status: 409, code: 'PROJECT_NAME_TAKEN' })
   })
+
+  it('lists the active projects by client and reads one of them', async () => {
+    const active = await projectsMock.listActiveProjects()
+    const clientNames = active.map((project) => project.client.name)
+
+    expect(clientNames).toEqual([...clientNames].sort((a, b) => a.localeCompare(b)))
+    await expect(projectsMock.getProject(active[0].id)).resolves.toMatchObject({ id: active[0].id, active: true })
+    await expect(projectsMock.getProject('missing')).rejects.toMatchObject({ status: 404 })
+  })
 })

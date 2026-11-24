@@ -1,0 +1,26 @@
+.ui-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-stepper li {
+  display: inline-flex;
+  height: var(--chip-h);
+  align-items: center;
+  padding-inline: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-chip-neutral);
+  color: var(--text-secondary);
+  font: 500 12.5px / 1 var(--font-body);
+  white-space: nowrap;
+}
+
+.ui-stepper li.is-current {
+  background: var(--brand-brown);
+  color: var(--text-on-brand);
+  font-weight: 600;
+}

@@ -355,6 +355,36 @@ export class FakeApi {
     return { status: 201, body: this.detail(created) }
   }
 
+  /** ProjectListItemResponse / ProjectResponse del backend para los proyectos simulados */
+  private project(project: (typeof PROJECTS)[number]) {
+    const client = CLIENTS.find((item) => item.id === project.clientId)!
+    return {
+      id: project.id,
+      name: project.name,
+      client: { id: client.id, name: client.name, isInternal: false },
+      active: project.active,
+      startDate: project.start,
+      contractEndDate: project.contractEndDate,
+      teamSize: this.resources.filter((item) => item.projectId === project.id && item.status !== 'BAJA').length,
+    }
+  }
+
+  private projects(params: URLSearchParams): Reply {
+    const includeInactive = params.get('includeInactive') === 'true'
+    const items = PROJECTS.filter((project) => includeInactive || project.active)
+      .map((project) => ({ ...this.project(project), daysToContractEnd: null, pendingConfirmation: 0, leads: [] }))
+      .sort((a, b) => a.client.name.localeCompare(b.client.name) || a.name.localeCompare(b.name))
+    const size = Number(params.get('size') ?? 25)
+    const number = Number(params.get('page') ?? 0)
+    return {
+      status: 200,
+      body: {
+        items: items.slice(number * size, number * size + size),
+        page: { number, size, totalElements: items.length, totalPages: Math.ceil(items.length / size) },
+      },
+    }
+  }
+
   private clientProjects(clientId: string): Reply {
     const items = PROJECTS.filter((project) => project.clientId === Number(clientId) && project.active).map((project) => ({
       id: project.id,
@@ -393,6 +423,15 @@ export class FakeApi {
     { method: 'GET', path: /^\/planner\/upcoming-events\/summary$/, reply: () => ({ status: 200, body: { windowDays: 30, total: 0, nearest: [] } }) },
     { method: 'GET', path: /^\/history\/resources\/\d+\/last-change$/, reply: () => ({ status: 204, body: undefined }) },
     { method: 'GET', path: /^\/planner\/upcoming-events\/summary$/, reply: () => ({ status: 200, body: { windowDays: 30, total: 0, nearest: [] } }) },
+    { method: 'GET', path: /^\/planner\/projects$/, reply: (_, params) => this.projects(params) },
+    {
+      method: 'GET',
+      path: /^\/planner\/projects\/(\d+)$/,
+      reply: ([, id]) => {
+        const project = PROJECTS.find((item) => item.id === Number(id))
+        return project ? { status: 200, body: this.project(project) } : { status: 404, body: { code: 'NOT_FOUND', detail: 'No existe el proyecto.' } }
+      },
+    },
     { method: 'GET', path: /^\/planner\/projects\/kpis$/, reply: () => ({ status: 200, body: { activeResources: 130, activeProjects: 3, activeClients: 2, endingSoon: 0 } }) },
     { method: 'GET', path: /^\/history\/resources\/\d+\/last-change$/, reply: () => ({ status: 204, body: undefined }) },
     { method: 'GET', path: /^\/planner\/operations-status$/, reply: () => ({ status: 200, body: {} }) },

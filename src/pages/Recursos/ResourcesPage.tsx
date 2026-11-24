@@ -10,6 +10,7 @@ import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDr
 import { ChevronLeft, ChevronRight, Download, GanttChartSquare, Plus, Table, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
+import { useOpenRegisterResource } from '../../components/recursos/registerProject';
 import { exportFileName, statusText, toExportRows } from './resourceExport';
 
 
@@ -197,6 +198,7 @@ export const ResourcesPage = () => {
   const { hasRole } = useAuth();
   const isAdmin = hasRole('operations-administrator');
   const navigate = useNavigate();
+  const openRegisterResource = useOpenRegisterResource();
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -517,7 +519,7 @@ useEffect(() => {
             <Download size={16} /> {exporting ? 'Exportando…' : 'Exportar'}
           </button>
           {isAdmin && (
-            <button onClick={() => navigate('/recursos/nuevo')} className="rp-btn-primary" style={{ height: 38, padding: '0 16px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+            <button onClick={openRegisterResource} className="rp-btn-primary" style={{ height: 38, padding: '0 16px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
               <Plus size={16} /> Registrar recurso
             </button>
           )}

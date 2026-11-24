@@ -23,6 +23,13 @@ import {
 } from './roleNavigation'
 import type { NavigationItemId } from './roleNavigation'
 import type { OperationsStatus } from '../../types'
+import { ProjectPickerDrawer } from '../recursos/ProjectPickerDrawer'
+import {
+  registerNavigationState,
+  registerResourcePath,
+  type ProjectChoice,
+  type RegisterResourceOutletContext,
+} from '../recursos/registerProject'
 import './MainLayout.css'
 
 interface ExtendedOperationsStatus extends OperationsStatus {
@@ -57,10 +64,19 @@ export function MainLayout({
   const { roles, user, logout, logoutInProgress } = useAuth()
   const navigate = useNavigate()
   const [providedLogoutInProgress, setProvidedLogoutInProgress] = useState(false)
+  const [registerOpen, setRegisterOpen] = useState(false)
   const navigationItems = getNavigationForRole(roles)
   const handleLogout = onLogout ?? logout
   const isLogoutInProgress = logoutInProgress || providedLogoutInProgress
   const canRegister = canRegisterResources(roles)
+  const openRegisterResource = () => (onRegisterResource ? onRegisterResource() : setRegisterOpen(true))
+  const outletContext: RegisterResourceOutletContext = { openRegisterResource }
+
+  /** Step 1 done: step 2 is /recursos/nuevo with the chosen project (SCRUM-84, CA-14) */
+  function continueRegister(choice: ProjectChoice): void {
+    setRegisterOpen(false)
+    navigate(registerResourcePath(choice), { state: registerNavigationState(choice) })
+  }
 
   async function handleLogoutClick(): Promise<void> {
     if (isLogoutInProgress) {
@@ -118,7 +134,7 @@ export function MainLayout({
             <button
               className="register-resource"
               type="button"
-              onClick={() => (onRegisterResource ? onRegisterResource() : navigate('/recursos/nuevo'))}
+              onClick={openRegisterResource}
             >
               <PlusIcon />
               <span>Registrar recurso</span>
@@ -156,8 +172,17 @@ export function MainLayout({
       </header>
 
       <main className="page-content">
-        <Outlet />
+        <Outlet context={outletContext} />
       </main>
+
+      {canRegister && (
+        <ProjectPickerDrawer
+          open={registerOpen}
+          canCreateProjects
+          onContinue={continueRegister}
+          onClose={() => setRegisterOpen(false)}
+        />
+      )}
 
       <OperationsBar status={operationsStatus} />
     </div>
