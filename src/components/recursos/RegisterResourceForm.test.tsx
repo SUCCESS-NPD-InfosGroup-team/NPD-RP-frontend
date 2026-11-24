@@ -365,6 +365,27 @@ describe('RegisterResourceForm', () => {
     expect(screen.getByText('Ese correo ya está registrado.')).toBeInTheDocument()
   })
 
+  it.each([['a text', 'x/../../evil'], ['zero', 0], ['a decimal', 10.5]])(
+    'neither links nor opens the modal when the existing id is %s',
+    async (_, existingResourceId) => {
+      const { getResource } = setup({
+        choice: NO_PROJECT,
+        createResource: vi.fn().mockRejectedValue(new ApiRequestError({
+          status: 409,
+          code: 'EMPLOYEE_NUMBER_TAKEN',
+          detail: 'El N° 1045 ya está registrado.',
+          existingResourceId: existingResourceId as number,
+        })),
+      })
+      await fillCollaborator('1045')
+      register()
+      expect(await screen.findByText('El N° 1045 ya está registrado.')).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Abrir su registro' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(getResource).not.toHaveBeenCalled()
+    },
+  )
+
   it('only links to the existing record while other fields still need fixing', async () => {
     setup({
       choice: NO_PROJECT,

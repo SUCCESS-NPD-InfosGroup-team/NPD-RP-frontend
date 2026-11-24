@@ -91,8 +91,14 @@ function staleMessage(updatedBy: string | undefined): string {
   return `${who} después de que lo abriste. Recarga el registro para ver sus cambios; los tuyos no se guardaron.`
 }
 
+/** The id of an existing resource as the API reports it, only when it is a real id (a positive integer) */
+function validResourceId(id: unknown): number | undefined {
+  return typeof id === 'number' && Number.isSafeInteger(id) && id > 0 ? id : undefined
+}
+
 function duplicateOf(id: number | undefined, name: string | undefined) {
-  return id === undefined ? undefined : { id, name: name ?? '' }
+  const validId = validResourceId(id)
+  return validId === undefined ? undefined : { id: validId, name: name ?? '' }
 }
 
 /** Translates a failed save into field errors, the duplicate link or a general message */
@@ -132,10 +138,10 @@ const ALREADY_REGISTERED = new Set(['EMPLOYEE_NUMBER_TAKEN', 'EMAIL_TAKEN'])
  */
 function existingResourceOf(cause: unknown): number | undefined {
   if (!(cause instanceof ApiRequestError)) return undefined
-  if (cause.code === 'EMPLOYEE_NUMBER_TAKEN') return cause.existingResourceId
+  if (cause.code === 'EMPLOYEE_NUMBER_TAKEN') return validResourceId(cause.existingResourceId)
   if (cause.status !== 400 || !cause.errors?.length) return undefined
   if (!cause.errors.every((error) => ALREADY_REGISTERED.has(error.code))) return undefined
-  return cause.errors.find((error) => error.code === 'EMPLOYEE_NUMBER_TAKEN')?.existingResourceId
+  return validResourceId(cause.errors.find((error) => error.code === 'EMPLOYEE_NUMBER_TAKEN')?.existingResourceId)
 }
 
 function probationText(probation: { endDate?: string; vacationMonth?: number }): string {
