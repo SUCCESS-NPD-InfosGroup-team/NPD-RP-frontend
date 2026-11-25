@@ -1,22 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Download } from 'lucide-react'
 import { ChevRightIcon } from '../../components/icons'
 import { ArrivalsTable } from '../../components/arribos/ArrivalsTable'
 import { ArrivalTypeCards } from '../../components/arribos/ArrivalTypeCards'
-import { ARRIVAL_TYPE_META, countLabel, formatToday, toRecursoFromArrival } from '../../components/arribos/arrivalsView'
+import { ARRIVAL_TYPE_META, countLabel, describeNotice, formatToday, toRecursoFromArrival } from '../../components/arribos/arrivalsView'
 import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDrawer'
 import { Button } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
 import { Paginador } from '../../components/ui/Paginador'
 import { useArrivals } from '../../hooks/useArrivals'
+import { getArrivalsApi } from '../../services/arrivals'
 import { getProjectsApi } from '../../services/projects'
 import { ApiRequestError } from '../../services/projects.types'
 import { getResourcesApi } from '../../services/resources'
 import type { Client } from '../../services/projects.types'
 import type { CatalogItem } from '../../services/resources.types'
 import type { Recurso } from '../../types'
+import { downloadExcel, fetchAllPages, spreadsheetFileName } from '../../utils/spreadsheetExport'
 import {
   ARRIVALS_PAGE_SIZE,
+  type ArrivalEvent,
   ARRIVAL_WINDOWS,
   type ArrivalType,
   type ArrivalWindow,
@@ -25,6 +29,8 @@ import '../../components/arribos/ArribosPage.css'
 
 export function ArribosProximosPage() {
   const navigate = useNavigate()
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
   const [selectedResource, setSelectedResource] = useState<Recurso | null>(null)
   const [windowDays, setWindowDays] = useState<ArrivalWindow>(30)
   const [clientId, setClientId] = useState('')
@@ -77,6 +83,41 @@ export function ArribosProximosPage() {
   const total = data?.total ?? 0
   const from = (page - 1) * ARRIVALS_PAGE_SIZE + 1
 
+  async function handleExport(): Promise<void> {
+    if (!total || exporting) return
+
+    setExporting(true)
+    setExportError('')
+    try {
+      const api = await getArrivalsApi()
+      const events = await fetchAllPages(async (requestedPage) => {
+        const result = await api.listArrivals(filters, requestedPage)
+        return { items: result.items, totalPages: result.totalPages }
+      })
+      const rows = events.map((event: ArrivalEvent) => {
+        const notice = describeNotice(event.notice)
+        return {
+          Fecha: event.date,
+          Tipo: ARRIVAL_TYPE_META[event.type].label,
+          Recurso: event.resource?.name ?? '',
+          'N° empleado': event.resource?.employeeNumber ?? '',
+          'Rol en el cliente': event.resource?.clientRole ?? '',
+          Cliente: event.client ?? '',
+          Proyecto: event.project ?? '',
+          'Líder NPD': event.leader ?? '',
+          'Días restantes': event.daysRemaining,
+          'Personas afectadas': event.resourceCount,
+          Aviso: [notice.text, notice.detail].filter(Boolean).join(' · '),
+        }
+      })
+      await downloadExcel(rows, spreadsheetFileName('Arribos_proximos'), 'Arribos próximos')
+    } catch {
+      setExportError('No se pudieron exportar los arribos próximos. Intenta de nuevo.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <section className="screen arrivals-page">
       <nav className="arrivals-page__crumbs" aria-label="Ruta de navegación">
@@ -91,8 +132,16 @@ export function ArribosProximosPage() {
             Fines de asignación, de contrato y de probatoria, y vacaciones que empiezan. Hoy es {formatToday()}.
           </p>
         </div>
-        {/* TODO SCRUM-158: add "Exportar" (CA-08, with the pre-export notice) when the export endpoint exists. */}
+        <Button
+          variant="secondary"
+          icon={<Download />}
+          disabled={loading || exporting || total === 0}
+          onClick={() => void handleExport()}
+        >
+          {exporting ? 'Exportando…' : 'Exportar'}
+        </Button>
       </header>
+      {exportError && <p className="arrivals-page__export-error" role="alert">{exportError}</p>}
 
       <ArrivalTypeCards
         summary={data?.summary}
@@ -176,6 +225,19 @@ export function ArribosProximosPage() {
             if (resource) setSelectedResource(toRecursoFromArrival(resource))
           }}
         />
+        {!error && data && data.items.length > 0 && total > 0 && (
+          <div className="arrivals-page__pagination-bottom">
+            <Paginador
+              range={`${from}–${Math.min(page * ARRIVALS_PAGE_SIZE, total)} de ${total}`}
+              page={page}
+              totalPages={data.totalPages ?? Math.ceil(total / ARRIVALS_PAGE_SIZE)}
+              onPageChange={(nextPage) => {
+                setPage(nextPage)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+            />
+          </div>
+        )}
       </div>
       {selectedResource && (
         <ResourceDetailDrawer
