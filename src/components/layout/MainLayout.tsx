@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { apiFetch, searchRecursos } from '../../services/api'
+import { getProjectsApi } from '../../services/projects'
 import {
   BellIcon,
   ChartIcon,
-  ClockIcon,
   EditIcon,
   FolderIcon,
   LogoutIcon,
@@ -22,13 +23,24 @@ import {
 } from './roleNavigation'
 import type { NavigationItemId } from './roleNavigation'
 import type { OperationsStatus } from '../../types'
+import { ProjectPickerDrawer } from '../recursos/ProjectPickerDrawer'
+import {
+  registerNavigationState,
+  registerResourcePath,
+  type ProjectChoice,
+  type RegisterResourceOutletContext,
+} from '../recursos/registerProject'
 import './MainLayout.css'
+
+interface ExtendedOperationsStatus extends OperationsStatus {
+  projectCount?: number
+}
 
 interface MainLayoutProps {
   onRegisterResource?: () => void
   onLogout?: () => void | Promise<void>
   unreadNotificationCount?: number
-  operationsStatus?: OperationsStatus
+  operationsStatus?: ExtendedOperationsStatus
 }
 
 const iconById: Record<NavigationItemId, ComponentType> = {
@@ -52,10 +64,19 @@ export function MainLayout({
   const { roles, user, logout, logoutInProgress } = useAuth()
   const navigate = useNavigate()
   const [providedLogoutInProgress, setProvidedLogoutInProgress] = useState(false)
+  const [registerOpen, setRegisterOpen] = useState(false)
   const navigationItems = getNavigationForRole(roles)
   const handleLogout = onLogout ?? logout
   const isLogoutInProgress = logoutInProgress || providedLogoutInProgress
   const canRegister = canRegisterResources(roles)
+  const openRegisterResource = () => (onRegisterResource ? onRegisterResource() : setRegisterOpen(true))
+  const outletContext: RegisterResourceOutletContext = { openRegisterResource }
+
+  /** Step 1 done: step 2 is /recursos/nuevo with the chosen project (SCRUM-84, CA-14) */
+  function continueRegister(choice: ProjectChoice): void {
+    setRegisterOpen(false)
+    navigate(registerResourcePath(choice), { state: registerNavigationState(choice) })
+  }
 
   async function handleLogoutClick(): Promise<void> {
     if (isLogoutInProgress) {
@@ -113,7 +134,7 @@ export function MainLayout({
             <button
               className="register-resource"
               type="button"
-              onClick={() => (onRegisterResource ? onRegisterResource() : navigate('/recursos/nuevo'))}
+              onClick={openRegisterResource}
             >
               <PlusIcon />
               <span>Registrar recurso</span>
@@ -151,25 +172,90 @@ export function MainLayout({
       </header>
 
       <main className="page-content">
-        <Outlet />
+        <Outlet context={outletContext} />
       </main>
+
+      {canRegister && (
+        <ProjectPickerDrawer
+          open={registerOpen}
+          canCreateProjects
+          onContinue={continueRegister}
+          onClose={() => setRegisterOpen(false)}
+        />
+      )}
 
       <OperationsBar status={operationsStatus} />
     </div>
   )
 }
 
-function OperationsBar({ status }: Readonly<{ status?: OperationsStatus }>) {
-  const [now, setNow] = useState(() => Date.now())
+function OperationsBar({ status }: Readonly<{ status?: ExtendedOperationsStatus }>) {
+  const [fetchedStatus, setFetchedStatus] = useState<Partial<ExtendedOperationsStatus>>({})
 
   useEffect(() => {
-    if (!isValidDate(status?.sessionExpiresAt)) {
-      return
+    if (status) return
+    let active = true
+
+    const loadStatus = async () => {
+      try {
+        const [projectsApi, activeResPage] = await Promise.all([
+          getProjectsApi(),
+          searchRecursos(
+            {
+              search: '',
+              cliente: 'Todos',
+              proyecto: 'Todos',
+              liderNPD: 'Todos',
+              rol: 'Todos',
+              nivel: '',
+              estado: 'Activo',
+              situacion: 'Todos',
+            },
+            1,
+            1,
+          ),
+        ])
+
+        const kpis = await projectsApi.getKpis()
+
+        let backendMeta: Partial<ExtendedOperationsStatus> = {}
+        try {
+          const metaRes = await apiFetch('planner', '/operations-status')
+          if (metaRes.ok) {
+            const raw = (await metaRes.json()) as {
+              lastUpdatedAt?: string | null
+              lastUpdatedBy?: string | null
+              nextNotificationAt?: string | null
+            }
+            backendMeta = {
+              lastUpdatedAt: raw.lastUpdatedAt ? new Date(raw.lastUpdatedAt) : undefined,
+              lastUpdatedBy: raw.lastUpdatedBy ?? undefined,
+              nextNotificationAt: raw.nextNotificationAt ? new Date(raw.nextNotificationAt) : undefined,
+            }
+          }
+        } catch {
+          // Si el endpoint aún no existe en backend, mantiene los conteos reales
+        }
+
+        if (!active) return
+        setFetchedStatus({
+          activeResources: activeResPage.page.totalElements,
+          projectCount: kpis.activeProjects,
+          clientCount: kpis.activeClients,
+          ...backendMeta,
+        })
+      } catch {
+        // Mantiene estado por defecto sin romper la vista
+      }
     }
 
-    const intervalId = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(intervalId)
-  }, [status?.sessionExpiresAt])
+    void loadStatus()
+    return () => {
+      active = false
+    }
+  }, [status])
+
+  const effective = status ?? fetchedStatus
 
   return (
     <footer className="operations-bar" aria-label="Estado de operaciones">
@@ -177,35 +263,41 @@ function OperationsBar({ status }: Readonly<{ status?: OperationsStatus }>) {
         <EditIcon />
         <span>Última actualización de datos:</span>{' '}
         <strong>
-          {isValidDate(status?.lastUpdatedAt)
-            ? formatDateTime(status.lastUpdatedAt)
+          {isValidDate(effective.lastUpdatedAt)
+            ? formatDateTime(effective.lastUpdatedAt)
             : '—'}
         </strong>{' '}
         <span>por</span>{' '}
-        <strong>{status?.lastUpdatedBy?.trim() || '—'}</strong>
+        <strong>{effective.lastUpdatedBy?.trim() || '—'}</strong>
       </span>
       <span className="operations-status-item">
-        <strong>{status?.activeResources ?? '—'}</strong>
-        {' '}
+        <strong>{effective.activeResources ?? '—'}</strong>{' '}
         <span>recursos activos ·</span>{' '}
-        <strong>{status?.clientCount ?? '—'}</strong>{' '}
+        {effective.projectCount !== undefined && (
+          <>
+            <strong>{effective.projectCount}</strong>{' '}
+            <span>proyectos ·</span>{' '}
+          </>
+        )}
+        <strong>{effective.clientCount ?? '—'}</strong>{' '}
         <span>clientes</span>
       </span>
       <span className="operations-status-item">
         <span>Próximo envío de avisos:</span>{' '}
         <strong>
-          {isValidDate(status?.nextNotificationAt)
-            ? formatDateTime(status.nextNotificationAt)
+          {isValidDate(effective.nextNotificationAt)
+            ? formatDateTime(effective.nextNotificationAt)
             : '—'}
         </strong>
       </span>
-      <span className="session-status">
-        <ClockIcon />
+<span className="operations-status-item">
         <span>La sesión expira en</span>{' '}
         <strong>
-          {isValidDate(status?.sessionExpiresAt)
-            ? formatSessionTime(status.sessionExpiresAt, now)
-            : '—'}
+          {typeof effective.sessionExpiresAt === 'string'
+            ? effective.sessionExpiresAt
+            : isValidDate(effective.sessionExpiresAt)
+              ? formatTime(effective.sessionExpiresAt)
+              : '—'}
         </strong>{' '}
         <span>sin actividad</span>
       </span>
@@ -218,22 +310,31 @@ function formatDateTime(value: Date): string {
     return '—'
   }
 
-  return new Intl.DateTimeFormat('es', {
-    dateStyle: 'short',
-    timeStyle: 'short',
+  const datePart = new Intl.DateTimeFormat('es', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   }).format(value)
+  const timePart = new Intl.DateTimeFormat('es', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(value)
+
+  return `${datePart} · ${timePart}`
+}
+
+function formatTime(value: Date): string {
+  if (!isValidDate(value)) {
+    return '—'
+  }
+  const hh = String(value.getUTCHours()).padStart(2, '0')
+  const mm = String(value.getUTCMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
 }
 
 function isValidDate(value?: Date): value is Date {
   return value instanceof Date && Number.isFinite(value.getTime())
-}
-
-function formatSessionTime(expiresAt: Date, now: number): string {
-  const totalSeconds = Math.floor(Math.max(0, expiresAt.getTime() - now) / 1000)
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
 function getInitials(name: string): string {

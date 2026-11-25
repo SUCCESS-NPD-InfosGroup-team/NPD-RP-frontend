@@ -104,16 +104,26 @@ export function RosterPreview({ today, hireDate, probationEnd, onProbation, proj
         </div>
       </div>
       <ul className="roster-preview__legend">
-        <li>
-          <span className="roster-preview__chip">Probatoria</span>
-          {onProbation && probationEnd
-            ? `Día 90 el ${shortDate(probationEnd, true)}, desde el contrato`
-            : 'No está en periodo de prueba'}
-        </li>
-        {project && (
+        {onProbation && probationEnd ? (
+          <li>
+            <span className="roster-preview__chip">Probatoria</span>
+            {`Día 90 el ${shortDate(probationEnd, true)}, desde el contrato`}
+          </li>
+        ) : (
+          <li>
+            <span className="roster-preview__chip roster-preview__chip--neutral">Sin probatoria</span>
+            No se envía aviso de fin de probatoria
+          </li>
+        )}
+        {project ? (
           <li>
             <span className="roster-preview__chip roster-preview__chip--danger">Avisos fin</span>
             {noticesLabel(notices.map((notice) => shortDate(notice)), project)}
+          </li>
+        ) : (
+          <li>
+            <span className="roster-preview__chip roster-preview__chip--warn">Sin proyecto</span>
+            Aparece en el grupo «Sin proyecto» de Recursos
           </li>
         )}
       </ul>

@@ -261,9 +261,12 @@ describe('ResourcesPage · BUG-01 real search API', () => {
   it('loads the projects of the chosen client and resets the project when the client changes', async () => {
     renderPage();
     await screen.findByRole('option', { name: 'BANESCO' });
+    expect(screen.getByLabelText('Proyecto')).toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Elige un cliente primero' })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: '3' } });
     expect(await screen.findByRole('option', { name: 'DEYEL' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Proyecto')).toBeEnabled();
     expect(listClientProjects).toHaveBeenCalledWith('3');
     fireEvent.change(screen.getByLabelText('Proyecto'), { target: { value: '41' } });
     await waitFor(() => expect(lastFilters()).toMatchObject({ cliente: '3', proyecto: '41' }));
@@ -271,6 +274,7 @@ describe('ResourcesPage · BUG-01 real search API', () => {
     fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'Todos' } });
     await waitFor(() => expect(lastFilters()).toMatchObject({ cliente: 'Todos', proyecto: 'Todos' }));
     expect(screen.queryByRole('option', { name: 'DEYEL' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Proyecto')).toBeDisabled();
   });
 
   it('includes inactive resources when the checkbox is marked', async () => {
@@ -324,9 +328,9 @@ describe('ResourcesPage · BUG-01 real search API', () => {
     expect(screen.getAllByText('No especificado').length).toBeGreaterThan(0);
     expect(screen.getByText('—')).toBeInTheDocument();
     const withoutProject = screen.getByRole('button', { name: 'Ver detalle de Sin asignar' });
-    expect(withoutProject.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(0);
+    expect(withoutProject.parentElement!.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(0);
     const indefinite = screen.getByRole('button', { name: 'Ver detalle de Importado' });
-    expect(indefinite.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(1);
+    expect(indefinite.parentElement!.querySelectorAll('span[style*="position: absolute"]')).toHaveLength(1);
   });
 
   it('ignores a slow response of an older search that arrives after the current one', async () => {

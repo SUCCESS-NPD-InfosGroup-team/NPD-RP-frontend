@@ -1,6 +1,7 @@
 import type { ApiError } from '../../services/projects.types'
 import type { ResourceRequest, ResourceResponse, ResourceSituationCode, ResourceStatusCode, StatusOption } from '../../services/resources.types'
 import { addDaysIso, fromIsoDate, todayIso, toIsoDate } from '../../utils/dates'
+import type { ProjectChoice } from './registerProject'
 
 /** Probation ends on day 90 counted from the contract start date (generated column in the DB) */
 export const PROBATION_DAYS = 90
@@ -231,6 +232,15 @@ export function toResourceRequest(values: ResourceFormValues, today = todayIso()
         }
       : null,
   }
+}
+
+/**
+ * Registering (SCRUM-84): the project is chosen in step 1, not in the form, so it overrides
+ * whatever the form holds for «¿Tiene proyecto?», client and project.
+ */
+export function withProjectChoice(values: ResourceFormValues, choice: ProjectChoice): ResourceFormValues {
+  if (choice.kind === 'none') return { ...values, withProject: false, clientId: '', projectId: '' }
+  return { ...values, withProject: true, clientId: choice.project.client.id, projectId: choice.project.id }
 }
 
 /** Preview only: the backend calculates and stores the real situation */

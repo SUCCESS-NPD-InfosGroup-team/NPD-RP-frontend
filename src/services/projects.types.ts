@@ -33,6 +33,15 @@ export interface ClientProject {
   contractEndDate: string | null
 }
 
+/** An active project as the «Registrar recurso» step 1 lists it and step 2 shows it fixed (SCRUM-84) */
+export interface ProjectOption {
+  id: string
+  name: string
+  client: { id: string; name: string }
+  teamSize: number
+  contractEndDate: string | null
+}
+
 export interface ProjectFilters {
   search?: string
   clientId?: string

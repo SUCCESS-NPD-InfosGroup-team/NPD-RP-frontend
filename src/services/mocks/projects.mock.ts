@@ -6,6 +6,7 @@ import type {
   Page,
   Project,
   ProjectFilters,
+  ProjectOption,
   ProjectsSummary,
 } from '../projects.types'
 
@@ -74,6 +75,16 @@ function filtered(filters: ProjectFilters): Project[] {
   })
 }
 
+function toOption(project: Project): ProjectOption {
+  return {
+    id: project.id,
+    name: project.name,
+    client: { id: project.client.id, name: project.client.name },
+    teamSize: project.teamSize,
+    contractEndDate: project.contractEnd?.slice(0, 10) ?? null,
+  }
+}
+
 export const projectsMock = {
   async listProjects(filters: ProjectFilters = {}, page = 1): Promise<Page<Project>> {
     const items = filtered(filters)
@@ -119,6 +130,17 @@ export const projectsMock = {
     }
     projects.push(project)
     return project
+  },
+  async listActiveProjects(): Promise<ProjectOption[]> {
+    return projects
+      .filter((project) => project.active)
+      .sort((a, b) => a.client.name.localeCompare(b.client.name) || a.name.localeCompare(b.name))
+      .map(toOption)
+  },
+  async getProject(id: string): Promise<ProjectOption & { active: boolean }> {
+    const project = projects.find((item) => item.id === id)
+    if (!project) throw { status: 404, code: 'NOT_FOUND', detail: 'No existe el proyecto.' }
+    return { ...toOption(project), active: project.active }
   },
   async listClientProjects(clientId: string): Promise<ClientProject[]> {
     return projects

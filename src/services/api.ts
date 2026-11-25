@@ -67,17 +67,56 @@ export function buildSearchParams(filters: Filters, page = 1, size = 25): URLSea
   return params
 }
 
+function matchesSituation(item: RecursoApi, situacion?: string): boolean {
+  if (!situacion || situacion === 'Todos') return true
+  const raw = item as RecursoApi & { situation?: { code?: string } | null }
+  if (!raw.situation || typeof raw.situation !== 'object' || !raw.situation.code) return true
+  return raw.situation.code === situacion
+}
+
+async function fetchRawPage(
+  filters: Filters,
+  page: number,
+  size: number,
+): Promise<ResourceSearchResponse>{
+  const params = buildSearchParams(filters, page, size)
+  const response = await apiFetch('planner', `/resources?${params.toString()}`)
+  if (!response.ok){
+    throw new Error('Error al buscar recursos')
+  }
+  return response.json() as Promise<ResourceSearchResponse>
+}
+
 export async function searchRecursos(
   filters: Filters,
   page = 1,
   size = 25,
-): Promise<ResourceSearchResponse> {
-  const params = buildSearchParams(filters, page, size)
-  const response = await apiFetch('planner', `/resources?${params.toString()}`)
-  if (!response.ok) {
-    throw new Error('Error al buscar recursos')
+): Promise<ResourceSearchResponse>{
+  const data = await fetchRawPage(filters, page, size)
+
+  if (filters.situacion && filters.situacion !== 'Todos'){
+    const hasMismatch = data.items.some((item) => !matchesSituation(item, filters.situacion))
+    if(hasMismatch){
+      const all = await searchAllRecursos(filters)
+      const totalElements =  all.length
+      const totalPages = Math.max(1, Math.ceil(totalElements / size))
+      const safePage = Math.min(Math.max(page, 1), totalPages)
+      const start = (safePage - 1) * size
+      return {
+        ...data,
+        items: all.slice(start, start + size),
+        page: {
+          ...data.page,
+          number: safePage - 1,
+          size,
+          totalElements,
+          totalPages,
+        },
+      }
+    }
   }
-  return response.json() as Promise<ResourceSearchResponse>
+
+  return data
 }
 
 /** Tamaño máximo de página que acepta el backend (spring.data.web.pageable.max-page-size) */
@@ -88,8 +127,8 @@ export const MAX_PAGE_SIZE = 100
  * El backend recorta cualquier `size` mayor a 100, así que no basta con pedir una página grande.
  */
 export async function searchAllRecursos(filters: Filters): Promise<RecursoApi[]> {
-  const first = await searchRecursos(filters, 1, MAX_PAGE_SIZE)
+  const first = await fetchRawPage(filters, 1, MAX_PAGE_SIZE)
   const remaining = Array.from({ length: Math.max(first.page.totalPages - 1, 0) }, (_, index) => index + 2)
-  const rest = await Promise.all(remaining.map((page) => searchRecursos(filters, page, MAX_PAGE_SIZE)))
+  const rest = await Promise.all(remaining.map((page) => fetchRawPage(filters, page, MAX_PAGE_SIZE)))
   return [first, ...rest].flatMap((response) => response.items)
 }
