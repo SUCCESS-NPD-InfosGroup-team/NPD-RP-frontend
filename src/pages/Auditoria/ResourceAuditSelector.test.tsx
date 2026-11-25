@@ -73,7 +73,7 @@ describe('ResourceAuditSelector', () => {
     expect(searchRecursos).toHaveBeenCalledWith({ search: '', estado: 'Todos' }, 1, 25)
     expect(screen.getByRole('row', { name: /Ana Torres/ })).toBeInTheDocument()
     expect(screen.getByRole('row', { name: /Ana Torres/ })).toHaveTextContent('Activo')
-    expect(screen.getByText('1–25 de 27')).toBeInTheDocument()
+    expect(screen.getAllByText('1–25 de 27')).toHaveLength(2)
   })
 
   it('debounces resource searches by 300 ms', async () => {
@@ -99,11 +99,17 @@ describe('ResourceAuditSelector', () => {
     renderSelector()
     await advanceTimers(300)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }))
+    expect(screen.getAllByRole('navigation', { name: 'Paginación' })).toHaveLength(2)
+    const nextPageButtons = screen.getAllByRole('button', { name: 'Página siguiente' })
+    expect(nextPageButtons).toHaveLength(2)
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    fireEvent.click(nextPageButtons[1])
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
     await advanceTimers(300)
 
     expect(searchRecursos).toHaveBeenLastCalledWith({ search: '', estado: 'Todos' }, 2, 25)
     expect(screen.getByText('26–26 de 26')).toBeInTheDocument()
+    scrollTo.mockRestore()
   })
 
   it('shows the empty state when no resources match', async () => {

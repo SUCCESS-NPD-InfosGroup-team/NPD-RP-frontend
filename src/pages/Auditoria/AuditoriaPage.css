@@ -35,6 +35,16 @@
   gap: 14px;
 }
 
+.audit-log-page__heading > .ui-button {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.audit-log-page__export-error {
+  margin: 0;
+  color: var(--state-danger);
+}
+
 .audit-log-page__avatar {
   display: grid;
   width: 48px;
@@ -116,6 +126,13 @@
 .audit-log-page__filters .ui-paginador {
   flex: 0 0 auto;
   padding-bottom: 2px;
+}
+
+.audit-log-page__pagination-bottom {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) 16px;
+  border-top: var(--border-width) solid var(--border-default);
 }
 
 .audit-log-page__table-wrap {

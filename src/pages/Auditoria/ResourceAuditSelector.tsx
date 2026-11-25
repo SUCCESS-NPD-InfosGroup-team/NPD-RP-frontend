@@ -65,6 +65,11 @@ export function ResourceAuditSelector() {
     setLoading(true)
   }
 
+  const handleBottomPageChange = (nextPage: number) => {
+    handlePageChange(nextPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const retry = () => {
     setRetryCount((count) => count + 1)
     setData(null)
@@ -145,6 +150,16 @@ export function ResourceAuditSelector() {
             <output className="resource-audit-selector__state">No se encontró ningún recurso</output>
           )}
         </div>
+        {!loading && !error && items.length > 0 && data && (
+          <div className="resource-audit-selector__pagination-bottom">
+            <Paginador
+              range={range}
+              page={page}
+              totalPages={Math.max(data.page.totalPages, 1)}
+              onPageChange={handleBottomPageChange}
+            />
+          </div>
+        )}
       </div>
     </section>
   )
