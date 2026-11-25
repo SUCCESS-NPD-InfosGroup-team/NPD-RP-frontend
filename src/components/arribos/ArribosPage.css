@@ -5,6 +5,7 @@
 .arrivals-page__crumbs svg { width: 14px; height: 14px; }
 .arrivals-page__header { display: flex; align-items: flex-start; justify-content: space-between; }
 .arrivals-page__subtitle { margin: 2px 0 0; color: var(--text-secondary); }
+.arrivals-page__export-error { margin: 0; color: var(--state-danger); }
 
 /* Type cards (CA-03) */
 .arrivals-page__cards { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
@@ -27,6 +28,7 @@
 .arrivals-page__applied { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-block: var(--border-width) solid var(--border-default); color: var(--text-secondary); font-size: 13px; }
 .arrivals-page__bar { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2) var(--space-4); color: var(--text-secondary); font-size: 13px; }
 .arrivals-page__bar strong { color: var(--text-primary); }
+.arrivals-page__pagination-bottom { display: flex; justify-content: flex-end; padding: var(--space-2) var(--space-4); border-top: var(--border-width) solid var(--border-default); }
 
 .arrivals-page__table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .arrivals-page__table thead th {

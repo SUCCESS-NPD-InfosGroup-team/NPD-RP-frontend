@@ -33,10 +33,25 @@ describe('ProjectsTable', () => {
     expect(screen.queryByRole('button', { name: /agregar colaboradores/i })).not.toBeInTheDocument()
   })
 
-  it('hides the add-members action until the registration route exists', () => {
-    render(<ProjectsTable projects={[{ ...projects[0], teamSize: 2, members: [{ id: 'member-1', initials: 'AB' }], leads: ['Noel'] }]} />)
+  it('keeps unavailable write actions visible but disabled for project managers', () => {
+    const view = render(<ProjectsTable
+      projects={[{ ...projects[0], teamSize: 2, members: [{ id: 'member-1', initials: 'AB' }], leads: ['Noel'] }]}
+    />)
     expect(screen.queryByRole('button', { name: /agregar colaboradores/i })).not.toBeInTheDocument()
     expect(screen.queryByText('AB')).not.toBeInTheDocument()
+
+    view.rerender(<ProjectsTable
+      projects={[{ ...projects[0], teamSize: 2, members: [{ id: 'member-1', initials: 'AB' }], leads: ['Noel'] }]}
+      canManageProjects
+    />)
+    expect(screen.getByRole('button', { name: /agregar colaboradores/i })).toBeDisabled()
+  })
+
+  it('shows reactivation as unavailable for inactive projects', () => {
+    render(<ProjectsTable projects={[{ ...projects[0], active: false }]} canManageProjects />)
+
+    expect(screen.getByText('Inactivo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /reactivar atlas/i })).toBeDisabled()
   })
 
   it('uses the API day count for current and expired contract badges', () => {
