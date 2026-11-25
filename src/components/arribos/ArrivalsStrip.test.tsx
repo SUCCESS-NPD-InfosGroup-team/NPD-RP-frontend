@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ArrivalEvent, ArrivalsStrip as Strip } from '../../services/arrivals.types'
@@ -26,7 +27,9 @@ function event(overrides: Partial<ArrivalEvent>): ArrivalEvent {
   }
 }
 
-const renderStrip = () => render(<MemoryRouter><ArrivalsStrip /></MemoryRouter>)
+const renderStrip = (onViewResource?: (resource: NonNullable<ArrivalEvent['resource']>) => void) => (
+  render(<MemoryRouter><ArrivalsStrip onViewResource={onViewResource} /></MemoryRouter>)
+)
 
 describe('ArrivalsStrip (HU-06 CA-01)', () => {
   beforeEach(() => getStrip.mockReset())
@@ -67,6 +70,32 @@ describe('ArrivalsStrip (HU-06 CA-01)', () => {
     expect(await screen.findByRole('link', { name: /Ver el evento/ })).toBeInTheDocument()
     expect(screen.getByText('Portal')).toBeInTheDocument()
     expect(screen.getByText('DÍA')).toBeInTheDocument()
+  })
+
+  it('opens a resource from the strip when a detail handler is provided', async () => {
+    const onViewResource = vi.fn()
+    getStrip.mockResolvedValue({
+      windowDays: 30,
+      total: 1,
+      nearest: [event({})],
+    })
+    renderStrip(onViewResource)
+
+    await userEvent.click(await screen.findByRole('button', { name: /Fin de probatoria: Iván Castrellón/ }))
+    expect(onViewResource).toHaveBeenCalledWith(event({}).resource)
+    expect(screen.queryByRole('link', { name: /Fin de probatoria: Iván Castrellón/ })).not.toBeInTheDocument()
+  })
+
+  it('keeps project-level strip cards linked to Arribos', async () => {
+    getStrip.mockResolvedValue({
+      windowDays: 30,
+      total: 1,
+      nearest: [event({ id: 'CONTRACT_END-9', type: 'CONTRACT_END', resource: null, project: 'Portal' })],
+    })
+    renderStrip(vi.fn())
+
+    expect(await screen.findByRole('link', { name: /Fin de contrato: Portal/ }))
+      .toHaveAttribute('href', '/arribos-proximos')
   })
 
   it('says nothing is due when there are no upcoming events, but still links to Arribos', async () => {

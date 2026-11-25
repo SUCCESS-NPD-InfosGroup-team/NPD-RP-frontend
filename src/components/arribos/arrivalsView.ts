@@ -1,5 +1,6 @@
 import type { ChipTone } from '../ui/Chip'
 import type { ArrivalEvent, ArrivalNotice, ArrivalType } from '../../services/arrivals.types'
+import type { Recurso } from '../../types'
 import { addDaysIso, formatShortDate, todayIso } from '../../utils/dates'
 
 export interface ArrivalTypeMeta {
@@ -19,6 +20,22 @@ export const ARRIVAL_TYPE_META: Record<ArrivalType, ArrivalTypeMeta> = {
 
 /** CA-05: days remaining are shown in red when 15 or fewer */
 export const URGENT_DAYS = 15
+
+export function toRecursoFromArrival(resource: NonNullable<ArrivalEvent['resource']>): Recurso {
+  return {
+    id: resource.id,
+    nEmpleado: `#${resource.employeeNumber}`,
+    nombre: resource.name,
+    rol: resource.clientRole ?? 'Sin rol',
+    cliente: 'No especificado',
+    proyecto: 'Sin proyecto',
+    liderNPD: 'Sin líder',
+    nivel: '—',
+    estado: 'Estado no disponible',
+    fechaInicio: '',
+    fechaFin: '',
+  }
+}
 
 export function formatRemaining(days: number): string {
   return days >= 0 ? `D-${days}` : `D+${Math.abs(days)}`
