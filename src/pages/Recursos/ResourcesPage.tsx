@@ -7,11 +7,17 @@ import { getProjectsApi } from '../../services/projects';
 import { getResourcesApi } from '../../services/resources';
 import { useAuth } from '../../context/AuthContext';
 import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDrawer';
-import { ChevronLeft, ChevronRight, Download, GanttChartSquare, Plus, Table, UserPlus } from 'lucide-react';
+import { BulkAssignmentPanel } from '../../components/recursos/BulkAssignmentPanel';
+import { useBulkAssign, type BulkAssignResource } from '../../hooks/useBulkAssign';
+import type { BulkAssignmentResponse } from '../../services/bulkAssignment.types';
+import { ChevronLeft, ChevronRight, Download, GanttChartSquare, Plus, Table, UserPlus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
 import { useOpenRegisterResource } from '../../components/recursos/registerProject';
 import { exportFileName, statusText, toExportRows } from './resourceExport';
+import { toRecursoFromArrival } from '../../components/arribos/arrivalsView';
+import type { RecursoApi } from '../../types';
+import './ResourcesPage.css';
 
 
 // ==========================================
@@ -91,6 +97,63 @@ function canSelectResource(resource: Recurso): boolean {
     && (resource.statusCode ?? resource.estado).toUpperCase() !== 'BAJA'
 }
 
+function groupLabel(item: RecursoApi): string {
+  if (item.projectActive === false) return 'No especificado';
+  return item.client?.name ?? 'Sin proyecto';
+}
+
+function toBulkAssignResource(resource: Recurso): BulkAssignResource {
+  const clientName = resource.cliente === 'Sin proyecto' || resource.cliente === 'No especificado'
+    ? null
+    : resource.cliente;
+  const projectName = resource.proyecto === 'Sin proyecto' ? null : resource.proyecto;
+  return {
+    employeeId: Number(resource.id),
+    employeeNumber: resource.nEmpleado.replace(/^#/, ''),
+    name: resource.nombre,
+    statusCode: resource.statusCode ?? resource.estado,
+    ...(resource.version === undefined ? {} : { version: resource.version }),
+    ...(resource.leaderId === undefined ? {} : { leaderId: resource.leaderId }),
+    ...(resource.rol === 'Sin rol' ? {} : { clientRoleName: resource.rol }),
+    currentClientName: clientName,
+    currentProjectName: projectName,
+  };
+}
+
+function GroupSelectionCheckbox({
+  groupName,
+  resources,
+  selectedIds,
+  onToggle,
+}: {
+  groupName: string;
+  resources: Recurso[];
+  selectedIds: Set<string>;
+  onToggle: (resources: Recurso[]) => void;
+}) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+  const eligible = resources.filter(canSelectResource);
+  const selectedCount = eligible.filter(resource => selectedIds.has(resource.id)).length;
+  const checked = eligible.length > 0 && selectedCount === eligible.length;
+  const indeterminate = selectedCount > 0 && !checked;
+
+  useEffect(() => {
+    if (checkboxRef.current) checkboxRef.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={checked}
+      aria-checked={indeterminate ? 'mixed' : checked}
+      aria-label={`Seleccionar grupo ${groupName}`}
+      disabled={!eligible.length}
+      onChange={() => onToggle(eligible)}
+    />
+  );
+}
+
 function toRecurso(item: RecursoApi): Recurso & {
   indefinite?: boolean;
   probationEndDate?: string;
@@ -133,6 +196,9 @@ function toRecurso(item: RecursoApi): Recurso & {
     liderNPD: item.leader?.name ?? 'Sin líder',
     nivel: item.level == null ? '—' : `N${item.level}`,
     estado: statusText(item.status),
+    statusCode: typeof item.status === 'string' ? item.status : item.status.code,
+    ...(item.version === undefined ? {} : { version: item.version }),
+    ...(item.leader ? { leaderId: item.leader.id } : {}),
     // Sin datos falsos (BUG-02): sin proyecto no hay barra; sin fin es indefinido
     fechaInicio: effectiveStart,
     fechaFin: raw.indefinite ? '' : (item.assignmentEnd ?? ''),
@@ -212,33 +278,46 @@ export const ResourcesPage = () => {
   const [catalogError, setCatalogError] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [assignmentPanelOpen, setAssignmentPanelOpen] = useState(false);
+  const [assignmentToast, setAssignmentToast] = useState('');
+  const selectedIds = new Set(assignment.selectedPeople.map(person => String(person.employeeId)));
   const [viewMode, setViewMode] = useState<'roster' | 'tabla'>('roster');
+
+  useEffect(() => {
+    const selectionBar = selectionBarRef.current;
+    if (!isAdmin || assignment.selectedCount === 0 || !selectionBar) {
+      setSelectionBarHeight(0);
+      return;
+    }
+
+    const updateHeight = () => {
+      const height = selectionBar.getBoundingClientRect().height;
+      setSelectionBarHeight(currentHeight => currentHeight === height ? currentHeight : height);
+    };
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateHeight);
+
+    updateHeight();
+    resizeObserver?.observe(selectionBar);
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [assignment.selectedCount, isAdmin]);
 
   const gridCols = isAdmin ? '24px 62px 1fr 40px' : '62px 1fr 40px';
 
-  const allSelected = recursos.length > 0 && recursos.every(r => selectedIds.has(r.id));
+  const selectableRecursos = recursos.filter(canSelectResource);
+  const allSelected = selectableRecursos.length > 0 && selectableRecursos.every(resource => selectedIds.has(resource.id));
+  const someSelected = selectableRecursos.some(resource => selectedIds.has(resource.id)) && !allSelected;
   const toggleOne = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+    const resource = recursos.find(item => item.id === id);
+    if (resource && canSelectResource(resource)) assignment.togglePerson(toBulkAssignResource(resource));
   };
 
-  const toggleAll = () => {
-    setSelectedIds(prev => {
-      const next = new Set (prev);
-      if (allSelected) recursos.forEach(r => next.delete(r.id));
-      else recursos.forEach(r => next.add(r.id));
-      return next;
-    });
-  };
+  const toggleAll = () => assignment.toggleGroup(selectableRecursos.map(toBulkAssignResource));
+  const clearSelection = () => assignment.clearSelection();
 
-  const clearSelection = () =>  setSelectedIds(new Set());
-
-
-  
   // BUG-01: Catálogos tipados
   const [catalogos, setCatalogos] = useState<{
     clientes: CatalogoItem[];
@@ -321,6 +400,13 @@ useEffect(() => {
     void load();
   }, [fetchData]);
 
+  const handleAssigned = (result: BulkAssignmentResponse) => {
+    const changeText = result.moved === 1 ? 'cambia de proyecto' : 'cambian de proyecto';
+    setAssignmentToast(`${result.added} a ${result.project.name} · ${result.moved} ${changeText}`);
+    assignment.clearSelection();
+    setAssignmentPanelOpen(false);
+    void fetchData();
+  };
 
   /** Un filtro nuevo vuelve a la página 1; otro cliente limpia el proyecto */
   const updateFilters = (changes: Partial<Filters>) => {
@@ -529,7 +615,7 @@ useEffect(() => {
       </div>
 
       {/* ARRIBOS PRÓXIMOS (HU-06 CA-01) */}
-      <ArrivalsStrip />
+      <ArrivalsStrip onViewResource={(resource) => openResourceDetail(toRecursoFromArrival(resource))} />
 
       {/* PANEL DE FILTROS CON CATÁLOGOS */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'grid', gridTemplateColumns: '1.55fr 1fr 1fr 1fr 1fr 0.6fr 0.7fr 1.05fr auto', gap: 10, alignItems: 'end' }}>
@@ -620,7 +706,16 @@ useEffect(() => {
       </div>
 
       {/* CONTENEDOR UNIFICADO: SUB-BARRA + TABLA + TIMELINE */}
-      <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+      <div
+        className="resource-roster"
+        style={{
+          backgroundColor: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 6,
+          overflow: 'hidden',
+          paddingBottom: selectionBarHeight > 0 ? `calc(${selectionBarHeight}px + var(--space-3))` : undefined,
+        }}
+      >
 
         {/* SUB-BARRA: chips de todos los filtros activos a la izquierda, agrupación a la derecha */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '8px 14px', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
@@ -725,7 +820,18 @@ useEffect(() => {
           {/* IZQUIERDA (conserva checkboxes de selección múltiple de tus compañeros) */}
           <div style={{ width: isAdmin ? 372 : 348, minWidth: isAdmin ? 372 : 348, flexShrink: 0, borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 8, padding: '0 12px', height: HEAD_H, alignItems: 'center', backgroundColor: C.headRow, borderBottom: `1px solid ${C.border}`, ...thStyle }}>
-              {isAdmin && (<div><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Seleccionar todos" /></div>)}
+              {isAdmin && (
+                <div>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    aria-checked={someSelected ? 'mixed' : allSelected}
+                    disabled={!selectableRecursos.length}
+                    onChange={toggleAll}
+                    aria-label="Seleccionar todos"
+                  />
+                </div>
+              )}
               <div>N° emp.</div>
               <div>Colaborador · Rol · Líder</div>
               <div style={{ textAlign: 'right' }}>Niv.</div>
@@ -740,6 +846,14 @@ useEffect(() => {
             {grupos.map(({ cliente, proyecto, kind, recs }) => (
               <div key={`${cliente}||${proyecto}`}>
                 <div style={{ height: ROW_H, padding: '0 12px', backgroundColor: GROUP_STYLE[kind].bg, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {isAdmin && (
+                    <GroupSelectionCheckbox
+                      groupName={cliente}
+                      resources={recs}
+                      selectedIds={selectedIds}
+                      onToggle={group => assignment.toggleGroup(group.map(toBulkAssignResource))}
+                    />
+                  )}
                   <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 700, textTransform: kind === 'normal' ? 'uppercase' : 'none', color: GROUP_STYLE[kind].color, whiteSpace: 'nowrap' }}>{cliente}</span>
                   {kind === 'normal' && (
                     <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: C.link, textDecoration: 'underline', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{proyecto}</span>
@@ -756,7 +870,17 @@ useEffect(() => {
                     className="rp-row"
                     style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 8, padding: '0 12px', height: ROW_H, borderBottom: `1px solid ${C.borderSoft}`, alignItems: 'center', fontSize: 13, backgroundColor: C.surface }}
                   >
-                    {isAdmin && (<div><input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} /></div>)}
+                    {isAdmin && (
+                      <div>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(rec.id)}
+                          disabled={!canSelectResource(rec)}
+                          onChange={() => toggleOne(rec.id)}
+                          aria-label={`Seleccionar ${rec.nombre}`}
+                        />
+                      </div>
+                    )}
                     <button
                       type="button"
                       className="rp-row-button"
@@ -915,7 +1039,14 @@ useEffect(() => {
                   <tr style={{ height: HEAD_H, backgroundColor: C.headRow, borderBottom: `1px solid ${C.border}`, ...thStyle }}>
                     {isAdmin && (
                       <th style={{ position: 'sticky', left: 0, zIndex: 12, backgroundColor: C.headRow, padding: '0 10px', width: 36, textAlign: 'center', borderRight: `1px solid ${C.borderSoft}` }}>
-                        <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Seleccionar todos" />
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          aria-checked={someSelected ? 'mixed' : allSelected}
+                          disabled={!selectableRecursos.length}
+                          onChange={toggleAll}
+                          aria-label="Seleccionar todos"
+                        />
                       </th>
                     )}
                     {TABLE_COLUMNS.map(col => {
@@ -948,7 +1079,13 @@ useEffect(() => {
                       <tr key={rec.id} className="rp-row" style={{ height: ROW_H, borderBottom: `1px solid ${C.borderSoft}`, backgroundColor: C.surface }}>
                         {isAdmin && (
                           <td style={{ position: 'sticky', left: 0, zIndex: 9, backgroundColor: 'inherit', padding: '0 10px', textAlign: 'center', borderRight: `1px solid ${C.borderSoft}` }}>
-                            <input type="checkbox" checked={selectedIds.has(rec.id)} onChange={() => toggleOne(rec.id)} aria-label={`Seleccionar ${rec.nombre}`} />
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(rec.id)}
+                              disabled={!canSelectResource(rec)}
+                              onChange={() => toggleOne(rec.id)}
+                              aria-label={`Seleccionar ${rec.nombre}`}
+                            />
                           </td>
                         )}
                         {TABLE_COLUMNS.map(col => {
@@ -987,18 +1124,27 @@ useEffect(() => {
         )}
       </div>
 
-      {/* CA-14 */}
+      {isAdmin && assignment.selectionError && (
+        <p className="resource-selection-error" role="alert" aria-live="assertive">
+          {assignment.selectionError}
+        </p>
+      )}
       {isAdmin && selectedIds.size > 0 && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: '#2B1810', color: 'white', borderRadius: 8, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
+        <div
+          ref={selectionBarRef}
+          className="resource-selection-bar"
+          role="toolbar"
+          aria-label="Acciones de selección"
+          style={{ insetBlockEnd: 'calc(var(--opsbar-h) + var(--space-3))' }}
+        >
           <span style={{ fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: 600, marginRight: 4 }}>{selectedIds.size} seleccionados</span>
           <button
             type="button"
             className="rp-btn-primary"
-            disabled
-            title="Disponible en HU-08"
-            style={{ height: 34, padding: '0 14px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'not-allowed', opacity: 0.7 }}
+            onClick={() => setAssignmentPanelOpen(true)}
+            style={{ height: 34, padding: '0 14px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
           >
-            Asignar a proyecto…
+            Asignar a proyecto
           </button>
           <button
             type="button"
