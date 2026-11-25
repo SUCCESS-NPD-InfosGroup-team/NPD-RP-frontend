@@ -35,9 +35,11 @@ interface ApiProject {
   startDate: string
   contractEndDate: string | null
   daysToContractEnd?: number | null
+  nextAssignmentEnd?: string | null
   teamSize: number
   /** Only in the list: GET /projects/{id} and POST /projects return a ProjectResponse without them */
   pendingConfirmation?: number
+  indefiniteCount?: number
   leads?: Array<{ id: number; name: string }>
 }
 
@@ -67,6 +69,8 @@ function mapProject(project: ApiProject): Project {
     startDate: project.startDate,
     contractEnd: project.contractEndDate,
     daysToContractEnd: project.daysToContractEnd,
+    nextAssignmentEnd: project.nextAssignmentEnd,
+    indefiniteCount: project.indefiniteCount,
     pendingCount: project.pendingConfirmation ?? 0,
     active: project.active,
   }
