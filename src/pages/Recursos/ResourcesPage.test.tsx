@@ -30,7 +30,22 @@ vi.mock('file-saver', () => ({ saveAs }));
 
 vi.mock('../../services/arrivals', () => ({
   getArrivalsApi: () => Promise.resolve({
-    getStrip: () => Promise.resolve({ windowDays: 30, total: 3, nearest: [] }),
+    getStrip: () => Promise.resolve({
+      windowDays: 30,
+      total: 3,
+      nearest: [{
+        id: 'PROBATION_END-1078',
+        type: 'PROBATION_END',
+        date: '2026-11-25',
+        daysRemaining: 11,
+        resource: { id: '1078', employeeNumber: '1078', name: 'Arribo de prueba', clientRole: 'QA Funcional' },
+        resourceCount: 1,
+        client: 'BANESCO',
+        project: 'DEYEL',
+        leader: 'Lorena Batista',
+        notice: { status: 'NONE', audience: null, stage: null, date: null },
+      }],
+    }),
   }),
 }));
 
@@ -121,8 +136,16 @@ describe('ResourcesPage (HU-03)', () => {
   it('shows the upcoming events strip instead of fixed numbers (HU-06 CA-01)', async () => {
     renderPage();
     expect(await screen.findByRole('link', { name: /Ver los 3 eventos/ })).toHaveAttribute('href', '/arribos-proximos');
+    expect(await screen.findByRole('button', { name: /Fin de probatoria: Arribo de prueba/ })).toBeInTheDocument();
     expect(screen.queryByText('Fin de contrato ≤ 7 días')).not.toBeInTheDocument();
     expect(screen.queryByText('Colaboradores sin proyecto')).not.toBeInTheDocument();
+  });
+
+  it('opens the detail drawer from a resource card in the arrivals strip', async () => {
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Fin de probatoria: Arribo de prueba/ }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('opens the detail drawer from the table row and timeline row', async () => {
@@ -170,7 +193,7 @@ describe('ResourcesPage (HU-03)', () => {
     expect(screen.queryByRole('toolbar', { name: 'Acciones de selección' })).not.toBeInTheDocument();
   });
 
-  it('selects only eligible visible group members and shows inactive bulk actions', async () => {
+  it('selects only eligible visible group members and keeps available bulk actions enabled', async () => {
     mockedSearch.mockResolvedValue(buildResourceSearchResponse([
       buildResource({ id: 1, name: 'Activa uno' }),
       buildResource({ id: 2, name: 'Baja', status: { code: 'BAJA', label: 'Baja' } }),
@@ -186,7 +209,7 @@ describe('ResourcesPage (HU-03)', () => {
     expect(screen.getByRole('checkbox', { name: 'Seleccionar Activa dos' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Seleccionar Baja' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Quitar de proyecto' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Limpiar selección' })).toBeEnabled();
   });
 
