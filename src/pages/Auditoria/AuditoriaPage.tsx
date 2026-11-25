@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { Download } from 'lucide-react'
 import { canAccessNavigationItem } from '../../components/layout/roleNavigation'
 import { formatAuditDateTime, formatAuditValue } from '../../components/auditoria/auditValueFormat'
 import { Button } from '../../components/ui/Button'
@@ -9,7 +10,9 @@ import { Paginador } from '../../components/ui/Paginador'
 import { useAuth } from '../../context/AuthContext'
 import { useHistoryAuditLog } from '../../hooks/useHistoryAuditLog'
 import { useResourceDetail } from '../../hooks/useResourceDetail'
+import { getHistoryApi } from '../../services/history'
 import type { AuditLogEntry } from '../../services/history.types'
+import { downloadExcel, fetchAllPages, spreadsheetFileName } from '../../utils/spreadsheetExport'
 import { ResourceAuditSelector } from './ResourceAuditSelector'
 import './AuditoriaPage.css'
 
@@ -22,6 +25,8 @@ export function AuditoriaPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [page, setPage] = useState(1)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
 
   const filters = useMemo(
     () => ({
@@ -62,6 +67,7 @@ export function AuditoriaPage() {
     return <ResourceAuditSelector />
   }
 
+  const selectedResourceId = resourceId
   const handleFilterChange = (setter: (nextValue: string) => void, nextValue: string): void => {
     setPage(1)
     setter(nextValue)
@@ -69,10 +75,13 @@ export function AuditoriaPage() {
 
   const actorOptions = data?.actors ?? []
   const fieldOptions = data?.fields ?? []
-  const resourceName = resourceTitle(resourceDetailState, resourceId)
+  const resourceName = resourceTitle(resourceDetailState, selectedResourceId)
   const totalElements = data?.page.totalElements ?? 0
   const pageMeta = data?.page
   const visibleItems = data?.items ?? []
+  const paginationRange = pageMeta && totalElements > 0
+    ? `${Math.min((pageMeta.number - 1) * pageMeta.size + 1, totalElements)}–${Math.min(pageMeta.number * pageMeta.size, totalElements)} de ${totalElements}`
+    : '0 de 0'
   const hasRequestError = Boolean(error) && !dateError
   const groupedItems = groupItemsByMonth(visibleItems)
   const initials = resourceDetailState.resource?.name
@@ -82,6 +91,38 @@ export function AuditoriaPage() {
     .slice(0, 2)
     .map((part) => part[0].toLocaleUpperCase('es'))
     .join('') ?? ''
+
+  async function handleExport(): Promise<void> {
+    if (!totalElements || exporting) return
+
+    setExporting(true)
+    setExportError('')
+    try {
+      const api = await getHistoryApi()
+      const entries = await fetchAllPages(async (requestedPage) => {
+        const result = await api.listAuditLog(selectedResourceId, filters, requestedPage)
+        return { items: result.items, totalPages: result.page.totalPages }
+      })
+      const rows = entries.flatMap((entry) => entry.fields.map((field) => ({
+        'ID auditoría': entry.id,
+        'Fecha y hora': entry.occurredAt,
+        Autor: entry.actor,
+        Acción: entry.action === 'CREATE' ? 'Alta' : 'Edición',
+        Campo: field.label,
+        'Valor anterior': formatAuditValue(field.oldValue),
+        'Valor nuevo': formatAuditValue(field.newValue),
+      })))
+      await downloadExcel(
+        rows,
+        spreadsheetFileName(`Auditoria_${selectedResourceId.replace(/[^\w-]/g, '_')}`),
+        'Auditoría',
+      )
+    } catch {
+      setExportError('No se pudo exportar la auditoría. Intenta de nuevo.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <section className="audit-log-page">
@@ -100,7 +141,16 @@ export function AuditoriaPage() {
           <h1>Auditoría · {resourceDetailState.resource?.name ?? `Recurso #${resourceId}`}</h1>
           <p>Quién cambió qué y cuándo en este registro. Las entradas no se pueden editar ni borrar.</p>
         </div>
+        <Button
+          variant="secondary"
+          icon={<Download />}
+          disabled={loading || exporting || totalElements === 0}
+          onClick={() => void handleExport()}
+        >
+          {exporting ? 'Exportando…' : 'Exportar'}
+        </Button>
       </header>
+      {exportError && <p className="audit-log-page__export-error" role="alert">{exportError}</p>}
 
       {resourceDetailState.error && (
         <div className="audit-log-page__resource-error" role="alert">
@@ -147,9 +197,7 @@ export function AuditoriaPage() {
           <span className="audit-log-page__sort">Más recientes primero</span>
           {pageMeta && (
             <Paginador
-              range={totalElements === 0
-                ? '0 de 0'
-                : `${Math.min((pageMeta.number - 1) * pageMeta.size + 1, totalElements)}–${Math.min(pageMeta.number * pageMeta.size, totalElements)} de ${totalElements}`}
+              range={paginationRange}
               page={pageMeta.number}
               totalPages={pageMeta.totalPages}
               onPageChange={(nextPage) => setPage(nextPage)}
@@ -206,6 +254,19 @@ export function AuditoriaPage() {
               </tbody>
             ))}
           </table>
+        </div>
+      )}
+      {!loading && !error && visibleItems.length > 0 && pageMeta && (
+        <div className="audit-log-page__pagination-bottom">
+          <Paginador
+            range={paginationRange}
+            page={pageMeta.number}
+            totalPages={pageMeta.totalPages}
+            onPageChange={(nextPage) => {
+              setPage(nextPage)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+          />
         </div>
       )}
       </section>
