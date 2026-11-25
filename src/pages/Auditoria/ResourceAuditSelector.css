@@ -86,6 +86,13 @@
   overflow-x: auto;
 }
 
+.resource-audit-selector__pagination-bottom {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  border-top: var(--border-width) solid var(--border-default);
+}
+
 .resource-audit-selector__table {
   width: 100%;
   border-collapse: collapse;
