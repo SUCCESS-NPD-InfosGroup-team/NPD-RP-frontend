@@ -12,6 +12,7 @@ vi.mock('../../services/api', () => ({ searchRecursos: vi.fn(), searchAllRecurso
 vi.mock('../../services/projects', () => ({ getProjectsApi: vi.fn() }));
 vi.mock('../../services/resources', () => ({ getResourcesApi: vi.fn() }));
 
+const arrivals = vi.hoisted(() => ({ getStrip: vi.fn() }));
 const xlsx = vi.hoisted(() => ({
   json_to_sheet: vi.fn(() => ({})),
   book_new: vi.fn(() => ({})),
@@ -23,9 +24,7 @@ vi.mock('xlsx', () => ({ utils: xlsx, write: xlsx.write }));
 vi.mock('file-saver', () => ({ saveAs }));
 
 vi.mock('../../services/arrivals', () => ({
-  getArrivalsApi: () => Promise.resolve({
-    getStrip: () => Promise.resolve({ windowDays: 30, total: 3, nearest: [] }),
-  }),
+  getArrivalsApi: () => Promise.resolve({ getStrip: arrivals.getStrip }),
 }));
 
 const auth = vi.hoisted(() => ({ isAdmin: true }));
@@ -49,6 +48,7 @@ let listClientProjects: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   auth.isAdmin = true;
+  arrivals.getStrip.mockReset().mockResolvedValue({ windowDays: 30, total: 3, nearest: [] });
   mockedSearch.mockReset().mockResolvedValue(resourceSearchResponse);
   mockedSearchAll.mockReset().mockResolvedValue(resourceSearchResponse.items);
   saveAs.mockReset();
@@ -97,6 +97,29 @@ describe('ResourcesPage (HU-03)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle de Ana Torres' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('opens the detail drawer from a resource card in the arrivals strip', async () => {
+    arrivals.getStrip.mockResolvedValue({
+      windowDays: 30,
+      total: 1,
+      nearest: [{
+        id: 'PROBATION_END-1',
+        type: 'PROBATION_END',
+        date: '2026-11-25',
+        daysRemaining: 11,
+        resource: { id: '2', employeeNumber: '1078', name: 'Iván Castrellón', clientRole: 'QA Funcional' },
+        resourceCount: 1,
+        client: 'TIGO',
+        project: 'Portal',
+        leader: 'Abdiel',
+        notice: { status: 'NONE', audience: null, stage: null, date: null },
+      }],
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Fin de probatoria: Iván Castrellón/ }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 

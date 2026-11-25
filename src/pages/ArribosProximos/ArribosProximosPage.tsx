@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChevRightIcon } from '../../components/icons'
 import { ArrivalsTable } from '../../components/arribos/ArrivalsTable'
 import { ArrivalTypeCards } from '../../components/arribos/ArrivalTypeCards'
-import { ARRIVAL_TYPE_META, countLabel, formatToday } from '../../components/arribos/arrivalsView'
+import { ARRIVAL_TYPE_META, countLabel, formatToday, toRecursoFromArrival } from '../../components/arribos/arrivalsView'
+import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDrawer'
 import { Button } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
 import { Paginador } from '../../components/ui/Paginador'
@@ -13,6 +14,7 @@ import { ApiRequestError } from '../../services/projects.types'
 import { getResourcesApi } from '../../services/resources'
 import type { Client } from '../../services/projects.types'
 import type { CatalogItem } from '../../services/resources.types'
+import type { Recurso } from '../../types'
 import {
   ARRIVALS_PAGE_SIZE,
   ARRIVAL_WINDOWS,
@@ -22,6 +24,8 @@ import {
 import '../../components/arribos/ArribosPage.css'
 
 export function ArribosProximosPage() {
+  const navigate = useNavigate()
+  const [selectedResource, setSelectedResource] = useState<Recurso | null>(null)
   const [windowDays, setWindowDays] = useState<ArrivalWindow>(30)
   const [clientId, setClientId] = useState('')
   const [leaderId, setLeaderId] = useState('')
@@ -161,8 +165,28 @@ export function ArribosProximosPage() {
           )}
         </div>
 
-        <ArrivalsResults data={data} loading={loading} error={error} refetch={refetch} windowDays={windowDays} />
+        <ArrivalsResults
+          data={data}
+          loading={loading}
+          error={error}
+          refetch={refetch}
+          windowDays={windowDays}
+          onViewResource={(resourceId) => {
+            const resource = data?.items.find((event) => event.resource?.id === resourceId)?.resource
+            if (resource) setSelectedResource(toRecursoFromArrival(resource))
+          }}
+        />
       </div>
+      {selectedResource && (
+        <ResourceDetailDrawer
+          resource={selectedResource}
+          onClose={() => setSelectedResource(null)}
+          onEdit={(resource) => {
+            setSelectedResource(null)
+            navigate(`/recursos/${resource.id}/editar`)
+          }}
+        />
+      )}
     </section>
   )
 }
@@ -173,7 +197,11 @@ function ArrivalsResults({
   error,
   refetch,
   windowDays,
-}: Readonly<Pick<ReturnType<typeof useArrivals>, 'data' | 'loading' | 'error' | 'refetch'> & { windowDays: number }>) {
+  onViewResource,
+}: Readonly<Pick<ReturnType<typeof useArrivals>, 'data' | 'loading' | 'error' | 'refetch'> & {
+  windowDays: number
+  onViewResource: (resourceId: string) => void
+}>) {
   if (error) {
     const endpointUnavailable = error instanceof ApiRequestError && error.status === 404
     return (
@@ -191,5 +219,5 @@ function ArrivalsResults({
   if (!data?.items.length) {
     return <div className="arrivals-page__empty">No hay eventos con estos filtros en los próximos {windowDays} días.</div>
   }
-  return <ArrivalsTable events={data.items} />
+  return <ArrivalsTable events={data.items} onViewResource={onViewResource} />
 }
