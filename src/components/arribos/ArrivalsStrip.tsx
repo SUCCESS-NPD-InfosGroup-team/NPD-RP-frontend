@@ -17,7 +17,9 @@ const DEFAULT_WINDOW_DAYS = 30
  * Strip at the top of Recursos (HU-06 CA-01): how many events are due soon and the 4 nearest ones,
  * with the link "Ver los N eventos →" to the Arribos screen.
  */
-export function ArrivalsStrip() {
+export function ArrivalsStrip({
+  onViewResource,
+}: Readonly<{ onViewResource?: (resource: NonNullable<ArrivalEvent['resource']>) => void }>) {
   const { data, loading, error, refetch } = useArrivalsStrip()
   const windowDays = data?.windowDays ?? DEFAULT_WINDOW_DAYS
 
@@ -35,7 +37,14 @@ export function ArrivalsStrip() {
       </div>
 
       <div className="arrivals-strip__events">
-        <StripEvents data={data} loading={loading} error={error} refetch={refetch} windowDays={windowDays} />
+        <StripEvents
+          data={data}
+          loading={loading}
+          error={error}
+          refetch={refetch}
+          windowDays={windowDays}
+          onViewResource={onViewResource}
+        />
       </div>
     </section>
   )
@@ -53,7 +62,11 @@ function StripEvents({
   error,
   refetch,
   windowDays,
-}: Readonly<Pick<ReturnType<typeof useArrivalsStrip>, 'data' | 'loading' | 'error' | 'refetch'> & { windowDays: number }>) {
+  onViewResource,
+}: Readonly<Pick<ReturnType<typeof useArrivalsStrip>, 'data' | 'loading' | 'error' | 'refetch'> & {
+  windowDays: number
+  onViewResource?: (resource: NonNullable<ArrivalEvent['resource']>) => void
+}>) {
   if (error) {
     return (
       <div className="arrivals-strip__message arrivals-strip__message--error" role="alert">
@@ -66,18 +79,27 @@ function StripEvents({
   if (!data?.nearest.length) {
     return <div className="arrivals-strip__message">Nada vence en los próximos {windowDays} días.</div>
   }
-  return <>{data.nearest.map((event) => <StripEvent key={event.id} event={event} />)}</>
+  return <>{data.nearest.map((event) => (
+    <StripEvent key={event.id} event={event} onViewResource={onViewResource} />
+  ))}</>
 }
 
-function StripEvent({ event }: Readonly<{ event: ArrivalEvent }>) {
+function StripEvent({
+  event,
+  onViewResource,
+}: Readonly<{
+  event: ArrivalEvent
+  onViewResource?: (resource: NonNullable<ArrivalEvent['resource']>) => void
+}>) {
   const meta = ARRIVAL_TYPE_META[event.type]
   // A contract end affects the whole team: it has no person, so the project names it
   const who = event.resource?.name ?? event.project ?? 'Proyecto'
   const where = [event.client, formatShortDate(event.date, true)].filter(Boolean).join(' · ')
   const days = countLabel(event.daysRemaining, 'día', 'días')
-
-  return (
-    <Link className="arrivals-strip__event" to={ARRIVALS_PATH} aria-label={`${meta.label}: ${who}, ${where}, faltan ${days}`}>
+  const label = `${meta.label}: ${who}, ${where}, faltan ${days}`
+  const resource = event.resource
+  const content = (
+    <>
       <span className="arrivals-strip__days">
         <strong className={isUrgent(event.daysRemaining) ? 'arrivals-strip__count arrivals-strip__count--urgent' : 'arrivals-strip__count'}>
           {event.daysRemaining}
@@ -89,6 +111,20 @@ function StripEvent({ event }: Readonly<{ event: ArrivalEvent }>) {
         <strong className="arrivals-strip__who">{who}</strong>
         <small className="arrivals-strip__where">{where}</small>
       </span>
-    </Link>
+    </>
   )
+
+  if (resource && onViewResource) {
+    return (
+      <button
+        className="arrivals-strip__event"
+        type="button"
+        aria-label={label}
+        onClick={() => onViewResource(resource)}
+      >
+        {content}
+      </button>
+    )
+  }
+  return <Link className="arrivals-strip__event" to={ARRIVALS_PATH} aria-label={label}>{content}</Link>
 }

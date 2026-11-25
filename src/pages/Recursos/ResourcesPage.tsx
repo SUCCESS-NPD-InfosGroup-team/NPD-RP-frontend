@@ -10,6 +10,7 @@ import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDr
 import { ChevronLeft, ChevronRight, Download, GanttChartSquare, Plus, Table, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
+import { toRecursoFromArrival } from '../../components/arribos/arrivalsView';
 import { useOpenRegisterResource } from '../../components/recursos/registerProject';
 import { exportFileName, statusText, toExportRows } from './resourceExport';
 
@@ -527,7 +528,7 @@ useEffect(() => {
       </div>
 
       {/* ARRIBOS PRÓXIMOS (HU-06 CA-01) */}
-      <ArrivalsStrip />
+      <ArrivalsStrip onViewResource={(resource) => openResourceDetail(toRecursoFromArrival(resource))} />
 
       {/* PANEL DE FILTROS CON CATÁLOGOS */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'grid', gridTemplateColumns: '1.55fr 1fr 1fr 1fr 1fr 0.6fr 0.7fr 1.05fr auto', gap: 10, alignItems: 'end' }}>

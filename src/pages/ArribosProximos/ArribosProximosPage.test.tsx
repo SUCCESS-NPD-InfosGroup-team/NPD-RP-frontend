@@ -19,6 +19,14 @@ vi.mock('../../services/projects', () => ({
 vi.mock('../../services/resources', () => ({
   getResourcesApi: () => Promise.resolve({ getNpdLeads: serviceMocks.getNpdLeads }),
 }))
+vi.mock('../../components/recursos/ResourceDetailDrawer', () => ({
+  ResourceDetailDrawer: ({ resource, onClose }: { resource: { nombre: string }; onClose: () => void }) => (
+    <div role="dialog">
+      <span>{resource.nombre}</span>
+      <button onClick={onClose}>Cerrar detalle del recurso</button>
+    </div>
+  ),
+}))
 
 const mockedUseArrivals = vi.mocked(useArrivals)
 
@@ -119,6 +127,18 @@ describe('ArribosProximosPage', () => {
       expect.objectContaining({ windowDays: 30 }),
       2,
     ))
+  })
+
+  it('opens the resource detail drawer from an arrivals row', async () => {
+    configureArrivals({
+      data: { ...pageData, items: [event], total: 1, totalPages: 1 },
+    })
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver detalle' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent('Recurso de prueba')
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle del recurso' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('combines filters, resets pagination, and clears selected filters', async () => {
