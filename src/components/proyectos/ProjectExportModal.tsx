@@ -41,8 +41,12 @@ export function ProjectExportModal({
         </div>
         <fieldset className="project-export-dialog__formats">
           <legend>Formato</legend>
-          <label className={`project-export-dialog__format${format === 'xlsx' ? ' is-selected' : ''}`}>
+          <label
+            htmlFor="project-export-format-xlsx"
+            className={`project-export-dialog__format${format === 'xlsx' ? ' is-selected' : ''}`}
+          >
             <input
+              id="project-export-format-xlsx"
               type="radio"
               name="project-export-format"
               value="xlsx"
@@ -55,8 +59,12 @@ export function ProjectExportModal({
               <small>Excel, con formato</small>
             </span>
           </label>
-          <label className={`project-export-dialog__format${format === 'csv' ? ' is-selected' : ''}`}>
+          <label
+            htmlFor="project-export-format-csv"
+            className={`project-export-dialog__format${format === 'csv' ? ' is-selected' : ''}`}
+          >
             <input
+              id="project-export-format-csv"
               type="radio"
               name="project-export-format"
               value="csv"

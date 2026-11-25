@@ -22,6 +22,40 @@ import {
 } from '../../utils/spreadsheetExport'
 import '../../components/proyectos/ProjectsPage.css'
 
+function buildActiveFilters({
+  search,
+  clientId,
+  leadId,
+  contractEnd,
+  includeInactive,
+  clients,
+  npdLeads,
+}: {
+  search: string
+  clientId: string
+  leadId: string
+  contractEnd: 'any' | 'next30' | 'none'
+  includeInactive: boolean
+  clients: Client[]
+  npdLeads: CatalogItem[]
+}): string {
+  const filters: string[] = []
+  if (search) filters.push(`Buscar: ${search}`)
+  if (clientId) filters.push(`Cliente: ${clients.find((client) => client.id === clientId)?.name ?? clientId}`)
+  if (leadId) filters.push(`Líder NPD: ${npdLeads.find((lead) => String(lead.id) === leadId)?.name ?? leadId}`)
+  if (contractEnd === 'next30') filters.push('Fin de contrato: próximos 30 días')
+  if (contractEnd === 'none') filters.push('Sin fin de contrato')
+  if (includeInactive) filters.push('Incluye inactivos')
+  return filters.join(' · ')
+}
+
+function buildProjectsSubtitle(projectCount: number, clientCount: number, includeInactive: boolean): string {
+  const projectLabel = projectCount === 1 ? 'proyecto' : 'proyectos'
+  const projectStatus = includeInactive ? '' : 'activos '
+  const clientLabel = clientCount === 1 ? 'cliente' : 'clientes'
+  return `${projectCount} ${projectLabel} ${projectStatus}de ${clientCount} ${clientLabel}. Cada colaborador está en un solo proyecto; desde aquí armas y ajustas cada equipo.`
+}
+
 export function ProjectsPage() {
   const { roles } = useAuth()
   const [exporting, setExporting] = useState(false)
@@ -129,14 +163,15 @@ export function ProjectsPage() {
     setNpdLeadsRetry((attempt) => attempt + 1)
   }
 
-  const activeFilters = [
-    search ? `Buscar: ${search}` : '',
-    clientId ? `Cliente: ${clients.find((client) => client.id === clientId)?.name ?? clientId}` : '',
-    leadId ? `Líder NPD: ${npdLeads.find((lead) => String(lead.id) === leadId)?.name ?? leadId}` : '',
-    contractEnd === 'next30' ? 'Fin de contrato: próximos 30 días' : '',
-    contractEnd === 'none' ? 'Sin fin de contrato' : '',
-    includeInactive ? 'Incluye inactivos' : '',
-  ].filter(Boolean).join(' · ')
+  const activeFilters = buildActiveFilters({
+    search,
+    clientId,
+    leadId,
+    contractEnd,
+    includeInactive,
+    clients,
+    npdLeads,
+  })
 
   const projectCount = data?.total ?? 0
   const clientCount = summary?.activeClients ?? 0
@@ -199,7 +234,7 @@ export function ProjectsPage() {
   }
 
   const subtitle = data
-    ? `${projectCount} ${projectCount === 1 ? 'proyecto' : 'proyectos'} ${includeInactive ? '' : 'activos '}de ${clientCount} ${clientCount === 1 ? 'cliente' : 'clientes'}. Cada colaborador está en un solo proyecto; desde aquí armas y ajustas cada equipo.`
+    ? buildProjectsSubtitle(projectCount, clientCount, includeInactive)
     : 'Cargando proyectos…'
 
   return (
@@ -318,13 +353,13 @@ export function ProjectsPage() {
       </div>
       {clientsError && (
         <p className="projects-page__filter-error" role="alert">
-          No se pudieron cargar los clientes.
+          No se pudieron cargar los clientes.{' '}
           <button type="button" onClick={retryClients}>Reintentar</button>
         </p>
       )}
       {npdLeadsError && (
         <p className="projects-page__filter-error" role="alert">
-          No se pudieron cargar los líderes NPD.
+          No se pudieron cargar los líderes NPD.{' '}
           <button type="button" onClick={retryNpdLeads}>Reintentar</button>
         </p>
       )}

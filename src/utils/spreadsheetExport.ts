@@ -11,11 +11,10 @@ export async function fetchAllPages<T>(
 ): Promise<T[]> {
   const firstPage = await loadPage(1)
   const items = [...firstPage.items]
-
-  for (let page = 2; page <= firstPage.totalPages; page += 1) {
-    const nextPage = await loadPage(page)
-    items.push(...nextPage.items)
-  }
+  const remainingPages = await Promise.all(
+    Array.from({ length: Math.max(firstPage.totalPages - 1, 0) }, (_, index) => loadPage(index + 2)),
+  )
+  remainingPages.forEach((page) => items.push(...page.items))
 
   return items
 }
@@ -62,7 +61,7 @@ export async function downloadSpreadsheet(
   const safeRows = rows.map((row) => Object.fromEntries(
     Object.entries(row).map(([key, value]) => [
       key,
-      typeof value === 'string' && /^[\s]*[=+\-@]/.test(value) ? `'${value}` : value,
+      typeof value === 'string' && /^\s*[=+\-@]/.test(value) ? `'${value}` : value,
     ]),
   ))
   const worksheet = utils.json_to_sheet(safeRows)
