@@ -1,0 +1,121 @@
+.ui-modal.project-export-dialog {
+  width: min(100%, 520px);
+  padding: 0;
+}
+
+.project-export-dialog .ui-modal__header {
+  padding: 18px 20px 6px;
+}
+
+.project-export-dialog .ui-modal__header h2 {
+  margin: 0;
+}
+
+.project-export-dialog__body {
+  padding: 8px 20px 18px;
+}
+
+.project-export-dialog__filter-summary {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.project-export-dialog__count {
+  display: flex;
+  min-height: 54px;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-group);
+}
+
+.project-export-dialog__count strong {
+  font: 700 28px / 1 var(--font-display);
+}
+
+.project-export-dialog__count span {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.project-export-dialog__formats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.project-export-dialog__formats legend {
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+  font: 600 13px / 1.2 var(--font-body);
+}
+
+.project-export-dialog__format {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.project-export-dialog__format.is-selected {
+  border-color: var(--brand-navy);
+  background: var(--brand-navy-tint);
+}
+
+.project-export-dialog__format input {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--brand-navy);
+}
+
+.project-export-dialog__format-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-export-dialog__format-copy strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.project-export-dialog__format-copy small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.project-export-dialog__description {
+  margin: var(--space-3) 0 0;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.project-export-dialog__error {
+  margin: var(--space-3) 0 0;
+  color: var(--state-danger);
+}
+
+.project-export-dialog__actions {
+  margin: 0;
+  padding: var(--space-3) 20px;
+}
+
+@media (max-width: 520px) {
+  .project-export-dialog__formats {
+    grid-template-columns: 1fr;
+  }
+}

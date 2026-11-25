@@ -21,6 +21,8 @@ export interface Project {
   startDate: string
   contractEnd: string | null
   daysToContractEnd?: number | null
+  nextAssignmentEnd?: string | null
+  indefiniteCount?: number
   pendingCount: number
   active: boolean
 }
