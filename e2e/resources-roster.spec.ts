@@ -176,4 +176,22 @@ test.describe('Recursos · roster con la API real', () => {
     await page.getByRole('button', { name: 'Roster' }).click()
     await expect(page.getByText('SEP 26')).toBeVisible()
   })
+
+  test('E2E-RES-14 muestra las 3 acciones en la barra de selección masiva y oculta checkboxes a no-admin (BUG-36)', async ({ page, open }) => {
+    await open('/recursos')
+    await expect(page.getByText('1–25 de 130 colaboradores')).toBeVisible()
+
+    const checkboxes = page.locator('tbody input[type="checkbox"], .rp-row input[type="checkbox"]')
+    await checkboxes.nth(0).check()
+    await checkboxes.nth(1).check()
+    await checkboxes.nth(2).check()
+
+    await expect(page.getByText('3 seleccionados')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Asignar a proyecto…' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Quitar de proyecto' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Exportar selección' })).toBeEnabled()
+
+    await page.getByRole('button', { name: 'Limpiar selección' }).click()
+    await expect(page.getByText('3 seleccionados')).toBeHidden()
+  })
 })
