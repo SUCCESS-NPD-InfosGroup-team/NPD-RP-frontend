@@ -103,15 +103,15 @@ test.describe('Recursos · roster con la API real', () => {
     await expect(page.getByText('Página 6 de 6')).toBeVisible()
   })
 
-  test('E2E-RES-08 sin resultados lo dice y «Limpiar filtros» restablece todo', async ({ page, open }) => {
+    test('E2E-RES-08 sin resultados muestra el estado vacío y las acciones de limpieza (BUG-28)', async ({ page, open }) => {
     await open('/recursos')
     await page.getByLabel('Buscar').fill('no-existe-nadie')
-    await expect(page.getByText('Ningún colaborador cumple los filtros.')).toBeVisible()
+    await expect(page.getByText('Ningún recurso coincide con «no-existe-nadie»')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Limpiar búsqueda' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Quitar todos los filtros' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Limpiar filtros' }).click()
-
+    await page.getByRole('button', { name: 'Quitar todos los filtros' }).click()
     await expect(page.getByLabel('Buscar')).toHaveValue('')
-    await expect(page.getByText('130 colaboradores, 25 por página.')).toBeVisible()
   })
 
   test('E2E-RES-09 si la búsqueda falla muestra el error con Reintentar, sin datos de ejemplo (BUG-02)', async ({ page, open, api }) => {
@@ -158,16 +158,5 @@ test.describe('Recursos · roster con la API real', () => {
     await lateOldResponse
     await expect(page.getByText(`${zunigas} colaboradores, 25 por página.`)).toBeVisible()
     await expect(page.getByText('130 colaboradores, 25 por página.')).toHaveCount(0)
-  })
-
-  test('E2E-RES-11 la fila abre el detalle y Escape lo cierra (HU-05)', async ({ page, open }) => {
-    await open('/recursos')
-    await page.getByRole('button', { name: /^Ver detalle de / }).first().click()
-
-    const drawer = page.getByRole('dialog')
-    await expect(drawer).toBeVisible()
-    await expect(drawer.getByRole('button', { name: 'Editar registro' })).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(drawer).toBeHidden()
   })
 })

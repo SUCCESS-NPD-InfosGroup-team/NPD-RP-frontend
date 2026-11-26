@@ -349,4 +349,41 @@ describe('ResourcesPage · BUG-03 edit', () => {
 
     expect(await screen.findByRole('heading', { name: 'Pantalla de edición' })).toBeInTheDocument();
   });
+
+  describe('ResourcesPage · BUG-28 empty state on search', () => {
+  it('shows the search empty state with both actions and clears search or all filters', async () => {
+    mockedSearch.mockImplementation((filters) =>
+      Promise.resolve(
+        filters.search === 'xyzqwe'
+          ? buildResourceSearchResponse([], { totalElements: 0, totalPages: 0 })
+          : resourceSearchResponse
+      )
+    );
+
+    renderPage();
+    await screen.findByText('#1045');
+
+    fireEvent.change(screen.getByLabelText('Situación'), { target: { value: 'ASIGNADO' } });
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'xyzqwe' } });
+
+    expect(await screen.findByText('Ningún recurso coincide con «xyzqwe»')).toBeInTheDocument();
+    expect(screen.getByText('0 de 0 colaboradores')).toBeInTheDocument();
+
+    const clearSearchBtn = screen.getByRole('button', { name: 'Limpiar búsqueda' });
+    const resetAllBtn = screen.getByRole('button', { name: 'Quitar todos los filtros' });
+    expect(clearSearchBtn).toBeInTheDocument();
+    expect(resetAllBtn).toBeInTheDocument();
+
+    // Probar "Limpiar búsqueda" (mantiene los demás filtros activos)
+    fireEvent.click(clearSearchBtn);
+    await waitFor(() => expect(lastFilters()).toMatchObject({ search: '', situacion: 'ASIGNADO' }));
+
+    // Volver a buscar sin resultados y probar "Quitar todos los filtros"
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'xyzqwe' } });
+    expect(await screen.findByText('Ningún recurso coincide con «xyzqwe»')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar todos los filtros' }));
+    await waitFor(() => expect(lastFilters()).toMatchObject({ search: '', situacion: 'Todos' }));
+  });
+});
 });
