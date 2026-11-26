@@ -46,6 +46,7 @@ export function ProjectsTable({
               <div
                 className={[
                   'projects-page__row',
+                  'projects-page__row--interactive',
                   project.id === highlightedProjectId ? 'projects-page__row--highlighted' : '',
                   !project.active ? 'projects-page__row--inactive' : '',
                 ].filter(Boolean).join(' ')}

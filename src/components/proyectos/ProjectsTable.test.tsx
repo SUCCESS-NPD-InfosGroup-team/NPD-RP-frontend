@@ -85,7 +85,8 @@ describe('ProjectsTable', () => {
   it('links each project name to its detail route', () => {
     renderProjectsTable({ projects })
 
-    expect(screen.getByRole('link', { name: 'Atlas' }))
-      .toHaveAttribute('href', '/proyectos/project-1')
+    const projectLink = screen.getByRole('link', { name: 'Atlas' })
+    expect(projectLink).toHaveAttribute('href', '/proyectos/project-1')
+    expect(projectLink.closest('.projects-page__row')).toHaveClass('projects-page__row--interactive')
   })
 })

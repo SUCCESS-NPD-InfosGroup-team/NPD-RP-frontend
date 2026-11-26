@@ -245,6 +245,10 @@
   background: var(--surface-group);
 }
 
+.projects-page__row--interactive:hover {
+  background-color: #FBF8F4;
+}
+
 .projects-page__project-name {
   display: flex;
   min-width: 0;
