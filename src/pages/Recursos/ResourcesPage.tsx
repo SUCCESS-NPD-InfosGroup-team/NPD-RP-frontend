@@ -731,10 +731,12 @@ useEffect(() => {
             </div>
 
 {!loading && !error && recursos.length === 0 && (
-            <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
-              Ningún colaborador cumple los filtros.
-            </div>
-          )}
+  <EmptyResourcesState
+    searchText={filters.search ?? ''}
+    onClearSearch={() => updateFilters({ search: '' })}
+    onResetFilters={resetFilters}
+  />
+)}
 
             {grupos.map(({ cliente, proyecto, kind, recs }) => (
               <div key={`${cliente}||${proyecto}`}>
@@ -1093,6 +1095,67 @@ const ErrorBanner = ({ message, onRetry }: { message: string; onRetry: () => voi
     <button onClick={onRetry} style={{ fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', color: C.danger }}>Reintentar</button>
   </div>
 );
+
+const EmptyResourcesState = ({
+  searchText,
+  onClearSearch,
+  onResetFilters,
+}: {
+  searchText: string;
+  onClearSearch: () => void;
+  onResetFilters: () => void;
+}) => {
+  const query = searchText.trim();
+  const hasSearch = query !== '';
+
+  return (
+    <div style={{ padding: '32px 16px', textAlign: 'center', color: C.muted, fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <p style={{ margin: 0, fontWeight: 500, color: C.text }}>
+        {hasSearch ? `Ningún recurso coincide con «${query}»` : 'Ningún colaborador cumple los filtros.'}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+        {hasSearch && (
+          <button
+            type="button"
+            className="rp-btn"
+            onClick={onClearSearch}
+            style={{
+              height: 32,
+              padding: '0 12px',
+              border: `1px solid ${C.border}`,
+              background: C.surface,
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+              color: C.text,
+            }}
+          >
+            Limpiar búsqueda
+          </button>
+        )}
+        <button
+          type="button"
+          className="rp-btn"
+          onClick={onResetFilters}
+          style={{
+            height: 32,
+            padding: '0 12px',
+            border: 'none',
+            background: C.chipBg,
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 600,
+            color: C.link,
+          }}
+        >
+          Quitar todos los filtros
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const RowAction = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
