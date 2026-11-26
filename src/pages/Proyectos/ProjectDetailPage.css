@@ -396,7 +396,7 @@
 
 .project-detail__timeline-today {
   position: absolute;
-  z-index: 2;
+  z-index: 8;
   top: 0;
   bottom: 0;
   width: 2px;
