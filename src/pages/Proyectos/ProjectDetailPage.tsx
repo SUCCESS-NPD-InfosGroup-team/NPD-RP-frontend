@@ -248,7 +248,7 @@ function ProjectTimeline({
         </div>
         <div className="project-detail__timeline-rows">
           {rows.map((row) => {
-            const bar = getTimelineBar(row.startDate, row.endDate, row.indefinite, row.kind, rangeStart, rangeEnd, daysInRange)
+            const bar = getTimelineBar(row.startDate, row.endDate, row.indefinite, rangeStart, rangeEnd, daysInRange)
             const endDate = row.endDate ? parseIsoDate(row.endDate) : null
             const endPosition = endDate ? getTimelinePosition(endDate, rangeStart, daysInRange) : null
             const alertPositions = endDate
@@ -581,15 +581,13 @@ function getTimelineBar(
   startValue: string,
   endValue: string | null,
   indefinite: boolean,
-  kind: 'project' | 'member' | 'pending',
   rangeStart: Date,
   rangeEnd: Date,
   daysInRange: number,
 ): { left: number; width: number } | null {
   const startDate = parseIsoDate(startValue)
   const endDate = indefinite ? rangeEnd : endValue ? parseIsoDate(endValue) : null
-  if (!startDate || !endDate || startDate > rangeEnd) return null
-  if (endDate < rangeStart) return kind === 'pending' ? { left: 0, width: 0 } : null
+  if (!startDate || !endDate || startDate > rangeEnd || startDate > endDate || endDate < rangeStart) return null
 
   const visibleStart = startDate < rangeStart ? rangeStart : startDate
   const visibleEnd = endDate > rangeEnd ? rangeEnd : endDate

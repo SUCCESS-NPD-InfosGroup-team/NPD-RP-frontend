@@ -404,6 +404,10 @@
   pointer-events: none;
 }
 
+.project-detail__timeline-track > .project-detail__timeline-today {
+  z-index: 1;
+}
+
 .project-detail__timeline-today-label {
   position: absolute;
   z-index: 6;

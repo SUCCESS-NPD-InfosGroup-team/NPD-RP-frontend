@@ -149,6 +149,7 @@ describe('ProjectDetailPage', () => {
   it('shows timeline labels, contract alerts, and overdue confirmations', async () => {
     const overduePending = {
       ...member,
+      assignmentStart: '2026-11-13',
       assignmentEnd: '2026-09-30',
       daysToAssignmentEnd: -57,
     }
@@ -158,6 +159,7 @@ describe('ProjectDetailPage', () => {
 
     expect(await screen.findByText('Fin de contrato 31 dic')).toBeInTheDocument()
     expect(screen.getByText('Venció 30 sep · confirmar')).toBeInTheDocument()
+    expect(screen.queryByTitle('desde nov 2026 · 30 sep 2026')).not.toBeInTheDocument()
     expect(screen.getByTestId('timeline-alert-project-30')).toBeInTheDocument()
     expect(screen.getByTestId('timeline-alert-project-15')).toBeInTheDocument()
     expect(screen.getByTestId('timeline-end-32')).toHaveTextContent('31 dic')
