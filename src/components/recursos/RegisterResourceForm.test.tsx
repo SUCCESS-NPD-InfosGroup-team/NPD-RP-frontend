@@ -252,7 +252,8 @@ describe('RegisterResourceForm', () => {
     fillAssignment()
     register()
     expect(await screen.findByText('El proyecto ya no está activo.')).toBeInTheDocument()
-    const summary = screen.getAllByRole('alert')[0]
+    const summaryText = await screen.findByText(/Corrige el campo marcado:/)
+    const summary = summaryText.closest('[role="alert"]') as HTMLElement
     fireEvent.click(within(summary).getByRole('link', { name: 'Proyecto asignado' }))
     expect(screen.getByRole('button', { name: 'Cambiar proyecto' })).toHaveFocus()
   })
