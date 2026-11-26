@@ -385,5 +385,29 @@ describe('ResourcesPage · BUG-03 edit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quitar todos los filtros' }));
     await waitFor(() => expect(lastFilters()).toMatchObject({ search: '', situacion: 'Todos' }));
   });
+
+  describe('ResourcesPage · BUG-32 Roster / Tabla view selector', () => {
+  it('switches between Roster and Tabla views, keeps active filters, renders sticky column and opens detail drawer', async () => {
+    renderPage();
+    await screen.findByText('#1045');
+
+    expect(screen.getByText('SEP 26')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tabla' }));
+
+    expect(screen.queryByText('SEP 26')).not.toBeInTheDocument();
+    expect(screen.getByText('22 columnas')).toBeInTheDocument();
+    const collaboratorHeader = screen.getByRole('columnheader', { name: 'Colaborador' });
+    expect(collaboratorHeader).toHaveStyle({ position: 'sticky' });
+    expect(screen.getByText('Estado: Activo')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Ana Torres'));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle del recurso' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Roster' }));
+    expect(screen.getByText('SEP 26')).toBeInTheDocument();
+  });
+});
 });
 });

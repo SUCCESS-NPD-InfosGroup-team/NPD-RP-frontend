@@ -159,4 +159,21 @@ test.describe('Recursos · roster con la API real', () => {
     await expect(page.getByText(`${zunigas} colaboradores, 25 por página.`)).toBeVisible()
     await expect(page.getByText('130 colaboradores, 25 por página.')).toHaveCount(0)
   })
+
+  test('E2E-RES-13 cambia entre vista Roster y Tabla manteniendo filtros y columna fija (BUG-32)', async ({ page, open }) => {
+    await open('/recursos')
+    await expect(page.getByText('1–25 de 130 colaboradores')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Tabla' }).click()
+    await expect(page.getByText('22 columnas')).toBeVisible()
+    await expect(page.getByText('Estado: Activo')).toBeVisible()
+
+    const collaboratorTh = page.getByRole('columnheader', { name: 'Colaborador' })
+    await expect(collaboratorTh).toBeVisible()
+    await expect(collaboratorTh).toHaveCSS('position', 'sticky')
+    await expect(page.getByRole('columnheader', { name: 'Observaciones' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Roster' }).click()
+    await expect(page.getByText('SEP 26')).toBeVisible()
+  })
 })
