@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { projectDetailApi } from '../../services/projectDetail.api'
@@ -44,6 +44,20 @@ const member = {
   daysToAssignmentEnd: -6,
   version: 2,
 }
+const assignedMember = {
+  ...member,
+  id: 32,
+  employeeNumber: '1042',
+  name: 'Ana Ríos',
+  level: 2,
+  clientRole: 'Analista',
+  leader: { id: 15, name: 'María Díaz' },
+  status: { code: 'ACTIVO' as const, label: 'Activo' },
+  situation: { code: 'ASIGNADO' as const, label: 'Asignado' },
+  assignmentStart: '2026-09-01',
+  assignmentEnd: '2026-12-31',
+  daysToAssignmentEnd: 35,
+}
 
 function renderProjectDetail() {
   return render(
@@ -67,12 +81,16 @@ describe('ProjectDetailPage', () => {
     renderProjectDetail()
 
     expect(await screen.findByRole('heading', { name: 'Caja de Ahorros' })).toBeInTheDocument()
-    expect(screen.getByText('D-18')).toHaveClass('project-detail__summary-value--danger')
-    expect(screen.getByText('1 por confirmar · fecha final vencida sin extender')).toBeInTheDocument()
+    const summary = screen.getByRole('region', { name: 'Resumen del proyecto' })
+    expect(within(summary).getByText('31 dic 2026')).toBeInTheDocument()
+    expect(within(summary).getByText('D-18')).toHaveClass('project-detail__summary-note-days')
+    expect(within(summary).getByText('fecha final vencida sin extender'))
+      .toHaveClass('project-detail__summary-note--danger')
 
     const table = screen.getByRole('table', { name: 'Equipo del proyecto' })
     const headers = within(table).getAllByRole('columnheader')
     expect(headers.map((header) => header.textContent)).toEqual([
+      'Seleccionar',
       'COLABORADOR',
       'ROL EN CLIENTE',
       'LÍDER NPD',
@@ -84,13 +102,127 @@ describe('ProjectDetailPage', () => {
     ])
 
     const row = within(table).getByRole('row', { name: /José Samudio/ })
+    expect(within(row).getByText('José Samudio')).toHaveClass('project-detail__member-name')
+    expect(within(row).getByText('#987 · Nivel 3')).toBeInTheDocument()
     expect(within(row).getByText('Sin rol')).toBeInTheDocument()
     expect(within(row).getByText('Vencido · 6 días')).toHaveClass('project-detail__days--danger')
     expect(within(row).getByText('Licencia')).toHaveClass('project-detail__chip--status-licencia')
+    expect(within(row).queryByText('Activo')).not.toBeInTheDocument()
     expect(within(row).getByText('Pendiente de confirmación')).toHaveClass(
       'project-detail__chip--situation-pendiente_confirmacion',
     )
     expect(within(row).getAllByText('—')).toHaveLength(3)
+  })
+
+  it('toggles row selection and keeps the batch action disabled', async () => {
+    mockedProjectDetailApi.getProject.mockResolvedValue({ ...project, teamSize: 2 })
+    mockedProjectDetailApi.getMembers.mockResolvedValue({ items: [member, assignedMember], total: 2 })
+
+    renderProjectDetail()
+
+    const selectAll = await screen.findByRole('checkbox', { name: 'Seleccionar todos los colaboradores' })
+    const selectAna = screen.getByRole('checkbox', { name: 'Seleccionar a Ana Ríos' })
+    fireEvent.click(selectAna)
+
+    expect(selectAll).toBePartiallyChecked()
+    expect(screen.getByRole('button', { name: 'Editar en bloque' })).toBeDisabled()
+
+    fireEvent.click(selectAll)
+    expect(selectAll).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Seleccionar a José Samudio' })).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Editar en bloque' })).toBeDisabled()
+  })
+
+  it('renders assigned and active chips without showing an Activo chip', async () => {
+    mockedProjectDetailApi.getProject.mockResolvedValue({ ...project, teamSize: 2 })
+    mockedProjectDetailApi.getMembers.mockResolvedValue({ items: [member, assignedMember], total: 2 })
+
+    renderProjectDetail()
+
+    const row = await screen.findByRole('row', { name: /Ana Ríos/ })
+    expect(within(row).getByText('#1042 · Nivel 2')).toBeInTheDocument()
+    expect(within(row).getByText('Asignado')).toHaveClass('project-detail__chip--situation-asignado')
+    expect(within(row).queryByText('Activo')).not.toBeInTheDocument()
+    expect(within(row).queryByText('Licencia')).not.toBeInTheDocument()
+  })
+
+  it('shows timeline labels, contract alerts, and overdue confirmations', async () => {
+    const overduePending = {
+      ...member,
+      assignmentEnd: '2026-09-30',
+      daysToAssignmentEnd: -57,
+    }
+    mockedProjectDetailApi.getMembers.mockResolvedValue({ items: [overduePending, assignedMember], total: 2 })
+
+    renderProjectDetail()
+
+    expect(await screen.findByText('Fin de contrato 31 dic')).toBeInTheDocument()
+    expect(screen.getByText('Venció 30 sep · confirmar')).toBeInTheDocument()
+    expect(screen.getByTestId('timeline-alert-project-30')).toBeInTheDocument()
+    expect(screen.getByTestId('timeline-alert-project-15')).toBeInTheDocument()
+    expect(screen.getByTestId('timeline-end-32')).toHaveTextContent('31 dic')
+    expect(screen.getByTestId('timeline-end-32').getAttribute('style')).toContain('px')
+    expect(screen.getByTestId('timeline-end-32').getAttribute('style')).not.toContain('%')
+  })
+
+  it('keeps the contract row without a date and extends indefinite assignments to the track end', async () => {
+    const indefiniteMember = {
+      ...assignedMember,
+      id: 33,
+      name: 'Carlos Gómez',
+      assignmentEnd: null,
+      indefinite: true,
+      daysToAssignmentEnd: null,
+    }
+    mockedProjectDetailApi.getProject.mockResolvedValue({
+      ...project,
+      contractEndDate: null,
+      daysToContractEnd: null,
+    })
+    mockedProjectDetailApi.getMembers.mockResolvedValue({ items: [indefiniteMember], total: 1 })
+
+    renderProjectDetail()
+
+    expect(await screen.findByText('CONTRATO CAJA DE AHORROS')).toBeInTheDocument()
+    expect(screen.getByText('Sin fecha de fin')).toBeInTheDocument()
+    expect(screen.queryByText(/^Fin de contrato/)).not.toBeInTheDocument()
+    expect(screen.getByTestId('timeline-indefinite-33').style.left).toBe('1331px')
+  })
+
+  it('positions month and today marks using the seven-month day scale', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 9, 7, 12))
+
+    try {
+      const { container } = renderProjectDetail()
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync()
+      })
+
+      const monthDays = [0, 30, 61, 91, 122, 153, 181]
+      const months = [
+        '2026-09-01',
+        '2026-10-01',
+        '2026-11-01',
+        '2026-12-01',
+        '2027-01-01',
+        '2027-02-01',
+        '2027-03-01',
+      ]
+      const pixelsPerDay = 1338 / 212
+
+      months.forEach((month, index) => {
+        const element = container.querySelector<HTMLElement>(`[data-month-start="${month}"]`)
+        expect(element).not.toBeNull()
+        expect(Number.parseFloat(element?.style.left ?? ''))
+          .toBeCloseTo(monthDays[index] * pixelsPerDay, 2)
+      })
+
+      expect(Number.parseFloat(screen.getByTestId('timeline-today-marker').style.left))
+        .toBeCloseTo(220 + (36 * pixelsPerDay), 2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('shows the empty-team mockup for an empty members response', async () => {

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Download, Pencil, Plus, UserRoundPlus, UsersRound } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { useProjectDetail } from '../../hooks/useProjectDetail'
@@ -93,8 +94,9 @@ function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
           value={String(project.pendingConfirmation)}
           note={project.pendingConfirmation === 0
             ? 'todas las fechas al día'
-            : `${project.pendingConfirmation} por confirmar · fecha final vencida sin extender`}
+            : 'fecha final vencida sin extender'}
           danger={project.pendingConfirmation > 0}
+          noteDanger={project.pendingConfirmation > 0}
         />
         <SummaryCard
           label="PRÓXIMO FIN DE ASIGNACIÓN"
@@ -114,12 +116,7 @@ function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
         {empty ? (
           <EmptyTeam project={project} />
         ) : (
-          <>
-            <p className="project-detail__team-help">
-              Marca colaboradores para cambiar su líder o fecha final en bloque, moverlos o quitarlos.
-            </p>
-            <TeamTable members={members} />
-          </>
+          <TeamTable members={members} />
         )}
       </section>
     </section>
@@ -131,40 +128,44 @@ function SummaryCard({
   value,
   note,
   danger = false,
-}: Readonly<{ label: string; value: string; note: string; danger?: boolean }>) {
+  noteDanger = false,
+}: Readonly<{
+  label: string
+  value: string
+  note: ReactNode
+  danger?: boolean
+  noteDanger?: boolean
+}>) {
   return (
     <article className="project-detail__summary-card">
       <h2>{label}</h2>
       <p className={danger ? 'project-detail__summary-value project-detail__summary-value--danger' : 'project-detail__summary-value'}>
         {value}
       </p>
-      <span>{note}</span>
+      <span className={noteDanger ? 'project-detail__summary-note project-detail__summary-note--danger' : 'project-detail__summary-note'}>
+        {note}
+      </span>
     </article>
   )
 }
 
 function ContractSummary({ project }: Readonly<{ project: ProjectDetail }>) {
   const days = project.daysToContractEnd
-  const isDanger = days !== null && days <= 30
-  const value = days === null
-    ? formatDate(project.contractEndDate)
-    : days < 0
-      ? `Vencido · ${Math.abs(days)} ${Math.abs(days) === 1 ? 'día' : 'días'}`
-      : days <= 30
-        ? `D-${days}`
-        : formatDate(project.contractEndDate)
+  const notice = 'aviso a Sales a 30 y 15 días'
   const note = days === null
     ? 'Sin fecha de fin'
     : days < 0
-      ? formatDate(project.contractEndDate)
-      : `en ${days} días · aviso a Sales a 30 y 15 días`
+      ? `Vencido · ${Math.abs(days)} ${Math.abs(days) === 1 ? 'día' : 'días'}`
+      : days <= 30
+        ? <><span className="project-detail__summary-note-days">D-{days}</span> · {notice}</>
+        : `en ${days} días · ${notice}`
 
   return (
     <SummaryCard
       label="FIN DE CONTRATO"
-      value={value}
+      value={formatDate(project.contractEndDate)}
       note={note}
-      danger={isDanger}
+      noteDanger={days !== null && days < 0}
     />
   )
 }
@@ -176,23 +177,34 @@ function ProjectTimeline({
   const months = getVisibleMonths()
   const rangeStart = months[0]
   const rangeEnd = new Date(months[months.length - 1].getFullYear(), months[months.length - 1].getMonth() + 1, 1)
-  const todayPosition = getPosition(new Date(), rangeStart, rangeEnd)
+  const daysInRange = getDaysBetween(rangeStart, rangeEnd)
+  const todayPosition = getTimelinePosition(new Date(), rangeStart, daysInRange)
+  const monthPositions = months.map((month, index) => {
+    const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1)
+    return {
+      date: month,
+      left: getTimelinePosition(month, rangeStart, daysInRange),
+      width: index === months.length - 1
+        ? TIMELINE_TRACK_WIDTH - getTimelinePosition(month, rangeStart, daysInRange)
+        : getTimelinePosition(nextMonth, rangeStart, daysInRange) - getTimelinePosition(month, rangeStart, daysInRange),
+    }
+  })
   const rows = [
     {
       id: 'project',
       name: `CONTRATO ${project.client.name.toLocaleUpperCase('es')}`,
       startDate: project.startDate,
       endDate: project.contractEndDate,
-      label: `Fin de contrato ${formatDate(project.contractEndDate, false)}`,
-      kind: 'project',
+      kind: 'project' as const,
+      indefinite: false,
     },
     ...members.map((member) => ({
       id: String(member.id),
       name: member.name,
       startDate: member.assignmentStart,
       endDate: member.assignmentEnd,
-      label: `desde ${formatDate(member.assignmentStart, false)}`,
-      kind: member.situation.code === 'PENDIENTE_CONFIRMACION' ? 'pending' : 'member',
+      kind: member.situation.code === 'PENDIENTE_CONFIRMACION' ? 'pending' as const : 'member' as const,
+      indefinite: member.indefinite,
     })),
   ]
 
@@ -202,106 +214,256 @@ function ProjectTimeline({
         <h2 id="project-detail-timeline-heading">Línea de tiempo</h2>
         <p>Contrato con el cliente y fecha final de cada colaborador</p>
       </header>
-      <div className="project-detail__timeline-months" aria-hidden="true">
-        <span />
-        <div className="project-detail__timeline-month-grid">
-          {months.map((month) => <span key={month.toISOString()}>{formatMonth(month)}</span>)}
-          {todayPosition !== null && (
-            <span
-              className="project-detail__timeline-today-label"
-              style={{ left: `${todayPosition}%` }}
-            >
-              HOY {formatToday()}
-            </span>
-          )}
+      <div className="project-detail__timeline-grid">
+        <div className="project-detail__timeline-months" aria-hidden="true">
+          <span className="project-detail__timeline-month-heading">COLABORADOR</span>
+          <div className="project-detail__timeline-month-track">
+            {monthPositions.map(({ date, left, width }) => (
+              <span
+                className="project-detail__timeline-month"
+                data-month-start={formatIsoDate(date)}
+                key={date.toISOString()}
+                style={{ left: `${left}px`, width: `${width}px` }}
+              >
+                {formatMonth(date)}
+              </span>
+            ))}
+            {todayPosition !== null && (
+              <span
+                className="project-detail__timeline-today-label"
+                style={{ left: `${todayPosition}px` }}
+              >
+                HOY {formatToday()}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="project-detail__timeline-rows">
-        {rows.map((row) => {
-          const bar = getBarPosition(row.startDate, row.endDate, rangeStart, rangeEnd)
-          return (
-            <div className="project-detail__timeline-row" key={row.id}>
-              <span className="project-detail__timeline-name">{row.name}</span>
-              <div className="project-detail__timeline-track">
-                {bar && (
-                  <span
-                    className={`project-detail__timeline-bar project-detail__timeline-bar--${row.kind}`}
-                    style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
-                    title={`${row.label}${row.endDate ? ` · ${formatDate(row.endDate)}` : ''}`}
-                  >
-                    {row.label}
-                  </span>
-                )}
-                {todayPosition !== null && (
-                  <span
-                    className="project-detail__timeline-today"
-                    style={{ left: `${todayPosition}%` }}
-                    aria-hidden="true"
-                  />
-                )}
+        <div className="project-detail__timeline-rows">
+          {rows.map((row) => {
+            const bar = getTimelineBar(row.startDate, row.endDate, row.indefinite, row.kind, rangeStart, rangeEnd, daysInRange)
+            const endDate = row.endDate ? parseIsoDate(row.endDate) : null
+            const endPosition = endDate ? getTimelinePosition(endDate, rangeStart, daysInRange) : null
+            const alertPositions = endDate
+              ? getAlertPositions(endDate, rangeStart, daysInRange)
+              : []
+
+            return (
+              <div className="project-detail__timeline-row" key={row.id}>
+                <span className="project-detail__timeline-name">{row.name}</span>
+                <div className="project-detail__timeline-track">
+                  {monthPositions.map(({ date, left }) => (
+                    <span
+                      className="project-detail__timeline-month-divider"
+                      key={date.toISOString()}
+                      style={{ left: `${left}px` }}
+                      aria-hidden="true"
+                    />
+                  ))}
+                  {row.kind === 'project' && endPosition !== null && (
+                    <>
+                      <span
+                        className="project-detail__timeline-contract-line"
+                        style={{ width: `${Math.min(Math.max(endPosition, 0), TIMELINE_TRACK_WIDTH)}px` }}
+                        aria-hidden="true"
+                      />
+                      <span
+                        className="project-detail__timeline-contract-label"
+                        style={{ left: `${endPosition - 120}px` }}
+                      >
+                        Fin de contrato {formatDate(row.endDate, false)}
+                      </span>
+                    </>
+                  )}
+                  {bar && row.kind !== 'project' && (
+                    <span
+                      className={`project-detail__timeline-bar project-detail__timeline-bar--${row.kind}`}
+                      style={{ left: `${bar.left}px`, width: `${bar.width}px` }}
+                      title={`desde ${formatMonthYear(row.startDate)}${row.endDate ? ` · ${formatDate(row.endDate)}` : ''}`}
+                    >
+                      desde {formatMonthYear(row.startDate)}
+                    </span>
+                  )}
+                  {row.kind !== 'project' && endPosition !== null && row.kind !== 'pending' && (
+                    <span
+                      className="project-detail__timeline-end-date"
+                      data-testid={`timeline-end-${row.id}`}
+                      style={{ left: `${endPosition + 12}px` }}
+                    >
+                      {formatDate(row.endDate, false)}
+                    </span>
+                  )}
+                  {row.kind === 'pending' && endPosition !== null && (
+                    <span
+                      className="project-detail__timeline-pending-label"
+                      style={{ left: `${Math.max(0, endPosition + 6)}px` }}
+                    >
+                      Venció {formatDate(row.endDate, false)} · confirmar
+                    </span>
+                  )}
+                  {row.indefinite && (
+                    <span
+                      className="project-detail__timeline-indefinite"
+                      data-testid={`timeline-indefinite-${row.id}`}
+                      style={{ left: `${TIMELINE_TRACK_WIDTH - 7}px` }}
+                      aria-label={`Fecha final indefinida: ${row.name}`}
+                    />
+                  )}
+                  {alertPositions.map(({ days, left }) => (
+                    <span
+                      className={`project-detail__timeline-alert project-detail__timeline-alert--${row.kind}`}
+                      data-testid={`timeline-alert-${row.id}-${days}`}
+                      key={days}
+                      style={{ left: `${left}px` }}
+                      title={`${days} días antes de la fecha final`}
+                      aria-hidden="true"
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
+        {todayPosition !== null && (
+          <span
+            className="project-detail__timeline-today"
+            data-testid="timeline-today-marker"
+            style={{ left: `${TIMELINE_NAME_WIDTH + todayPosition}px` }}
+            aria-hidden="true"
+          />
+        )}
       </div>
     </section>
   )
 }
 
 function TeamTable({ members }: Readonly<{ members: ProjectDetailMember[] }>) {
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
+  const selectAllRef = useRef<HTMLInputElement>(null)
   const unavailableColumns = [
     { key: 'team', label: 'EQUIPO' },
     { key: 'client-contact', label: 'CONTACTO POR CLIENTE' },
   ]
+  const selectedCount = members.filter((member) => selectedIds.has(member.id)).length
+  const allSelected = members.length > 0 && selectedCount === members.length
+  const partiallySelected = selectedCount > 0 && !allSelected
+
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = partiallySelected
+  }, [partiallySelected])
+
+  function toggleMember(memberId: number, checked: boolean) {
+    setSelectedIds((previous) => {
+      const next = new Set(previous)
+      if (checked) next.add(memberId)
+      else next.delete(memberId)
+      return next
+    })
+  }
+
+  function toggleAll(checked: boolean) {
+    setSelectedIds(checked ? new Set(members.map((member) => member.id)) : new Set())
+  }
+
   // TODO(SCRUM-188): Connect these placeholders when the members API provides both values.
 
   return (
-    <div className="project-detail__table-wrap">
-      <table className="project-detail__table" aria-label="Equipo del proyecto">
-        <thead>
-          <tr>
-            <th scope="col">COLABORADOR</th>
-            <th scope="col">ROL EN CLIENTE</th>
-            <th scope="col">LÍDER NPD</th>
-            <th scope="col">FECHA FINAL</th>
-            <th scope="col">SITUACIÓN</th>
-            {unavailableColumns.map((column) => <th scope="col" key={column.key}>{column.label}</th>)}
-            <th scope="col"><span className="project-detail__visually-hidden">Acciones</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((member) => (
-            <tr key={member.id}>
-              <td>
-                <strong>{member.name}</strong>
-                <span className="project-detail__member-meta">
-                  #{member.employeeNumber} · Nivel {member.level}
-                  <span className={`project-detail__chip project-detail__chip--status-${member.status.code.toLocaleLowerCase('es')}`}>
-                    {member.status.label}
-                  </span>
-                </span>
-              </td>
-              <td>{member.clientRole ?? 'Sin rol'}</td>
-              <td>{member.leader?.name ?? '—'}</td>
-              <td>
-                <AssignmentEnd member={member} />
-              </td>
-              <td>
-                <span className={`project-detail__chip project-detail__chip--situation-${member.situation.code.toLocaleLowerCase('es')}`}>
-                  {member.situation.label}
-                </span>
-              </td>
-              {unavailableColumns.map((column) => <td key={column.key}>—</td>)}
-              <td>
-                <button className="project-detail__edit" type="button" disabled title="Disponible próximamente">
-                  <Pencil aria-hidden="true" /> Editar
-                </button>
-              </td>
+    <>
+      <div className="project-detail__team-help">
+        <span>Marca colaboradores para cambiar su líder o fecha final en bloque, moverlos o quitarlos.</span>
+        {selectedCount > 0 && (
+          <button
+            className="project-detail__bulk-action"
+            type="button"
+            disabled
+            title="Disponible en SCRUM-128"
+          >
+            Editar en bloque
+          </button>
+        )}
+      </div>
+      <div className="project-detail__table-wrap">
+        <table className="project-detail__table" aria-label="Equipo del proyecto">
+          <colgroup>
+            <col className="project-detail__column-select" />
+            <col className="project-detail__column-name" />
+            <col className="project-detail__column-role" />
+            <col className="project-detail__column-leader" />
+            <col className="project-detail__column-end" />
+            <col className="project-detail__column-situation" />
+            <col className="project-detail__column-team" />
+            <col className="project-detail__column-contact" />
+            <col className="project-detail__column-actions" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">
+                <span className="project-detail__visually-hidden">Seleccionar</span>
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  aria-label="Seleccionar todos los colaboradores"
+                  checked={allSelected}
+                  onChange={(event) => toggleAll(event.currentTarget.checked)}
+                />
+              </th>
+              <th scope="col">COLABORADOR</th>
+              <th scope="col">ROL EN CLIENTE</th>
+              <th scope="col">LÍDER NPD</th>
+              <th scope="col">FECHA FINAL</th>
+              <th scope="col">SITUACIÓN</th>
+              {unavailableColumns.map((column) => (
+                <th scope="col" key={column.key}>{column.label}</th>
+              ))}
+              <th scope="col"><span className="project-detail__visually-hidden">Acciones</span></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {members.map((member) => (
+              <tr
+                className={member.status.code === 'LICENCIA' ? 'project-detail__table-row--license' : undefined}
+                key={member.id}
+              >
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label={`Seleccionar a ${member.name}`}
+                    checked={selectedIds.has(member.id)}
+                    onChange={(event) => toggleMember(member.id, event.currentTarget.checked)}
+                  />
+                </td>
+                <td>
+                  <strong className="project-detail__member-name">{member.name}</strong>
+                  <span className="project-detail__member-meta">
+                    <span>#{member.employeeNumber} · Nivel {member.level ?? '—'}</span>
+                    {member.status.code === 'LICENCIA' && (
+                      <span className="project-detail__chip project-detail__chip--status-licencia">
+                        Licencia
+                      </span>
+                    )}
+                  </span>
+                </td>
+                <td>{member.clientRole ?? 'Sin rol'}</td>
+                <td>{member.leader?.name ?? '—'}</td>
+                <td>
+                  <AssignmentEnd member={member} />
+                </td>
+                <td>
+                  <span className={`project-detail__chip project-detail__chip--situation-${member.situation.code.toLocaleLowerCase('es')}`}>
+                    {member.situation.code === 'ASIGNADO' ? 'Asignado' : 'Pendiente de confirmación'}
+                  </span>
+                </td>
+                {unavailableColumns.map((column) => <td key={column.key}>—</td>)}
+                <td>
+                  <button className="project-detail__edit" type="button" disabled title="Disponible próximamente">
+                    <Pencil aria-hidden="true" /> Editar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -353,7 +515,7 @@ function formatDate(value: string | null, includeYear = true): string {
     month: 'short',
     ...(includeYear ? { year: 'numeric' } : {}),
   }).format(date)
-  return formatted.replace(/\./g, '')
+  return formatted.replace(/\./g, '').replace(/\bsept\b/g, 'sep')
 }
 
 function parseIsoDate(value: string): Date | null {
@@ -369,9 +531,27 @@ function getVisibleMonths(today = new Date()): Date[] {
     new Date(firstMonth.getFullYear(), firstMonth.getMonth() + index, 1))
 }
 
+const TIMELINE_TRACK_WIDTH = 1338
+const TIMELINE_NAME_WIDTH = 220
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
+
 function formatMonth(value: Date): string {
   const month = new Intl.DateTimeFormat('es', { month: 'short' }).format(value)
   return `${month.replace(/\./g, '').toLocaleUpperCase('es')} ${String(value.getFullYear()).slice(-2)}`
+}
+
+function formatMonthYear(value: string): string {
+  const date = parseIsoDate(value)
+  if (!date) return '—'
+  return new Intl.DateTimeFormat('es', { month: 'short', year: 'numeric' })
+    .format(date)
+    .replace(/\./g, '')
+}
+
+function formatIsoDate(value: Date): string {
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  return `${value.getFullYear()}-${month}-${day}`
 }
 
 function formatToday(): string {
@@ -381,25 +561,47 @@ function formatToday(): string {
     .toLocaleUpperCase('es')
 }
 
-function getPosition(value: Date, start: Date, end: Date): number | null {
-  const position = ((value.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100
-  if (position < 0 || position > 100) return null
-  return position
+function getDaysBetween(start: Date, end: Date): number {
+  const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())
+  const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate())
+  return (endUtc - startUtc) / MILLISECONDS_PER_DAY
 }
 
-function getBarPosition(
+function getTimelinePosition(value: Date, rangeStart: Date, daysInRange: number): number {
+  const daysFromStart = getDaysBetween(rangeStart, value)
+  return daysFromStart * (TIMELINE_TRACK_WIDTH / daysInRange)
+}
+
+function getTimelineBar(
   startValue: string,
   endValue: string | null,
+  indefinite: boolean,
+  kind: 'project' | 'member' | 'pending',
   rangeStart: Date,
   rangeEnd: Date,
+  daysInRange: number,
 ): { left: number; width: number } | null {
   const startDate = parseIsoDate(startValue)
-  const endDate = endValue ? parseIsoDate(endValue) : rangeEnd
-  if (!startDate || !endDate || endDate < rangeStart || startDate > rangeEnd) return null
+  const endDate = indefinite ? rangeEnd : endValue ? parseIsoDate(endValue) : null
+  if (!startDate || !endDate || startDate > rangeEnd) return null
+  if (endDate < rangeStart) return kind === 'pending' ? { left: 0, width: 1 } : null
+
   const visibleStart = startDate < rangeStart ? rangeStart : startDate
   const visibleEnd = endDate > rangeEnd ? rangeEnd : endDate
-  const left = getPosition(visibleStart, rangeStart, rangeEnd)
-  const right = getPosition(visibleEnd, rangeStart, rangeEnd)
-  if (left === null || right === null || right < left) return null
+  const left = getTimelinePosition(visibleStart, rangeStart, daysInRange)
+  const right = getTimelinePosition(visibleEnd, rangeStart, daysInRange)
+  if (right < left) return null
   return { left, width: Math.max(right - left, 1) }
+}
+
+function getAlertPositions(
+  endDate: Date,
+  rangeStart: Date,
+  daysInRange: number,
+): Array<{ days: 15 | 30; left: number }> {
+  const pixelsPerDay = TIMELINE_TRACK_WIDTH / daysInRange
+  const endPosition = getTimelinePosition(endDate, rangeStart, daysInRange)
+  return ([30, 15] as const)
+    .map((days) => ({ days, left: endPosition - (days * pixelsPerDay) }))
+    .filter(({ left }) => left >= 0 && left <= TIMELINE_TRACK_WIDTH)
 }
