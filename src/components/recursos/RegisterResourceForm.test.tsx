@@ -252,7 +252,8 @@ describe('RegisterResourceForm', () => {
     fillAssignment()
     register()
     expect(await screen.findByText('El proyecto ya no está activo.')).toBeInTheDocument()
-    const summary = screen.getAllByRole('alert')[0]
+    const summaryText = await screen.findByText(/Corrige el campo marcado:/)
+    const summary = summaryText.closest('[role="alert"]') as HTMLElement
     fireEvent.click(within(summary).getByRole('link', { name: 'Proyecto asignado' }))
     expect(screen.getByRole('button', { name: 'Cambiar proyecto' })).toHaveFocus()
   })
@@ -581,5 +582,32 @@ describe('RegisterResourceForm in edit mode (HU-02, BUG-03)', () => {
     fireEvent.click(within(alert).getByRole('button', { name: 'Reintentar' }))
 
     expect(await screen.findByLabelText('Nombre de empleado *')).toHaveValue('Ana Torres')
+  })
+
+  it('requires termination reason and date when editing Estado = Baja and sends PUT without assignment (SCRUM-210)', async () => {
+    const { updateResource, onSaved } = setupEdit()
+    await screen.findByRole('option', { name: 'Analista' })
+
+    change('Estado *', 'BAJA')
+    expect(screen.getByText('Con Estado = Baja la persona se registra sin proyecto.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Cliente *')).not.toBeInTheDocument()
+
+    save()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Corrige los 2 campos marcados: Motivo de desvinculación y Fecha de desvinculación.',
+    )
+    expect(updateResource).not.toHaveBeenCalled()
+
+    change('Motivo de desvinculación *', '2')
+    change('Fecha de desvinculación *', '25112026')
+    save()
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ version: 4 })))
+    expect(updateResource).toHaveBeenCalledWith(1045, expect.objectContaining({
+      status: 'BAJA',
+      termination: { date: '2026-11-25', reasonId: 2 },
+      assignment: null,
+      version: 3,
+    }))
   })
 })
