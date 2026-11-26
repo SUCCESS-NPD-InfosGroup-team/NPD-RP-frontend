@@ -181,8 +181,7 @@
 }
 
 .project-detail__timeline {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .project-detail__timeline-heading,
@@ -211,13 +210,14 @@
 
 .project-detail__timeline-grid {
   position: relative;
-  width: 1558px;
+  width: 100%;
+  min-width: 0;
 }
 
 .project-detail__timeline-months,
 .project-detail__timeline-row {
   display: grid;
-  grid-template-columns: 220px 1338px;
+  grid-template-columns: 220px minmax(0, 1fr);
 }
 
 .project-detail__timeline-months {
@@ -237,7 +237,8 @@
 
 .project-detail__timeline-month-track {
   position: relative;
-  width: 1338px;
+  width: 100%;
+  min-width: 0;
   height: 34px;
 }
 
@@ -276,7 +277,8 @@
 
 .project-detail__timeline-track {
   position: relative;
-  width: 1338px;
+  width: 100%;
+  min-width: 0;
   height: 39px;
 }
 
@@ -295,6 +297,7 @@
   top: 8px;
   display: block;
   overflow: hidden;
+  min-width: 1px;
   height: 20px;
   box-sizing: border-box;
   padding: 0 8px;
@@ -374,7 +377,7 @@
   width: 14px;
   height: 14px;
   background: #ff9872;
-  transform: rotate(45deg);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .project-detail__timeline-alert {

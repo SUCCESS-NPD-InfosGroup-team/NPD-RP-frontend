@@ -185,7 +185,7 @@ function ProjectTimeline({
       date: month,
       left: getTimelinePosition(month, rangeStart, daysInRange),
       width: index === months.length - 1
-        ? TIMELINE_TRACK_WIDTH - getTimelinePosition(month, rangeStart, daysInRange)
+        ? 100 - getTimelinePosition(month, rangeStart, daysInRange)
         : getTimelinePosition(nextMonth, rangeStart, daysInRange) - getTimelinePosition(month, rangeStart, daysInRange),
     }
   })
@@ -223,7 +223,7 @@ function ProjectTimeline({
                 className="project-detail__timeline-month"
                 data-month-start={formatIsoDate(date)}
                 key={date.toISOString()}
-                style={{ left: `${left}px`, width: `${width}px` }}
+                style={{ left: `${left}%`, width: `${width}%` }}
               >
                 {formatMonth(date)}
               </span>
@@ -231,10 +231,18 @@ function ProjectTimeline({
             {todayPosition !== null && (
               <span
                 className="project-detail__timeline-today-label"
-                style={{ left: `${todayPosition}px` }}
+                style={{ left: `${todayPosition}%` }}
               >
                 HOY {formatToday()}
               </span>
+            )}
+            {todayPosition !== null && (
+              <span
+                className="project-detail__timeline-today"
+                data-testid="timeline-today-marker"
+                style={{ left: `${todayPosition}%` }}
+                aria-hidden="true"
+              />
             )}
           </div>
         </div>
@@ -255,20 +263,27 @@ function ProjectTimeline({
                     <span
                       className="project-detail__timeline-month-divider"
                       key={date.toISOString()}
-                      style={{ left: `${left}px` }}
+                      style={{ left: `${left}%` }}
                       aria-hidden="true"
                     />
                   ))}
+                  {todayPosition !== null && (
+                    <span
+                      className="project-detail__timeline-today"
+                      style={{ left: `${todayPosition}%` }}
+                      aria-hidden="true"
+                    />
+                  )}
                   {row.kind === 'project' && endPosition !== null && (
                     <>
                       <span
                         className="project-detail__timeline-contract-line"
-                        style={{ width: `${Math.min(Math.max(endPosition, 0), TIMELINE_TRACK_WIDTH)}px` }}
+                        style={{ width: `${Math.min(Math.max(endPosition, 0), 100)}%` }}
                         aria-hidden="true"
                       />
                       <span
                         className="project-detail__timeline-contract-label"
-                        style={{ left: `${endPosition - 120}px` }}
+                        style={{ left: `calc(${endPosition}% - 120px)` }}
                       >
                         Fin de contrato {formatDate(row.endDate, false)}
                       </span>
@@ -277,7 +292,7 @@ function ProjectTimeline({
                   {bar && row.kind !== 'project' && (
                     <span
                       className={`project-detail__timeline-bar project-detail__timeline-bar--${row.kind}`}
-                      style={{ left: `${bar.left}px`, width: `${bar.width}px` }}
+                      style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
                       title={`desde ${formatMonthYear(row.startDate)}${row.endDate ? ` · ${formatDate(row.endDate)}` : ''}`}
                     >
                       desde {formatMonthYear(row.startDate)}
@@ -287,7 +302,7 @@ function ProjectTimeline({
                     <span
                       className="project-detail__timeline-end-date"
                       data-testid={`timeline-end-${row.id}`}
-                      style={{ left: `${endPosition + 12}px` }}
+                      style={{ left: `calc(${endPosition}% + 12px)` }}
                     >
                       {formatDate(row.endDate, false)}
                     </span>
@@ -295,7 +310,7 @@ function ProjectTimeline({
                   {row.kind === 'pending' && endPosition !== null && (
                     <span
                       className="project-detail__timeline-pending-label"
-                      style={{ left: `${Math.max(0, endPosition + 6)}px` }}
+                      style={{ left: `calc(${Math.max(0, endPosition)}% + 6px)` }}
                     >
                       Venció {formatDate(row.endDate, false)} · confirmar
                     </span>
@@ -304,7 +319,7 @@ function ProjectTimeline({
                     <span
                       className="project-detail__timeline-indefinite"
                       data-testid={`timeline-indefinite-${row.id}`}
-                      style={{ left: `${TIMELINE_TRACK_WIDTH - 7}px` }}
+                      style={{ left: '100%' }}
                       aria-label={`Fecha final indefinida: ${row.name}`}
                     />
                   )}
@@ -313,7 +328,7 @@ function ProjectTimeline({
                       className={`project-detail__timeline-alert project-detail__timeline-alert--${row.kind}`}
                       data-testid={`timeline-alert-${row.id}-${days}`}
                       key={days}
-                      style={{ left: `${left}px` }}
+                      style={{ left: `${left}%` }}
                       title={`${days} días antes de la fecha final`}
                       aria-hidden="true"
                     />
@@ -323,14 +338,6 @@ function ProjectTimeline({
             )
           })}
         </div>
-        {todayPosition !== null && (
-          <span
-            className="project-detail__timeline-today"
-            data-testid="timeline-today-marker"
-            style={{ left: `${TIMELINE_NAME_WIDTH + todayPosition}px` }}
-            aria-hidden="true"
-          />
-        )}
       </div>
     </section>
   )
@@ -531,8 +538,6 @@ function getVisibleMonths(today = new Date()): Date[] {
     new Date(firstMonth.getFullYear(), firstMonth.getMonth() + index, 1))
 }
 
-const TIMELINE_TRACK_WIDTH = 1338
-const TIMELINE_NAME_WIDTH = 220
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 
 function formatMonth(value: Date): string {
@@ -569,7 +574,7 @@ function getDaysBetween(start: Date, end: Date): number {
 
 function getTimelinePosition(value: Date, rangeStart: Date, daysInRange: number): number {
   const daysFromStart = getDaysBetween(rangeStart, value)
-  return daysFromStart * (TIMELINE_TRACK_WIDTH / daysInRange)
+  return (daysFromStart / daysInRange) * 100
 }
 
 function getTimelineBar(
@@ -584,14 +589,14 @@ function getTimelineBar(
   const startDate = parseIsoDate(startValue)
   const endDate = indefinite ? rangeEnd : endValue ? parseIsoDate(endValue) : null
   if (!startDate || !endDate || startDate > rangeEnd) return null
-  if (endDate < rangeStart) return kind === 'pending' ? { left: 0, width: 1 } : null
+  if (endDate < rangeStart) return kind === 'pending' ? { left: 0, width: 0 } : null
 
   const visibleStart = startDate < rangeStart ? rangeStart : startDate
   const visibleEnd = endDate > rangeEnd ? rangeEnd : endDate
   const left = getTimelinePosition(visibleStart, rangeStart, daysInRange)
   const right = getTimelinePosition(visibleEnd, rangeStart, daysInRange)
   if (right < left) return null
-  return { left, width: Math.max(right - left, 1) }
+  return { left, width: Math.max(right - left, 0) }
 }
 
 function getAlertPositions(
@@ -599,9 +604,9 @@ function getAlertPositions(
   rangeStart: Date,
   daysInRange: number,
 ): Array<{ days: 15 | 30; left: number }> {
-  const pixelsPerDay = TIMELINE_TRACK_WIDTH / daysInRange
+  const percentPerDay = 100 / daysInRange
   const endPosition = getTimelinePosition(endDate, rangeStart, daysInRange)
   return ([30, 15] as const)
-    .map((days) => ({ days, left: endPosition - (days * pixelsPerDay) }))
-    .filter(({ left }) => left >= 0 && left <= TIMELINE_TRACK_WIDTH)
+    .map((days) => ({ days, left: endPosition - (days * percentPerDay) }))
+    .filter(({ left }) => left >= 0 && left <= 100)
 }

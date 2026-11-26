@@ -161,8 +161,8 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByTestId('timeline-alert-project-30')).toBeInTheDocument()
     expect(screen.getByTestId('timeline-alert-project-15')).toBeInTheDocument()
     expect(screen.getByTestId('timeline-end-32')).toHaveTextContent('31 dic')
-    expect(screen.getByTestId('timeline-end-32').getAttribute('style')).toContain('px')
-    expect(screen.getByTestId('timeline-end-32').getAttribute('style')).not.toContain('%')
+    expect(screen.getByTestId('timeline-end-32').getAttribute('style')).toContain('%')
+    expect(screen.getByTestId('timeline-end-32').getAttribute('style')).toContain('+ 12px')
   })
 
   it('keeps the contract row without a date and extends indefinite assignments to the track end', async () => {
@@ -186,7 +186,7 @@ describe('ProjectDetailPage', () => {
     expect(await screen.findByText('CONTRATO CAJA DE AHORROS')).toBeInTheDocument()
     expect(screen.getByText('Sin fecha de fin')).toBeInTheDocument()
     expect(screen.queryByText(/^Fin de contrato/)).not.toBeInTheDocument()
-    expect(screen.getByTestId('timeline-indefinite-33').style.left).toBe('1331px')
+    expect(screen.getByTestId('timeline-indefinite-33').style.left).toBe('100%')
   })
 
   it('positions month and today marks using the seven-month day scale', async () => {
@@ -200,6 +200,7 @@ describe('ProjectDetailPage', () => {
       })
 
       const monthDays = [0, 30, 61, 91, 122, 153, 181]
+      const monthWidths = [30, 31, 30, 31, 31, 28, 31]
       const months = [
         '2026-09-01',
         '2026-10-01',
@@ -209,17 +210,23 @@ describe('ProjectDetailPage', () => {
         '2027-02-01',
         '2027-03-01',
       ]
-      const pixelsPerDay = 1338 / 212
+      const percentPerDay = 100 / 212
 
       months.forEach((month, index) => {
         const element = container.querySelector<HTMLElement>(`[data-month-start="${month}"]`)
         expect(element).not.toBeNull()
+        expect(element?.style.left).toContain('%')
+        expect(element?.style.width).toContain('%')
         expect(Number.parseFloat(element?.style.left ?? ''))
-          .toBeCloseTo(monthDays[index] * pixelsPerDay, 2)
+          .toBeCloseTo(monthDays[index] * percentPerDay, 6)
+        expect(Number.parseFloat(element?.style.width ?? ''))
+          .toBeCloseTo(monthWidths[index] * percentPerDay, 6)
       })
 
-      expect(Number.parseFloat(screen.getByTestId('timeline-today-marker').style.left))
-        .toBeCloseTo(220 + (36 * pixelsPerDay), 2)
+      const todayMarker = screen.getByTestId('timeline-today-marker')
+      expect(todayMarker.style.left).toContain('%')
+      expect(Number.parseFloat(todayMarker.style.left))
+        .toBeCloseTo(36 * percentPerDay, 6)
     } finally {
       vi.useRealTimers()
     }
