@@ -248,11 +248,19 @@ function ProjectTimeline({
         </div>
         <div className="project-detail__timeline-rows">
           {rows.map((row) => {
-            const bar = getTimelineBar(row.startDate, row.endDate, row.indefinite, rangeStart, rangeEnd, daysInRange)
+            const bar = getTimelineBar(row.startDate, row.endDate, row.indefinite, row.kind, rangeStart, rangeEnd, daysInRange)
+            const barLabel = bar ? getTimelineBarLabel(row.startDate, rangeStart) : null
             const endDate = row.endDate ? parseIsoDate(row.endDate) : null
             const endPosition = endDate ? getTimelinePosition(endDate, rangeStart, daysInRange) : null
+            const pendingLabelPosition = endPosition === null
+              ? null
+              : bar
+                ? bar.left + bar.width
+                : Math.min(Math.max(0, endPosition), 100)
             const alertPositions = endDate
-              ? getAlertPositions(endDate, rangeStart, daysInRange)
+              ? getAlertPositions(endDate, rangeStart, daysInRange).filter(({ left }) =>
+                row.kind === 'project' || (bar !== null && left >= bar.left && left <= bar.left + bar.width),
+              )
               : []
 
             return (
@@ -295,7 +303,7 @@ function ProjectTimeline({
                       style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
                       title={`desde ${formatMonthYear(row.startDate)}${row.endDate ? ` · ${formatDate(row.endDate)}` : ''}`}
                     >
-                      desde {formatMonthYear(row.startDate)}
+                      {barLabel}
                     </span>
                   )}
                   {row.kind !== 'project' && endPosition !== null && row.kind !== 'pending' && (
@@ -307,10 +315,10 @@ function ProjectTimeline({
                       {formatDate(row.endDate, false)}
                     </span>
                   )}
-                  {row.kind === 'pending' && endPosition !== null && (
+                  {row.kind === 'pending' && pendingLabelPosition !== null && (
                     <span
                       className="project-detail__timeline-pending-label"
-                      style={{ left: `calc(${Math.max(0, endPosition)}% + 6px)` }}
+                      style={{ left: `calc(${pendingLabelPosition}% + 6px)` }}
                     >
                       Venció {formatDate(row.endDate, false)} · confirmar
                     </span>
@@ -577,24 +585,35 @@ function getTimelinePosition(value: Date, rangeStart: Date, daysInRange: number)
   return (daysFromStart / daysInRange) * 100
 }
 
+function getTimelineBarLabel(startValue: string, rangeStart: Date): string | null {
+  const startDate = parseIsoDate(startValue)
+  if (!startDate) return null
+
+  return startDate < rangeStart
+    ? `desde ${formatMonthYear(startValue)}`
+    : formatDate(startValue, false)
+}
+
 function getTimelineBar(
   startValue: string,
   endValue: string | null,
   indefinite: boolean,
+  kind: 'project' | 'member' | 'pending',
   rangeStart: Date,
   rangeEnd: Date,
   daysInRange: number,
 ): { left: number; width: number } | null {
   const startDate = parseIsoDate(startValue)
   const endDate = indefinite ? rangeEnd : endValue ? parseIsoDate(endValue) : null
-  if (!startDate || !endDate || startDate > rangeEnd || startDate > endDate || endDate < rangeStart) return null
+  if (!startDate || !endDate || startDate > rangeEnd) return null
 
   const visibleStart = startDate < rangeStart ? rangeStart : startDate
+  if (endDate < rangeStart && startDate < rangeStart) return null
   const visibleEnd = endDate > rangeEnd ? rangeEnd : endDate
   const left = getTimelinePosition(visibleStart, rangeStart, daysInRange)
   const right = getTimelinePosition(visibleEnd, rangeStart, daysInRange)
-  if (right < left) return null
-  return { left, width: Math.max(right - left, 0) }
+  if (right < left) return kind === 'pending' ? { left, width: 1.5 } : null
+  return { left, width: Math.max(right - left, 1.5) }
 }
 
 function getAlertPositions(

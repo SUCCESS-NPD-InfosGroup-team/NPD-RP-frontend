@@ -159,12 +159,60 @@ describe('ProjectDetailPage', () => {
 
     expect(await screen.findByText('Fin de contrato 31 dic')).toBeInTheDocument()
     expect(screen.getByText('Venció 30 sep · confirmar')).toBeInTheDocument()
-    expect(screen.queryByTitle('desde nov 2026 · 30 sep 2026')).not.toBeInTheDocument()
+    expect(screen.getByTitle('desde nov 2026 · 30 sep 2026')).toHaveTextContent('13 nov')
     expect(screen.getByTestId('timeline-alert-project-30')).toBeInTheDocument()
     expect(screen.getByTestId('timeline-alert-project-15')).toBeInTheDocument()
+    expect(screen.queryByTestId(`timeline-alert-${overduePending.id}-30`)).not.toBeInTheDocument()
+    expect(screen.queryByTestId(`timeline-alert-${overduePending.id}-15`)).not.toBeInTheDocument()
     expect(screen.getByTestId('timeline-end-32')).toHaveTextContent('31 dic')
     expect(screen.getByTestId('timeline-end-32').getAttribute('style')).toContain('%')
     expect(screen.getByTestId('timeline-end-32').getAttribute('style')).toContain('+ 12px')
+  })
+
+  it('uses the same start-date labels and minimum rail width as resources', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 10, 26, 12))
+
+    try {
+      const shortAssignment = {
+        ...member,
+        id: 34,
+        name: 'Short assignment',
+        assignmentStart: '2026-11-13',
+        assignmentEnd: '2026-11-15',
+        daysToAssignmentEnd: -11,
+      }
+      const longAssignment = {
+        ...assignedMember,
+        id: 35,
+        name: 'Long assignment',
+        assignmentStart: '2026-11-13',
+        assignmentEnd: '2026-12-31',
+      }
+      mockedProjectDetailApi.getMembers.mockResolvedValue({
+        items: [shortAssignment, longAssignment],
+        total: 2,
+      })
+
+      renderProjectDetail()
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync()
+      })
+
+      const shortBar = screen.getByTitle('desde nov 2026 · 15 nov 2026')
+      expect(shortBar).toHaveTextContent('13 nov')
+      expect(shortBar.style.width).toBe('1.5%')
+      const pendingLabel = screen.getByText('Venció 15 nov · confirmar')
+      const barEnd = Number.parseFloat(shortBar.style.left) + Number.parseFloat(shortBar.style.width)
+      const pendingLabelPosition = pendingLabel.style.left.match(/^calc\(([\d.]+)% \+ 6px\)$/)
+      expect(pendingLabelPosition).not.toBeNull()
+      expect(Number(pendingLabelPosition?.[1])).toBeCloseTo(barEnd, 2)
+      expect(screen.queryByTestId('timeline-alert-34-30')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('timeline-alert-34-15')).not.toBeInTheDocument()
+      expect(screen.getByTitle('desde nov 2026 · 31 dic 2026')).toHaveTextContent('13 nov')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('keeps the contract row without a date and extends indefinite assignments to the track end', async () => {
