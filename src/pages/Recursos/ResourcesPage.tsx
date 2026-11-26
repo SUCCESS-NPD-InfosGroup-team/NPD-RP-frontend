@@ -671,49 +671,11 @@ useEffect(() => {
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {viewMode === 'roster' && (
             <span style={{ color: C.muted }}>
-            {viewMode === 'roster'
-              ? <>Agrupado por <strong style={{ color: C.text }}>Cliente → Proyecto</strong></>
-              : <>Vista completa · <strong style={{ color: C.text }}>22 columnas</strong></>}
-          </span>
-            )}
-            <div role="group" aria-label="Modo de vista" style={{ display: 'inline-flex', backgroundColor: C.headRow, padding: 2, borderRadius: 5, border: `1px solid ${C.border}` }}>
-              <button
-                type="button"
-                onClick={() => setViewMode('roster')}
-                style={{
-                  padding: '4px 12px',
-                  border: 'none',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: viewMode === 'roster' ? C.surface : 'transparent',
-                  color: viewMode === 'roster' ? C.text : C.muted,
-                  boxShadow: viewMode === 'roster' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-                }}
-              >
-                Roster
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('tabla')}
-                style={{
-                  padding: '4px 12px',
-                  border: 'none',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: viewMode === 'tabla' ? C.surface : 'transparent',
-                  color: viewMode === 'tabla' ? C.text : C.muted,
-                  boxShadow: viewMode === 'tabla' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-                }}
-              >
-                Tabla
-              </button>
-            </div>
+              {viewMode === 'roster'
+                ? <>Agrupado por <strong style={{ color: C.text }}>Cliente → Proyecto</strong></>
+                : <>Vista completa · <strong style={{ color: C.text }}>22 columnas</strong></>}
+            </span>
           </div>
         </div>
 
@@ -903,13 +865,17 @@ useEffect(() => {
           </div>
         </div>
         ) : (
+
           /* VISTA TABLA DE 22 COLUMNAS CON NOMBRE FIJO */
           <div style={{ overflowX: 'auto', minHeight: 400 }}>
 {!loading && !error && recursos.length === 0 && (
-  <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
-    Ningún colaborador cumple los filtros.
-  </div>
+  <EmptyResourcesState
+    searchText={filters.search ?? ''}
+    onClearSearch={() => updateFilters({ search: '' })}
+    onResetFilters={resetFilters}
+  />
 )}
+
             {!loading && recursos.length > 0 && (
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
