@@ -121,6 +121,10 @@
   color: var(--text-on-brand);
 }
 
+.project-detail__actions .project-detail__button--reactivate {
+  width: 168px;
+}
+
 .project-detail__button--danger {
   border-color: var(--state-danger);
   color: var(--state-danger);

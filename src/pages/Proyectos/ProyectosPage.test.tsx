@@ -5,6 +5,7 @@ import { ProjectsPage } from './ProyectosPage'
 import { useAuth } from '../../context/AuthContext'
 import { useProjects } from '../../hooks/useProjects'
 import { getResourcesApi } from '../../services/resources'
+import { projectDetailApi } from '../../services/projectDetail.api'
 
 const exportMocks = vi.hoisted(() => ({
   jsonToSheet: vi.fn((rows: unknown[]) => ({ rows })),
@@ -28,6 +29,12 @@ vi.mock('file-saver', () => ({ saveAs: exportMocks.saveAs }))
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }))
 vi.mock('../../hooks/useProjects', () => ({ useProjects: vi.fn() }))
 vi.mock('../../services/resources', () => ({ getResourcesApi: vi.fn() }))
+vi.mock('../../services/projectDetail.api', () => ({
+  projectDetailApi: {
+    getProject: vi.fn(),
+    reactivateProject: vi.fn(),
+  },
+}))
 vi.mock('../../components/proyectos/NewProjectModal', () => ({
   NewProjectModal: () => null,
 }))
@@ -35,6 +42,7 @@ vi.mock('../../components/proyectos/NewProjectModal', () => ({
 const mockedUseAuth = vi.mocked(useAuth)
 const mockedUseProjects = vi.mocked(useProjects)
 const mockedGetResourcesApi = vi.mocked(getResourcesApi)
+const mockedProjectDetailApi = vi.mocked(projectDetailApi)
 const projectsApi = {
   listProjects: vi.fn(),
   listClients: vi.fn(),
@@ -100,6 +108,86 @@ describe('ProjectsPage', () => {
     renderProjectsPage()
 
     expect(screen.getByRole('button', { name: 'Exportar' })).toBeDisabled()
+  })
+
+  it('reactivates a listed project with its current version and refreshes projects', async () => {
+    const inactiveProject = {
+      id: '8',
+      name: 'Atlas',
+      client: { id: '4', name: 'Cliente de prueba', isInternal: false },
+      teamSize: 0,
+      members: [],
+      leads: [],
+      startDate: '2025-02-03',
+      contractEnd: null,
+      pendingCount: 0,
+      active: false,
+    }
+    const refetch = vi.fn().mockResolvedValue(undefined)
+    mockedUseProjects.mockReturnValue({
+      data: {
+        items: [inactiveProject],
+        page: 1,
+        pageSize: 25,
+        total: 1,
+        totalPages: 1,
+      },
+      summary: {
+        activeProjects: 0,
+        activeClients: 0,
+        contractEndingSoon: 0,
+        withoutTeam: 0,
+        unassignedPeople: 0,
+      },
+      loading: false,
+      error: undefined,
+      filters: { includeInactive: true },
+      page: 1,
+      setPage: vi.fn(),
+      refetch,
+      api: projectsApi as never,
+    })
+    mockedProjectDetailApi.getProject.mockResolvedValue({
+      id: 8,
+      name: 'Atlas',
+      client: { id: 4, name: 'Cliente de prueba', isInternal: false },
+      active: false,
+      startDate: '2025-02-03',
+      contractEndDate: null,
+      daysToContractEnd: null,
+      teamSize: 0,
+      pendingConfirmation: 0,
+      indefiniteCount: 0,
+      nextAssignmentEnd: null,
+      leads: [],
+      version: 7,
+      updatedAt: '2026-11-25T18:30:00Z',
+    })
+    mockedProjectDetailApi.reactivateProject.mockResolvedValue({
+      id: 8,
+      name: 'Atlas',
+      client: { id: 4, name: 'Cliente de prueba', isInternal: false },
+      active: true,
+      startDate: '2025-02-03',
+      contractEndDate: null,
+      daysToContractEnd: null,
+      teamSize: 0,
+      pendingConfirmation: 0,
+      indefiniteCount: 0,
+      nextAssignmentEnd: null,
+      leads: [],
+      version: 8,
+      updatedAt: '2026-11-26T18:30:00Z',
+    })
+
+    renderProjectsPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Reactivar Atlas' }))
+
+    await waitFor(() => {
+      expect(mockedProjectDetailApi.getProject).toHaveBeenCalledWith('8')
+      expect(mockedProjectDetailApi.reactivateProject).toHaveBeenCalledWith('8', 7)
+      expect(refetch).toHaveBeenCalledOnce()
+    })
   })
 
   it('exports every project page using the active filters', async () => {

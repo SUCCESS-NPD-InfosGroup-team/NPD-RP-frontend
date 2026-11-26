@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -59,11 +59,25 @@ describe('ProjectsTable', () => {
     expect(screen.getByRole('button', { name: /agregar colaboradores/i })).toBeDisabled()
   })
 
-  it('shows reactivation as unavailable for inactive projects', () => {
-    renderProjectsTable({ projects: [{ ...projects[0], active: false }], canManageProjects: true })
+  it('reactivates an inactive project when the action is available', () => {
+    const onReactivate = vi.fn<(_: string) => Promise<void>>().mockResolvedValue(undefined)
+    renderProjectsTable({
+      projects: [{ ...projects[0], active: false }],
+      canManageProjects: true,
+      onReactivate,
+    })
 
     expect(screen.getByText('Inactivo')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /reactivar atlas/i })).toBeDisabled()
+    const button = screen.getByRole('button', { name: 'Reactivar Atlas' })
+    expect(button).toBeEnabled()
+    fireEvent.click(button)
+    expect(onReactivate).toHaveBeenCalledWith('project-1')
+  })
+
+  it('keeps reactivation unavailable if no handler is provided', () => {
+    renderProjectsTable({ projects: [{ ...projects[0], active: false }], canManageProjects: true })
+
+    expect(screen.getByRole('button', { name: 'Reactivar Atlas' })).toBeDisabled()
   })
 
   it('uses the API day count for current and expired contract badges', () => {

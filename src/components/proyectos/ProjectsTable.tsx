@@ -9,6 +9,8 @@ interface ProjectsTableProps {
   projects: Project[]
   highlightedProjectId?: string
   canManageProjects?: boolean
+  onReactivate?: (projectId: string) => Promise<void>
+  reactivatingProjectId?: string
 }
 
 function contractEndCell(remaining: number | null | undefined, contractEnd: string | null) {
@@ -21,6 +23,8 @@ export function ProjectsTable({
   projects,
   highlightedProjectId,
   canManageProjects = false,
+  onReactivate,
+  reactivatingProjectId,
 }: Readonly<ProjectsTableProps>) {
   return (
     <div className="projects-page__table" role="table" aria-label="Proyectos por cliente">
@@ -79,15 +83,20 @@ export function ProjectsTable({
                       variant="ghost"
                       className="projects-page__row-action"
                       icon={project.active ? <UserRoundPlus /> : <RotateCcw />}
-                      disabled
+                      disabled={project.active || !onReactivate || reactivatingProjectId !== undefined}
+                      onClick={() => {
+                        if (!project.active && onReactivate) void onReactivate(project.id)
+                      }}
                       title={project.active
                         ? 'La asignación estará disponible cuando exista el endpoint del backend.'
-                        : 'La reactivación estará disponible cuando exista el endpoint del backend.'}
+                        : onReactivate ? 'Reactivar proyecto.' : 'Disponible próximamente'}
                       aria-label={project.active
                         ? `Agregar colaboradores a ${project.name} (no disponible todavía)`
-                        : `Reactivar ${project.name} (no disponible todavía)`}
+                        : `Reactivar ${project.name}`}
                     >
-                      {project.active ? 'Agregar colaboradores' : 'Reactivar'}
+                      {project.active
+                        ? 'Agregar colaboradores'
+                        : reactivatingProjectId === project.id ? 'Reactivando…' : 'Reactivar'}
                     </Button>
                   )}
                 </span>

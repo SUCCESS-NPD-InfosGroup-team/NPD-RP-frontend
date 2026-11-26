@@ -22,6 +22,17 @@ export interface ProjectDetail {
   updatedAt: string
 }
 
+export interface UpdateProjectRequest {
+  name: string
+  contractEndDate: string | null
+  version: number
+}
+
+export interface UpdateProjectResponse {
+  project: ProjectDetail
+  membersEndDateMoved: number
+}
+
 export interface ProjectDetailMember {
   id: number
   employeeNumber: string

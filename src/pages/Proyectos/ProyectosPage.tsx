@@ -12,6 +12,7 @@ import { ProjectExportModal } from '../../components/proyectos/ProjectExportModa
 import type { Client, Project } from '../../services/projects.types'
 import { getProjectsApi } from '../../services/projects'
 import { getResourcesApi } from '../../services/resources'
+import { projectDetailApi } from '../../services/projectDetail.api'
 import type { CatalogItem } from '../../services/resources.types'
 import { canCreateProjects } from '../../components/layout/roleNavigation'
 import {
@@ -71,6 +72,8 @@ export function ProjectsPage() {
   const [page, setPage] = useState(1)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const [highlightedProjectId, setHighlightedProjectId] = useState<string>()
+  const [reactivatingProjectId, setReactivatingProjectId] = useState<string>()
+  const [reactivationError, setReactivationError] = useState('')
   const [clients, setClients] = useState<Client[]>([])
   const [clientsLoading, setClientsLoading] = useState(true)
   const [clientsError, setClientsError] = useState(false)
@@ -222,6 +225,22 @@ export function ProjectsPage() {
       setExportError('No se pudieron exportar los proyectos. Intenta de nuevo.')
     } finally {
       setExporting(false)
+    }
+  }
+
+  async function handleReactivateProject(projectId: string): Promise<void> {
+    if (reactivatingProjectId) return
+
+    setReactivatingProjectId(projectId)
+    setReactivationError('')
+    try {
+      const currentProject = await projectDetailApi.getProject(projectId)
+      await projectDetailApi.reactivateProject(projectId, currentProject.version)
+      await refetch()
+    } catch (cause) {
+      setReactivationError(cause instanceof Error ? cause.message : 'No se pudo reactivar el proyecto.')
+    } finally {
+      setReactivatingProjectId(undefined)
     }
   }
 
@@ -389,11 +408,16 @@ export function ProjectsPage() {
           <Button variant="secondary" onClick={() => void refetch()}>Reintentar</Button>
         </div>
       )}
+      {reactivationError && (
+        <p className="projects-page__filter-error" role="alert">{reactivationError}</p>
+      )}
       {!(loading && !data) && !error && (
         <ProjectsTable
           projects={data?.items ?? []}
           highlightedProjectId={highlightedProjectId}
           canManageProjects={canManageProjects}
+          onReactivate={handleReactivateProject}
+          reactivatingProjectId={reactivatingProjectId}
         />
       )}
 
