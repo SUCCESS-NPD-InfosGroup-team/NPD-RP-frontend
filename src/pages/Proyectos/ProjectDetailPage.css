@@ -114,6 +114,12 @@
   opacity: .8;
 }
 
+.project-detail__export-error {
+  margin: -8px 0 0;
+  color: var(--state-danger);
+  font-size: 12px;
+}
+
 .project-detail__summary {
   display: grid;
   height: 88px;

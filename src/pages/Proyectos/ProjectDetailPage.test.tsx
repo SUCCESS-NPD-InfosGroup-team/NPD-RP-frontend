@@ -12,6 +12,13 @@ vi.mock('../../services/projectDetail.api', () => ({
   },
 }))
 
+const exportMocks = vi.hoisted(() => ({
+  downloadExcel: vi.fn(),
+  spreadsheetFileName: vi.fn(() => 'Equipo_proyecto_8_2026-11-26.xlsx'),
+}))
+
+vi.mock('../../utils/spreadsheetExport', () => exportMocks)
+
 const mockedProjectDetailApi = vi.mocked(projectDetailApi)
 const project = {
   id: 8,
@@ -75,6 +82,9 @@ describe('ProjectDetailPage', () => {
     mockedProjectDetailApi.getMembers.mockReset()
     mockedProjectDetailApi.getProject.mockResolvedValue(project)
     mockedProjectDetailApi.getMembers.mockResolvedValue({ items: [member], total: 1 })
+    exportMocks.downloadExcel.mockReset()
+    exportMocks.downloadExcel.mockResolvedValue(undefined)
+    exportMocks.spreadsheetFileName.mockClear()
   })
 
   it('renders the project summary and ordered member columns from the contract', async () => {
@@ -112,6 +122,62 @@ describe('ProjectDetailPage', () => {
       'project-detail__chip--situation-pendiente_confirmacion',
     )
     expect(within(row).getAllByText('—')).toHaveLength(3)
+  })
+
+  it('exports loaded team fields to an Excel spreadsheet from the frontend', async () => {
+    mockedProjectDetailApi.getMembers.mockResolvedValue({
+      items: [member, assignedMember],
+      total: 2,
+    })
+
+    renderProjectDetail()
+    fireEvent.click(await screen.findByRole('button', { name: 'Exportar equipo' }))
+
+    await waitFor(() => expect(exportMocks.downloadExcel).toHaveBeenCalledOnce())
+    expect(exportMocks.spreadsheetFileName).toHaveBeenCalledWith('Equipo_proyecto_8')
+    expect(exportMocks.downloadExcel).toHaveBeenCalledWith([
+      {
+        Cliente: 'CAJA DE AHORROS',
+        Proyecto: 'Caja de Ahorros',
+        'N.º colaborador': '987',
+        Colaborador: 'José Samudio',
+        Nivel: 3,
+        'Rol en cliente': 'Sin rol',
+        'Líder NPD': '',
+        Estado: 'Licencia',
+        Situación: 'Pendiente de confirmación',
+        'Inicio de asignación': '2024-11-01',
+        'Fin de asignación': '2026-11-20',
+        Indefinida: 'No',
+        'Días al fin de asignación': -6,
+      },
+      {
+        Cliente: 'CAJA DE AHORROS',
+        Proyecto: 'Caja de Ahorros',
+        'N.º colaborador': '1042',
+        Colaborador: 'Ana Ríos',
+        Nivel: 2,
+        'Rol en cliente': 'Analista',
+        'Líder NPD': 'María Díaz',
+        Estado: 'Activo',
+        Situación: 'Asignado',
+        'Inicio de asignación': '2026-09-01',
+        'Fin de asignación': '2026-12-31',
+        Indefinida: 'No',
+        'Días al fin de asignación': 35,
+      },
+    ], 'Equipo_proyecto_8_2026-11-26.xlsx', 'Equipo')
+  })
+
+  it('shows an error when frontend team export fails', async () => {
+    exportMocks.downloadExcel.mockRejectedValue(new Error('Export failed'))
+
+    renderProjectDetail()
+    fireEvent.click(await screen.findByRole('button', { name: 'Exportar equipo' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No se pudo exportar el equipo. Intenta de nuevo.',
+    )
   })
 
   it('toggles row selection and keeps the batch action disabled', async () => {
@@ -293,6 +359,7 @@ describe('ProjectDetailPage', () => {
       .toHaveLength(2)
     screen.getAllByRole('button', { name: 'Agregar colaboradores' })
       .forEach((button) => expect(button).toBeDisabled())
+    expect(screen.getByRole('button', { name: 'Exportar equipo' })).toBeDisabled()
     expect(screen.queryByRole('table', { name: 'Equipo del proyecto' })).not.toBeInTheDocument()
   })
 

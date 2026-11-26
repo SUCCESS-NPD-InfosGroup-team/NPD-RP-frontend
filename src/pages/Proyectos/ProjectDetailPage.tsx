@@ -3,6 +3,7 @@ import { Download, Pencil, Plus, UserRoundPlus, UsersRound } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { useProjectDetail } from '../../hooks/useProjectDetail'
 import type { ProjectDetail, ProjectDetailMember } from '../../services/projectDetail.types'
+import { downloadExcel, spreadsheetFileName, type SpreadsheetRow } from '../../utils/spreadsheetExport'
 import './ProjectDetailPage.css'
 
 export function ProjectDetailPage() {
@@ -22,6 +23,41 @@ export function ProjectDetailPage() {
 
 function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
   const { project, members, loading, error, notFound, empty, reload } = useProjectDetail(projectId)
+  const [exportingTeam, setExportingTeam] = useState(false)
+  const [exportError, setExportError] = useState('')
+
+  async function handleExportTeam(): Promise<void> {
+    if (!project || empty || exportingTeam) return
+
+    setExportingTeam(true)
+    setExportError('')
+    try {
+      const rows: SpreadsheetRow[] = members.map((member) => ({
+        Cliente: project.client.name,
+        Proyecto: project.name,
+        'N.º colaborador': member.employeeNumber,
+        Colaborador: member.name,
+        Nivel: member.level,
+        'Rol en cliente': member.clientRole ?? 'Sin rol',
+        'Líder NPD': member.leader?.name ?? '',
+        Estado: member.status.label,
+        Situación: member.situation.label,
+        'Inicio de asignación': member.assignmentStart,
+        'Fin de asignación': member.assignmentEnd ?? '',
+        Indefinida: member.indefinite ? 'Sí' : 'No',
+        'Días al fin de asignación': member.daysToAssignmentEnd ?? '',
+      }))
+      await downloadExcel(
+        rows,
+        spreadsheetFileName(`Equipo_proyecto_${project.id}`),
+        'Equipo',
+      )
+    } catch {
+      setExportError('No se pudo exportar el equipo. Intenta de nuevo.')
+    } finally {
+      setExportingTeam(false)
+    }
+  }
 
   if (loading) {
     return <p className="project-detail__state" role="status">Cargando detalle del proyecto…</p>
@@ -67,8 +103,14 @@ function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
           </p>
         </div>
         <div className="project-detail__actions" aria-label="Acciones del proyecto">
-          <button className="project-detail__button" type="button" disabled title="Disponible próximamente">
-            <Download aria-hidden="true" /> Exportar equipo
+          <button
+            className="project-detail__button"
+            type="button"
+            onClick={() => void handleExportTeam()}
+            disabled={empty || exportingTeam}
+            title={empty ? 'No hay colaboradores para exportar' : undefined}
+          >
+            <Download aria-hidden="true" /> {exportingTeam ? 'Exportando…' : 'Exportar equipo'}
           </button>
           <button className="project-detail__button" type="button" disabled title="Disponible próximamente">
             <Pencil aria-hidden="true" /> Editar proyecto
@@ -81,6 +123,8 @@ function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
           </button>
         </div>
       </header>
+
+      {exportError && <p className="project-detail__export-error" role="alert">{exportError}</p>}
 
       <section className="project-detail__summary" aria-label="Resumen del proyecto">
         <SummaryCard
