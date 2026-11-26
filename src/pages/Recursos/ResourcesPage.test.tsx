@@ -408,6 +408,46 @@ describe('ResourcesPage · BUG-03 edit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Roster' }));
     expect(screen.getByText('SEP 26')).toBeInTheDocument();
   });
+
+  describe('ResourcesPage · BUG-36 bulk selection bar & role visibility', () => {
+  it('shows Asignar a proyecto, Quitar de proyecto and Exportar selección and exports only selected rows', async () => {
+    renderPage();
+    await screen.findByText('#1045');
+
+    const rowCheckbox = screen.getByRole('checkbox', { name: /Seleccionar Ana Torres/i });
+    fireEvent.click(rowCheckbox);
+
+    expect(screen.getByText('1 seleccionados')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Asignar a proyecto…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Quitar de proyecto' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Limpiar selección' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar selección' }));
+    await waitFor(() =>
+      expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), expect.stringMatching(/^Recursos_\d{4}-\d{2}-\d{2}\.xlsx$/))
+    );
+    expect(xlsx.json_to_sheet).toHaveBeenCalledWith([
+      expect.objectContaining({ 'N° Empleado': '1045', Nombre: 'Ana Torres' }),
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar selección' }));
+    expect(screen.queryByText('1 seleccionados')).not.toBeInTheDocument();
+  });
+
+  it('hides bulk selection checkboxes for non-admin roles in both Roster and Tabla views', async () => {
+    auth.isAdmin = false;
+    renderPage();
+    await screen.findByText('#1045');
+
+    expect(screen.queryByRole('checkbox', { name: 'Seleccionar todos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Seleccionar Ana Torres/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tabla' }));
+    expect(screen.queryByRole('checkbox', { name: 'Seleccionar todos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Seleccionar Ana Torres/i })).not.toBeInTheDocument();
+  });
+});
 });
 });
 });
