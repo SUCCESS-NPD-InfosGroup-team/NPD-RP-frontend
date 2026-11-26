@@ -75,6 +75,24 @@
   white-space: nowrap;
 }
 
+.project-detail__button:not(:disabled) {
+  cursor: pointer;
+  transition: filter 120ms ease, transform 80ms ease;
+}
+
+.project-detail__button:not(:disabled):hover {
+  filter: brightness(.96);
+}
+
+.project-detail__button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.project-detail__button:focus-visible {
+  outline: var(--focus-width) solid var(--brand-navy);
+  outline-offset: var(--focus-offset);
+}
+
 .project-detail__actions .project-detail__button:nth-child(1) {
   width: 152px;
 }
