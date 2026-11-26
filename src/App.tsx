@@ -10,6 +10,7 @@ import type { OperationsStatus } from './types'
 import { ResourcesPage } from './pages/Recursos/ResourcesPage'
 import { ArribosProximosPage } from './pages/ArribosProximos/ArribosProximosPage'
 import { ProjectsPage } from './pages/Proyectos/ProyectosPage'
+import { ProjectDetailPage } from './pages/Proyectos/ProjectDetailPage'
 import { UsuariosPage } from './pages/Usuarios/UsuariosPage'
 import { AuditoriaPage } from './pages/Auditoria/AuditoriaPage'
 
@@ -86,6 +87,10 @@ export default function App({
               element={<Screen roles={roles} item={item} />}
             />
           ))}
+          <Route
+            path="proyectos/:projectId"
+            element={canAccessNavigationItem(roles, 'projects') ? <ProjectDetailPage /> : <NoAccess />}
+          />
           <Route path="auditoria/:resourceId" element={<AuditoriaPage />} />
           <Route path="recursos/nuevo" element={<RegisterResourceRoute roles={roles} />} />
           <Route path="recursos/:resourceId/editar" element={<EditResourceRoute roles={roles} />} />

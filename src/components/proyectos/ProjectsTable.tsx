@@ -1,4 +1,5 @@
 import { RotateCcw, UserRoundPlus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Chip } from '../ui/Chip'
 import { Button } from '../ui/Button'
 import type { Project } from '../../services/projects.types'
@@ -51,10 +52,13 @@ export function ProjectsTable({
                 key={project.id}
                 role="row"
               >
-                <strong className="projects-page__project-name">
+                <Link
+                  className="projects-page__project-name projects-page__project-link"
+                  to={`/proyectos/${encodeURIComponent(project.id)}`}
+                >
                   {project.name}
                   {!project.active && <Chip>Inactivo</Chip>}
-                </strong>
+                </Link>
                 <span>
                   {project.teamSize
                     ? <strong>{project.teamSize}</strong>

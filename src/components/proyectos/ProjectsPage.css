@@ -255,6 +255,16 @@
   white-space: nowrap;
 }
 
+.projects-page__project-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.projects-page__project-link:focus-visible {
+  outline: var(--focus-width) solid var(--brand-navy);
+  outline-offset: var(--focus-offset);
+}
+
 .projects-page__group {
   display: flex;
   min-width: 1120px;
