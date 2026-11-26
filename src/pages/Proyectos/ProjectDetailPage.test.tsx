@@ -9,7 +9,14 @@ vi.mock('../../services/projectDetail.api', () => ({
   projectDetailApi: {
     getProject: vi.fn(),
     getMembers: vi.fn(),
+    updateProject: vi.fn(),
+    deactivateProject: vi.fn(),
+    reactivateProject: vi.fn(),
   },
+}))
+const authMocks = vi.hoisted(() => ({ roles: ['guest'] as string[] }))
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ roles: authMocks.roles }),
 }))
 
 const exportMocks = vi.hoisted(() => ({
@@ -80,6 +87,8 @@ describe('ProjectDetailPage', () => {
   beforeEach(() => {
     mockedProjectDetailApi.getProject.mockReset()
     mockedProjectDetailApi.getMembers.mockReset()
+    mockedProjectDetailApi.reactivateProject.mockReset()
+    authMocks.roles = ['guest']
     mockedProjectDetailApi.getProject.mockResolvedValue(project)
     mockedProjectDetailApi.getMembers.mockResolvedValue({ items: [member], total: 1 })
     exportMocks.downloadExcel.mockReset()
@@ -178,6 +187,22 @@ describe('ProjectDetailPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No se pudo exportar el equipo. Intenta de nuevo.',
     )
+  })
+
+  it('reactivates an inactive project for Operations administrators', async () => {
+    authMocks.roles = ['operations-administrator']
+    const inactiveProject = { ...project, active: false, teamSize: 0 }
+    const activeProject = { ...project, active: true, teamSize: 0, version: 4 }
+    mockedProjectDetailApi.getProject
+      .mockResolvedValueOnce(inactiveProject)
+      .mockResolvedValue(activeProject)
+    mockedProjectDetailApi.reactivateProject.mockResolvedValue(activeProject)
+
+    renderProjectDetail()
+    fireEvent.click(await screen.findByRole('button', { name: 'Reactivar proyecto' }))
+
+    await waitFor(() => expect(mockedProjectDetailApi.reactivateProject).toHaveBeenCalledWith('8', 3))
+    expect(await screen.findByRole('button', { name: /Editar proyecto/ })).toBeInTheDocument()
   })
 
   it('toggles row selection and keeps the batch action disabled', async () => {

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Download, Pencil, Plus, UserRoundPlus, UsersRound } from 'lucide-react'
+import { Download, Pencil, Plus, RotateCcw, UserRoundPlus, UsersRound } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import { canCreateProjects } from '../../components/layout/roleNavigation'
+import { ProjectManagementActions } from '../../components/proyectos/ProjectManagementActions'
 import { useProjectDetail } from '../../hooks/useProjectDetail'
+import { projectDetailApi } from '../../services/projectDetail.api'
 import type { ProjectDetail, ProjectDetailMember } from '../../services/projectDetail.types'
 import { downloadExcel, spreadsheetFileName, type SpreadsheetRow } from '../../utils/spreadsheetExport'
 import './ProjectDetailPage.css'
@@ -23,8 +27,12 @@ export function ProjectDetailPage() {
 
 function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
   const { project, members, loading, error, notFound, empty, reload } = useProjectDetail(projectId)
+  const { roles } = useAuth()
   const [exportingTeam, setExportingTeam] = useState(false)
   const [exportError, setExportError] = useState('')
+  const [reactivating, setReactivating] = useState(false)
+  const [reactivationError, setReactivationError] = useState('')
+  const canManageProjects = canCreateProjects(roles)
 
   async function handleExportTeam(): Promise<void> {
     if (!project || empty || exportingTeam) return
@@ -56,6 +64,21 @@ function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
       setExportError('No se pudo exportar el equipo. Intenta de nuevo.')
     } finally {
       setExportingTeam(false)
+    }
+  }
+
+  async function handleReactivate(): Promise<void> {
+    if (!project || reactivating) return
+
+    setReactivating(true)
+    setReactivationError('')
+    try {
+      await projectDetailApi.reactivateProject(String(project.id), project.version)
+      await reload()
+    } catch (cause) {
+      setReactivationError(cause instanceof Error ? cause.message : 'No se pudo reactivar el proyecto.')
+    } finally {
+      setReactivating(false)
     }
   }
 
@@ -112,19 +135,37 @@ function ProjectDetailContent({ projectId }: Readonly<{ projectId: string }>) {
           >
             <Download aria-hidden="true" /> {exportingTeam ? 'Exportando…' : 'Exportar equipo'}
           </button>
-          <button className="project-detail__button" type="button" disabled title="Disponible próximamente">
-            <Pencil aria-hidden="true" /> Editar proyecto
-          </button>
-          <button className="project-detail__button" type="button" disabled title="Disponible próximamente">
-            <Plus aria-hidden="true" /> Registrar colaborador nuevo
-          </button>
-          <button className="project-detail__button project-detail__button--primary" type="button" disabled title="Disponible próximamente">
-            <UserRoundPlus aria-hidden="true" /> Agregar colaboradores
-          </button>
+          <ProjectManagementActions
+            project={project}
+            canManage={canManageProjects}
+            onUpdated={reload}
+          />
+          {!project.active && canManageProjects && (
+            <button
+              className="project-detail__button project-detail__button--primary project-detail__button--reactivate"
+              type="button"
+              disabled={reactivating}
+              onClick={() => void handleReactivate()}
+            >
+              <RotateCcw aria-hidden="true" />
+              {reactivating ? 'Reactivando…' : 'Reactivar proyecto'}
+            </button>
+          )}
+          {project.active && (
+            <>
+              <button className="project-detail__button" type="button" disabled title="Disponible próximamente">
+                <Plus aria-hidden="true" /> Registrar colaborador nuevo
+              </button>
+              <button className="project-detail__button project-detail__button--primary" type="button" disabled title="Disponible próximamente">
+                <UserRoundPlus aria-hidden="true" /> Agregar colaboradores
+              </button>
+            </>
+          )}
         </div>
       </header>
 
       {exportError && <p className="project-detail__export-error" role="alert">{exportError}</p>}
+      {reactivationError && <p className="project-detail__export-error" role="alert">{reactivationError}</p>}
 
       <section className="project-detail__summary" aria-label="Resumen del proyecto">
         <SummaryCard
@@ -556,9 +597,6 @@ function EmptyTeam({ project }: Readonly<{ project: ProjectDetail }>) {
         </button>
         <button className="project-detail__button project-detail__button--primary" type="button" disabled title="Disponible próximamente">
           <UserRoundPlus aria-hidden="true" /> Agregar colaboradores
-        </button>
-        <button className="project-detail__button project-detail__button--danger" type="button" disabled title="Disponible próximamente">
-          Desactivar proyecto
         </button>
       </div>
     </div>
