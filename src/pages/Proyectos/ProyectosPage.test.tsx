@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, vi } from 'vitest'
 import { ProjectsPage } from './ProyectosPage'
 import { useAuth } from '../../context/AuthContext'
@@ -37,6 +38,14 @@ const mockedGetResourcesApi = vi.mocked(getResourcesApi)
 const projectsApi = {
   listProjects: vi.fn(),
   listClients: vi.fn(),
+}
+
+function renderProjectsPage() {
+  return render(
+    <MemoryRouter>
+      <ProjectsPage />
+    </MemoryRouter>,
+  )
 }
 
 describe('ProjectsPage', () => {
@@ -88,7 +97,7 @@ describe('ProjectsPage', () => {
   })
 
   it('shows the export action disabled when there are no projects', () => {
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(screen.getByRole('button', { name: 'Exportar' })).toBeDisabled()
   })
@@ -146,7 +155,7 @@ describe('ProjectsPage', () => {
       api: projectsApi as never,
     })
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
     await screen.findByRole('option', { name: 'Cliente de prueba' })
     fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: '4' } })
     fireEvent.click(screen.getByRole('button', { name: 'Exportar' }))
@@ -171,7 +180,7 @@ describe('ProjectsPage', () => {
   })
 
   it('uses the backend-supported search filter', async () => {
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'Atlas' } })
 
@@ -181,13 +190,13 @@ describe('ProjectsPage', () => {
   })
 
   it('exposes the backend-supported no-contract-end filter', () => {
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(screen.getByRole('option', { name: 'Sin fecha' })).toBeInTheDocument()
   })
 
   it('shows all KPIs returned by the projects API', () => {
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(screen.getByText('SIN EQUIPO')).toBeInTheDocument()
     expect(screen.getByText('COLABORADORES SIN PROYECTO')).toBeInTheDocument()
@@ -248,7 +257,7 @@ describe('ProjectsPage', () => {
       api: projectsApi as never,
     })
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
     fireEvent.click(screen.getByRole('button', { name: 'Exportar' }))
     fireEvent.click(screen.getByRole('radio', { name: /csv/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Exportar todo' }))
@@ -263,7 +272,7 @@ describe('ProjectsPage', () => {
   })
 
   it('hides the paginator when there are no projects', () => {
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(screen.queryByRole('navigation', { name: 'Paginación' })).not.toBeInTheDocument()
   })
@@ -305,7 +314,7 @@ describe('ProjectsPage', () => {
       api: undefined,
     })
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(screen.getByRole('navigation', { name: 'Paginación' })).toBeInTheDocument()
   })
@@ -347,13 +356,17 @@ describe('ProjectsPage', () => {
       refetch: vi.fn(),
       api: undefined,
     }))
-    const view = render(<ProjectsPage />)
+    const view = renderProjectsPage()
 
     expect(await screen.findByRole('option', { name: 'Noel Vega' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Mara Sol' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Solo en esta página' })).not.toBeInTheDocument()
     page = 2
-    view.rerender(<ProjectsPage />)
+    view.rerender(
+      <MemoryRouter>
+        <ProjectsPage />
+      </MemoryRouter>,
+    )
     expect(screen.getByRole('option', { name: 'Noel Vega' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Solo en otra página' })).not.toBeInTheDocument()
   })

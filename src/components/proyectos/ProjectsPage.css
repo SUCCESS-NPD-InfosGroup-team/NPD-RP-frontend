@@ -245,6 +245,10 @@
   background: var(--surface-group);
 }
 
+.projects-page__project-link:hover {
+  background-color: #FBF8F4;
+}
+
 .projects-page__project-name {
   display: flex;
   min-width: 0;
@@ -253,6 +257,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.projects-page__project-link {
+  align-self: stretch;
+  margin-left: calc(0px - var(--space-3));
+  padding-left: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+.projects-page__project-link:focus-visible {
+  outline: var(--focus-width) solid var(--brand-navy);
+  outline-offset: var(--focus-offset);
 }
 
 .projects-page__group {
