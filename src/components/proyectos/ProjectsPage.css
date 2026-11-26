@@ -245,7 +245,7 @@
   background: var(--surface-group);
 }
 
-.projects-page__row--interactive:hover {
+.projects-page__project-link:hover {
   background-color: #FBF8F4;
 }
 
