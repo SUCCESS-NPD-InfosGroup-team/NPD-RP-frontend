@@ -1,10 +1,16 @@
+import { RotateCcw, UserRoundPlus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Chip } from '../ui/Chip'
+import { Button } from '../ui/Button'
 import type { Project } from '../../services/projects.types'
 import { formatProjectDate, groupProjectsByClient } from './projectsView'
 
 interface ProjectsTableProps {
   projects: Project[]
   highlightedProjectId?: string
+  canManageProjects?: boolean
+  onReactivate?: (projectId: string) => Promise<void>
+  reactivatingProjectId?: string
 }
 
 function contractEndCell(remaining: number | null | undefined, contractEnd: string | null) {
@@ -13,42 +19,93 @@ function contractEndCell(remaining: number | null | undefined, contractEnd: stri
   return <Chip tone="solid-danger">{`D-${remaining}`}</Chip>
 }
 
-export function ProjectsTable({ projects, highlightedProjectId }: Readonly<ProjectsTableProps>) {
+export function ProjectsTable({
+  projects,
+  highlightedProjectId,
+  canManageProjects = false,
+  onReactivate,
+  reactivatingProjectId,
+}: Readonly<ProjectsTableProps>) {
   return (
-    <div className="projects-page__table">
-      <div className="projects-page__row projects-page__row--head">
-        <span>PROYECTO</span><span>EQUIPO</span><span>LÍDERES NPD</span><span>INICIO</span>
-        <span>FIN DE CONTRATO</span><span>PENDIENTES</span><span />
+    <div className="projects-page__table" role="table" aria-label="Proyectos por cliente">
+      <div className="projects-page__row projects-page__row--head" role="row">
+        <span role="columnheader">PROYECTO</span><span role="columnheader">EQUIPO</span>
+        <span role="columnheader">LÍDERES NPD</span><span role="columnheader">INICIO</span>
+        <span role="columnheader">FIN DE CONTRATO</span><span role="columnheader">PENDIENTES</span>
+        <span role="columnheader" aria-label="Acciones" />
       </div>
       {groupProjectsByClient(projects).map(({ client, projects: clientProjects }) => (
-        <div key={client.id}>
+        <div key={client.id} role="rowgroup">
           <div className="projects-page__group">
             <span>{client.name.toUpperCase()}</span>
             {client.isInternal && <Chip tone="info">Interno</Chip>}
-            <span className="projects-page__group-meta">{clientProjects.length} proyectos · {clientProjects.reduce((sum, project) => sum + project.teamSize, 0)} colaboradores</span>
+            <span className="projects-page__group-meta">
+              {clientProjects.length} {clientProjects.length === 1 ? 'proyecto' : 'proyectos'} ·{' '}
+              {clientProjects.reduce((sum, project) => sum + project.teamSize, 0)} colaboradores
+            </span>
           </div>
           {clientProjects.map((project) => {
             const remaining = project.daysToContractEnd
             return (
-              <div className={`projects-page__row${project.id === highlightedProjectId ? ' projects-page__row--highlighted' : ''}`} key={project.id}>
-                <strong>{project.name}</strong>
+              <div
+                className={[
+                  'projects-page__row',
+                  project.id === highlightedProjectId ? 'projects-page__row--highlighted' : '',
+                  !project.active ? 'projects-page__row--inactive' : '',
+                ].filter(Boolean).join(' ')}
+                key={project.id}
+                role="row"
+              >
+                <Link
+                  className="projects-page__project-name projects-page__project-link"
+                  to={`/proyectos/${encodeURIComponent(project.id)}`}
+                >
+                  {project.name}
+                  {!project.active && <Chip>Inactivo</Chip>}
+                </Link>
                 <span>
                   {project.teamSize
-                    ? project.teamSize
+                    ? <strong>{project.teamSize}</strong>
                     : <Chip tone="warn">Sin equipo</Chip>}
                   {/* TODO SCRUM-169: restore member initials when the API provides them. */}
                 </span>
                 <span>{project.leads.length ? project.leads.join(', ') : '—'}</span>
                 <span>{formatProjectDate(project.startDate)}</span>
                 <span>{contractEndCell(remaining, project.contractEnd)}</span>
-                <span>{project.pendingCount || '—'}</span>
-                <span>{/* TODO SCRUM-165: restore add-members action when the registration route exists. */}</span>
+                <span>
+                  {project.pendingCount > 0
+                    ? <Chip tone="solid-danger">{`${project.pendingCount} por confirmar`}</Chip>
+                    : '—'}
+                </span>
+                <span className="projects-page__row-actions">
+                  {canManageProjects && (
+                    <Button
+                      variant="ghost"
+                      className="projects-page__row-action"
+                      icon={project.active ? <UserRoundPlus /> : <RotateCcw />}
+                      disabled={project.active || !onReactivate || reactivatingProjectId !== undefined}
+                      onClick={() => {
+                        if (!project.active && onReactivate) void onReactivate(project.id)
+                      }}
+                      title={project.active
+                        ? 'La asignación estará disponible cuando exista el endpoint del backend.'
+                        : onReactivate ? 'Reactivar proyecto.' : 'Disponible próximamente'}
+                      aria-label={project.active
+                        ? `Agregar colaboradores a ${project.name} (no disponible todavía)`
+                        : `Reactivar ${project.name}`}
+                    >
+                      {project.active
+                        ? 'Agregar colaboradores'
+                        : reactivatingProjectId === project.id ? 'Reactivando…' : 'Reactivar'}
+                    </Button>
+                  )}
+                </span>
               </div>
             )
           })}
         </div>
       ))}
-      {!projects.length && <div className="projects-page__empty">No hay proyectos para mostrar.</div>}
+      {!projects.length && <div className="projects-page__empty">No hay proyectos que coincidan con los filtros.</div>}
     </div>
   )
 }

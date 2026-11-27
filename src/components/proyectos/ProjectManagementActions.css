@@ -1,0 +1,166 @@
+.ui-modal__overlay.project-management__overlay {
+  padding: 16px;
+  background: rgba(51, 34, 28, 0.48);
+}
+
+.ui-modal.project-management__modal {
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border-radius: 6px;
+  background: var(--surface-card);
+  box-shadow: 0 24px 32px rgba(51, 34, 28, 0.5);
+}
+
+.ui-modal.project-management__modal--edit {
+  width: min(620px, calc(100vw - 32px));
+}
+
+.ui-modal.project-management__modal--deactivate {
+  width: min(580px, calc(100vw - 32px));
+}
+
+.project-management__modal .ui-modal__header {
+  gap: 12px;
+  align-items: flex-start;
+  padding: 18px 20px 6px;
+}
+
+.project-management__modal .ui-modal__header h2 {
+  margin: 0;
+  font: 700 22px / 25.3px var(--font-display);
+}
+
+.project-management__modal .ui-modal__close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius);
+  color: transparent;
+}
+
+.project-management__form {
+  display: flex;
+  flex-direction: column;
+}
+
+.project-management__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 20px 18px;
+}
+
+.project-management__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text-primary);
+  font: 600 13px / normal var(--font-body);
+}
+
+.project-management__field input {
+  width: 100%;
+  height: 36px;
+  flex: 0 0 36px;
+  padding-inline: 10px;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: 400 14px / normal var(--font-body);
+}
+
+.project-management__field input[type="date"] {
+  width: 200px;
+}
+
+.project-management__field input:focus-visible {
+  outline: var(--focus-width) solid var(--brand-navy);
+  outline-offset: var(--focus-offset);
+}
+
+.project-management__field input.project-management__input--error {
+  border-color: var(--state-danger);
+  background: var(--surface-error);
+}
+
+.project-management__help {
+  color: var(--text-secondary);
+  font: 400 12.5px / 18.125px var(--font-body);
+}
+
+.project-management__required {
+  color: var(--state-danger);
+}
+
+.project-management__date-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--state-danger);
+  font: 500 12.5px / normal var(--font-body);
+}
+
+.project-management__date-error img {
+  flex: 0 0 15px;
+}
+
+.project-management__error {
+  margin: 0;
+  color: var(--state-danger);
+  font-size: 13px;
+}
+
+.project-management__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 20px;
+  border-top: var(--border-width) solid var(--border-default);
+}
+
+.project-management__footer-spacer {
+  flex: 1 1 auto;
+}
+
+.project-management__footer .ui-button {
+  height: 34px;
+  border-radius: var(--radius);
+  font: 600 14px / 1 var(--font-body);
+}
+
+.project-management__footer .project-management__deactivate,
+.project-management__footer--deactivate .ui-button--danger {
+  border-color: var(--state-danger-border-tint);
+  background: var(--surface-card);
+  color: var(--state-danger);
+}
+
+.project-management__deactivation {
+  padding: 8px 20px 18px;
+}
+
+.project-management__deactivation > p:first-child {
+  margin: 0;
+  color: var(--text-primary);
+  font: 400 14px / 20.3px var(--font-body);
+}
+
+@media (max-width: 640px) {
+  .project-management__fields {
+    overflow-y: auto;
+  }
+
+  .project-management__modal--edit,
+  .project-management__modal--deactivate {
+    width: calc(100vw - 32px);
+  }
+
+  .project-management__field input[type="date"] {
+    max-width: 100%;
+  }
+}

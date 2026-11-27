@@ -21,6 +21,8 @@ export interface Project {
   startDate: string
   contractEnd: string | null
   daysToContractEnd?: number | null
+  nextAssignmentEnd?: string | null
+  indefiniteCount?: number
   pendingCount: number
   active: boolean
 }
@@ -29,6 +31,15 @@ export interface Project {
 export interface ClientProject {
   id: string
   name: string
+  teamSize: number
+  contractEndDate: string | null
+}
+
+/** An active project as the «Registrar recurso» step 1 lists it and step 2 shows it fixed (SCRUM-84) */
+export interface ProjectOption {
+  id: string
+  name: string
+  client: { id: string; name: string }
   teamSize: number
   contractEndDate: string | null
 }

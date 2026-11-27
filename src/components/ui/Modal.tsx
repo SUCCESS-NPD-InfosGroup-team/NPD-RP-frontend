@@ -9,9 +9,20 @@ interface ModalProps {
   children: ReactNode
   onClose: () => void
   className?: string
+  overlayClassName?: string
+  closeIcon?: ReactNode
 }
 
-export function Modal({ open, isOpen, title, children, onClose, className = '' }: Readonly<ModalProps>) {
+export function Modal({
+  open,
+  isOpen,
+  title,
+  children,
+  onClose,
+  className = '',
+  overlayClassName = '',
+  closeIcon,
+}: Readonly<ModalProps>) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   
   // Unificamos: si 'open' es undefined, usamos 'isOpen'
@@ -66,7 +77,7 @@ export function Modal({ open, isOpen, title, children, onClose, className = '' }
   if (!isModalOpen) return null
 
   return (
-    <div className="ui-modal__overlay">
+    <div className={['ui-modal__overlay', overlayClassName].filter(Boolean).join(' ')}>
       <button className="ui-modal__backdrop" type="button" tabIndex={-1} aria-hidden="true" aria-label="Cerrar" onClick={onClose} />
       <dialog
         ref={dialogRef}
@@ -79,7 +90,9 @@ export function Modal({ open, isOpen, title, children, onClose, className = '' }
         {title && (
           <div className="ui-modal__header">
             <h2 id="ui-modal-title">{title}</h2>
-            <button className="ui-modal__close" type="button" aria-label="Cerrar" onClick={onClose}>×</button>
+            <button className="ui-modal__close" type="button" aria-label="Cerrar" onClick={onClose}>
+              {closeIcon ?? '×'}
+            </button>
           </div>
         )}
         {children}

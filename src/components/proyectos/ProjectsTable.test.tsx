@@ -1,4 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import type { ComponentProps } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProjectsTable } from './ProjectsTable'
 
@@ -15,6 +17,14 @@ const projects = [{
   active: true,
 }]
 
+function renderProjectsTable(props: ComponentProps<typeof ProjectsTable>) {
+  return render(
+    <MemoryRouter>
+      <ProjectsTable {...props} />
+    </MemoryRouter>,
+  )
+}
+
 describe('ProjectsTable', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -26,32 +36,70 @@ describe('ProjectsTable', () => {
   })
 
   it('renders the no-team state and hides write actions for read-only users', () => {
-    render(<ProjectsTable projects={projects} />)
+    renderProjectsTable({ projects })
     expect(screen.getByText('EQUIPO')).toBeInTheDocument()
     expect(screen.getByText('Sin equipo')).toBeInTheDocument()
     expect(screen.getAllByText('—')).toHaveLength(2)
     expect(screen.queryByRole('button', { name: /agregar colaboradores/i })).not.toBeInTheDocument()
   })
 
-  it('hides the add-members action until the registration route exists', () => {
-    render(<ProjectsTable projects={[{ ...projects[0], teamSize: 2, members: [{ id: 'member-1', initials: 'AB' }], leads: ['Noel'] }]} />)
+  it('keeps unavailable write actions visible but disabled for project managers', () => {
+    const tableProps = {
+      projects: [{ ...projects[0], teamSize: 2, members: [{ id: 'member-1', initials: 'AB' }], leads: ['Noel'] }],
+    }
+    const view = renderProjectsTable(tableProps)
     expect(screen.queryByRole('button', { name: /agregar colaboradores/i })).not.toBeInTheDocument()
     expect(screen.queryByText('AB')).not.toBeInTheDocument()
+
+    view.rerender(
+      <MemoryRouter>
+        <ProjectsTable {...tableProps} canManageProjects />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: /agregar colaboradores/i })).toBeDisabled()
+  })
+
+  it('reactivates an inactive project when the action is available', () => {
+    const onReactivate = vi.fn<(_: string) => Promise<void>>().mockResolvedValue(undefined)
+    renderProjectsTable({
+      projects: [{ ...projects[0], active: false }],
+      canManageProjects: true,
+      onReactivate,
+    })
+
+    expect(screen.getByText('Inactivo')).toBeInTheDocument()
+    const button = screen.getByRole('button', { name: 'Reactivar Atlas' })
+    expect(button).toBeEnabled()
+    fireEvent.click(button)
+    expect(onReactivate).toHaveBeenCalledWith('project-1')
+  })
+
+  it('keeps reactivation unavailable if no handler is provided', () => {
+    renderProjectsTable({ projects: [{ ...projects[0], active: false }], canManageProjects: true })
+
+    expect(screen.getByRole('button', { name: 'Reactivar Atlas' })).toBeDisabled()
   })
 
   it('uses the API day count for current and expired contract badges', () => {
-    render(<ProjectsTable projects={[
+    renderProjectsTable({ projects: [
       { ...projects[0], id: 'today', name: 'Today', contractEnd: '2026-11-01', daysToContractEnd: 0 },
       { ...projects[0], id: 'expired', name: 'Expired', contractEnd: '2026-10-31', daysToContractEnd: -1 },
-    ]} />)
+    ] })
 
     expect(screen.getByText('D-0')).toBeInTheDocument()
     expect(screen.getByText('Vencido')).toBeInTheDocument()
   })
 
   it('highlights an existing project after a duplicate error', () => {
-    render(<ProjectsTable projects={projects} highlightedProjectId="project-1" />)
+    renderProjectsTable({ projects, highlightedProjectId: 'project-1' })
 
     expect(screen.getByText('Atlas').closest('.projects-page__row')).toHaveClass('projects-page__row--highlighted')
+  })
+
+  it('links each project name to its detail route', () => {
+    renderProjectsTable({ projects })
+
+    expect(screen.getByRole('link', { name: 'Atlas' }))
+      .toHaveAttribute('href', '/proyectos/project-1')
   })
 })

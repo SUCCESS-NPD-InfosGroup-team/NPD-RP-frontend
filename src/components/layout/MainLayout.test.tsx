@@ -24,6 +24,18 @@ vi.mock('../../pages/Recursos/ResourcesPage', () => ({
   ResourcesPage: () => <h1>Recursos</h1>
 }))
 
+// Step 1 of «Registrar recurso» (SCRUM-84): its own tests cover the drawer
+vi.mock('../recursos/ProjectPickerDrawer', () => ({
+  ProjectPickerDrawer: ({ open, onContinue, onClose }: { open: boolean; onContinue: (choice: { kind: 'none' }) => void; onClose: () => void }) => (
+    open ? (
+      <div role="dialog" aria-label="Paso 1">
+        <button type="button" onClick={() => onContinue({ kind: 'none' })}>Continuar sin proyecto</button>
+        <button type="button" onClick={onClose}>Cerrar paso 1</button>
+      </div>
+    ) : null
+  ),
+}))
+
 vi.mock('../../hooks/useHistoryAuditLog', () => ({
   useHistoryAuditLog: () => ({ loading: false, refetch: vi.fn() }),
 }))
@@ -153,6 +165,22 @@ describe('role-based navigation', () => {
 
     await user.click(screen.getByRole('button', { name: /Registrar recurso/ }))
     expect(onRegister).toHaveBeenCalledOnce()
+  })
+
+  it('opens step 1 over the current page and goes to step 2 with the choice (SCRUM-84, CA-14)', async () => {
+    const user = userEvent.setup()
+    renderForRole('operations-administrator')
+
+    expect(screen.queryByRole('dialog', { name: 'Paso 1' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Registrar recurso/ }))
+    expect(screen.getByRole('heading', { name: 'Recursos' })).toBeInTheDocument()
+    await user.click(within(screen.getByRole('dialog', { name: 'Paso 1' })).getByRole('button', { name: 'Cerrar paso 1' }))
+    expect(screen.queryByRole('dialog', { name: 'Paso 1' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Registrar recurso/ }))
+    await user.click(screen.getByRole('button', { name: 'Continuar sin proyecto' }))
+    expect(window.location.pathname + window.location.search).toBe('/recursos/nuevo?proyecto=ninguno')
+    expect(await screen.findByRole('heading', { name: 'Registrar recurso', level: 1 })).toBeInTheDocument()
   })
 
   it.each(roleCases)('hides global search until resource API search is available: %s', (role) => {

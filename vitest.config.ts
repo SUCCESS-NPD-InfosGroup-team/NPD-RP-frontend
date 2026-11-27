@@ -30,6 +30,10 @@ export default defineConfig({
       'src/services/**/*.test.tsx',
       'src/pages/ArribosProximos/**/*.test.ts',
       'src/pages/ArribosProximos/**/*.test.tsx',
+      'src/pages/Proyectos/**/*.test.ts',
+      'src/pages/Proyectos/**/*.test.tsx',
+      'src/components/proyectos/**/*.test.ts',
+      'src/components/proyectos/**/*.test.tsx',
     ],
 
     // Excluir los tests de otros módulos

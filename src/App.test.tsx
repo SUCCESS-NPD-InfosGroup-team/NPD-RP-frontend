@@ -143,9 +143,9 @@ describe('App routes', () => {
   )
 
   it('opens the register form for the operations administrator', () => {
-    renderAtPath('operations-administrator', '/recursos/nuevo')
+    renderAtPath('operations-administrator', '/recursos/nuevo?proyecto=ninguno')
 
-    expect(screen.getByRole('heading', { name: 'Registrar Recurso' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Registrar recurso' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
       .not.toBeInTheDocument()
   })
@@ -157,7 +157,7 @@ describe('App routes', () => {
 
       expect(screen.getByRole('heading', { name: 'No tienes acceso a esta pantalla' }))
         .toBeInTheDocument()
-      expect(screen.queryByRole('heading', { name: 'Registrar Recurso' }))
+      expect(screen.queryByRole('heading', { name: 'Registrar recurso' }))
         .not.toBeInTheDocument()
     },
   )

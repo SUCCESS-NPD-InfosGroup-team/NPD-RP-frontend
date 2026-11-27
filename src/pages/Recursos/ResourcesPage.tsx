@@ -10,6 +10,8 @@ import { ResourceDetailDrawer } from '../../components/recursos/ResourceDetailDr
 import { ChevronLeft, ChevronRight, Download, GanttChartSquare, Plus, Table, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ArrivalsStrip } from '../../components/arribos/ArrivalsStrip';
+import { toRecursoFromArrival } from '../../components/arribos/arrivalsView';
+import { useOpenRegisterResource } from '../../components/recursos/registerProject';
 import { exportFileName, statusText, toExportRows } from './resourceExport';
 
 
@@ -197,6 +199,7 @@ export const ResourcesPage = () => {
   const { hasRole } = useAuth();
   const isAdmin = hasRole('operations-administrator');
   const navigate = useNavigate();
+  const openRegisterResource = useOpenRegisterResource();
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -517,7 +520,7 @@ useEffect(() => {
             <Download size={16} /> {exporting ? 'Exportando…' : 'Exportar'}
           </button>
           {isAdmin && (
-            <button onClick={() => navigate('/recursos/nuevo')} className="rp-btn-primary" style={{ height: 38, padding: '0 16px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+            <button onClick={openRegisterResource} className="rp-btn-primary" style={{ height: 38, padding: '0 16px', border: 'none', background: C.primary, color: 'white', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
               <Plus size={16} /> Registrar recurso
             </button>
           )}
@@ -525,7 +528,7 @@ useEffect(() => {
       </div>
 
       {/* ARRIBOS PRÓXIMOS (HU-06 CA-01) */}
-      <ArrivalsStrip />
+      <ArrivalsStrip onViewResource={(resource) => openResourceDetail(toRecursoFromArrival(resource))} />
 
       {/* PANEL DE FILTROS CON CATÁLOGOS */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 12px', marginBottom: 16, display: 'grid', gridTemplateColumns: '1.55fr 1fr 1fr 1fr 1fr 0.6fr 0.7fr 1.05fr auto', gap: 10, alignItems: 'end' }}>
@@ -668,49 +671,11 @@ useEffect(() => {
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {viewMode === 'roster' && (
             <span style={{ color: C.muted }}>
-            {viewMode === 'roster'
-              ? <>Agrupado por <strong style={{ color: C.text }}>Cliente → Proyecto</strong></>
-              : <>Vista completa · <strong style={{ color: C.text }}>22 columnas</strong></>}
-          </span>
-            )}
-            <div role="group" aria-label="Modo de vista" style={{ display: 'inline-flex', backgroundColor: C.headRow, padding: 2, borderRadius: 5, border: `1px solid ${C.border}` }}>
-              <button
-                type="button"
-                onClick={() => setViewMode('roster')}
-                style={{
-                  padding: '4px 12px',
-                  border: 'none',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: viewMode === 'roster' ? C.surface : 'transparent',
-                  color: viewMode === 'roster' ? C.text : C.muted,
-                  boxShadow: viewMode === 'roster' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-                }}
-              >
-                Roster
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('tabla')}
-                style={{
-                  padding: '4px 12px',
-                  border: 'none',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: viewMode === 'tabla' ? C.surface : 'transparent',
-                  color: viewMode === 'tabla' ? C.text : C.muted,
-                  boxShadow: viewMode === 'tabla' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-                }}
-              >
-                Tabla
-              </button>
-            </div>
+              {viewMode === 'roster'
+                ? <>Agrupado por <strong style={{ color: C.text }}>Cliente → Proyecto</strong></>
+                : <>Vista completa · <strong style={{ color: C.text }}>22 columnas</strong></>}
+            </span>
           </div>
         </div>
 
@@ -728,10 +693,12 @@ useEffect(() => {
             </div>
 
 {!loading && !error && recursos.length === 0 && (
-            <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
-              Ningún colaborador cumple los filtros.
-            </div>
-          )}
+  <EmptyResourcesState
+    searchText={filters.search ?? ''}
+    onClearSearch={() => updateFilters({ search: '' })}
+    onResetFilters={resetFilters}
+  />
+)}
 
             {grupos.map(({ cliente, proyecto, kind, recs }) => (
               <div key={`${cliente}||${proyecto}`}>
@@ -898,13 +865,17 @@ useEffect(() => {
           </div>
         </div>
         ) : (
+
           /* VISTA TABLA DE 22 COLUMNAS CON NOMBRE FIJO */
           <div style={{ overflowX: 'auto', minHeight: 400 }}>
 {!loading && !error && recursos.length === 0 && (
-  <div style={{ padding: '28px 16px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
-    Ningún colaborador cumple los filtros.
-  </div>
+  <EmptyResourcesState
+    searchText={filters.search ?? ''}
+    onClearSearch={() => updateFilters({ search: '' })}
+    onResetFilters={resetFilters}
+  />
 )}
+
             {!loading && recursos.length > 0 && (
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
@@ -1090,6 +1061,67 @@ const ErrorBanner = ({ message, onRetry }: { message: string; onRetry: () => voi
     <button onClick={onRetry} style={{ fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', color: C.danger }}>Reintentar</button>
   </div>
 );
+
+const EmptyResourcesState = ({
+  searchText,
+  onClearSearch,
+  onResetFilters,
+}: {
+  searchText: string;
+  onClearSearch: () => void;
+  onResetFilters: () => void;
+}) => {
+  const query = searchText.trim();
+  const hasSearch = query !== '';
+
+  return (
+    <div style={{ padding: '32px 16px', textAlign: 'center', color: C.muted, fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <p style={{ margin: 0, fontWeight: 500, color: C.text }}>
+        {hasSearch ? `Ningún recurso coincide con «${query}»` : 'Ningún colaborador cumple los filtros.'}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+        {hasSearch && (
+          <button
+            type="button"
+            className="rp-btn"
+            onClick={onClearSearch}
+            style={{
+              height: 32,
+              padding: '0 12px',
+              border: `1px solid ${C.border}`,
+              background: C.surface,
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+              color: C.text,
+            }}
+          >
+            Limpiar búsqueda
+          </button>
+        )}
+        <button
+          type="button"
+          className="rp-btn"
+          onClick={onResetFilters}
+          style={{
+            height: 32,
+            padding: '0 12px',
+            border: 'none',
+            background: C.chipBg,
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 600,
+            color: C.link,
+          }}
+        >
+          Quitar todos los filtros
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const RowAction = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.link, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>

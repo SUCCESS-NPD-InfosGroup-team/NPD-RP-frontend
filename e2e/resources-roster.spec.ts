@@ -103,15 +103,15 @@ test.describe('Recursos · roster con la API real', () => {
     await expect(page.getByText('Página 6 de 6')).toBeVisible()
   })
 
-  test('E2E-RES-08 sin resultados lo dice y «Limpiar filtros» restablece todo', async ({ page, open }) => {
+    test('E2E-RES-08 sin resultados muestra el estado vacío y las acciones de limpieza (BUG-28)', async ({ page, open }) => {
     await open('/recursos')
     await page.getByLabel('Buscar').fill('no-existe-nadie')
-    await expect(page.getByText('Ningún colaborador cumple los filtros.')).toBeVisible()
+    await expect(page.getByText('Ningún recurso coincide con «no-existe-nadie»')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Limpiar búsqueda' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Quitar todos los filtros' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Limpiar filtros' }).click()
-
+    await page.getByRole('button', { name: 'Quitar todos los filtros' }).click()
     await expect(page.getByLabel('Buscar')).toHaveValue('')
-    await expect(page.getByText('130 colaboradores, 25 por página.')).toBeVisible()
   })
 
   test('E2E-RES-09 si la búsqueda falla muestra el error con Reintentar, sin datos de ejemplo (BUG-02)', async ({ page, open, api }) => {
@@ -160,14 +160,38 @@ test.describe('Recursos · roster con la API real', () => {
     await expect(page.getByText('130 colaboradores, 25 por página.')).toHaveCount(0)
   })
 
-  test('E2E-RES-11 la fila abre el detalle y Escape lo cierra (HU-05)', async ({ page, open }) => {
+  test('E2E-RES-13 cambia entre vista Roster y Tabla manteniendo filtros y columna fija (BUG-32)', async ({ page, open }) => {
     await open('/recursos')
-    await page.getByRole('button', { name: /^Ver detalle de / }).first().click()
+    await expect(page.getByText('1–25 de 130 colaboradores')).toBeVisible()
 
-    const drawer = page.getByRole('dialog')
-    await expect(drawer).toBeVisible()
-    await expect(drawer.getByRole('button', { name: 'Editar registro' })).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(drawer).toBeHidden()
+    await page.getByRole('button', { name: 'Tabla' }).click()
+    await expect(page.getByText('22 columnas')).toBeVisible()
+    await expect(page.getByText('Estado: Activo')).toBeVisible()
+
+    const collaboratorTh = page.getByRole('columnheader', { name: 'Colaborador' })
+    await expect(collaboratorTh).toBeVisible()
+    await expect(collaboratorTh).toHaveCSS('position', 'sticky')
+    await expect(page.getByRole('columnheader', { name: 'Observaciones' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Roster' }).click()
+    await expect(page.getByText('SEP 26')).toBeVisible()
+  })
+
+  test('E2E-RES-14 muestra las 3 acciones en la barra de selección masiva y oculta checkboxes a no-admin (BUG-36)', async ({ page, open }) => {
+    await open('/recursos')
+    await expect(page.getByText('1–25 de 130 colaboradores')).toBeVisible()
+
+    const checkboxes = page.locator('tbody input[type="checkbox"], .rp-row input[type="checkbox"]')
+    await checkboxes.nth(0).check()
+    await checkboxes.nth(1).check()
+    await checkboxes.nth(2).check()
+
+    await expect(page.getByText('3 seleccionados')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Asignar a proyecto…' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Quitar de proyecto' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Exportar selección' })).toBeEnabled()
+
+    await page.getByRole('button', { name: 'Limpiar selección' }).click()
+    await expect(page.getByText('3 seleccionados')).toBeHidden()
   })
 })

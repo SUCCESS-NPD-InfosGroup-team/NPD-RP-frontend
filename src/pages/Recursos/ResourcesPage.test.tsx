@@ -12,6 +12,7 @@ vi.mock('../../services/api', () => ({ searchRecursos: vi.fn(), searchAllRecurso
 vi.mock('../../services/projects', () => ({ getProjectsApi: vi.fn() }));
 vi.mock('../../services/resources', () => ({ getResourcesApi: vi.fn() }));
 
+const arrivals = vi.hoisted(() => ({ getStrip: vi.fn() }));
 const xlsx = vi.hoisted(() => ({
   json_to_sheet: vi.fn(() => ({})),
   book_new: vi.fn(() => ({})),
@@ -23,9 +24,7 @@ vi.mock('xlsx', () => ({ utils: xlsx, write: xlsx.write }));
 vi.mock('file-saver', () => ({ saveAs }));
 
 vi.mock('../../services/arrivals', () => ({
-  getArrivalsApi: () => Promise.resolve({
-    getStrip: () => Promise.resolve({ windowDays: 30, total: 3, nearest: [] }),
-  }),
+  getArrivalsApi: () => Promise.resolve({ getStrip: arrivals.getStrip }),
 }));
 
 const auth = vi.hoisted(() => ({ isAdmin: true }));
@@ -49,6 +48,7 @@ let listClientProjects: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   auth.isAdmin = true;
+  arrivals.getStrip.mockReset().mockResolvedValue({ windowDays: 30, total: 3, nearest: [] });
   mockedSearch.mockReset().mockResolvedValue(resourceSearchResponse);
   mockedSearchAll.mockReset().mockResolvedValue(resourceSearchResponse.items);
   saveAs.mockReset();
@@ -97,6 +97,29 @@ describe('ResourcesPage (HU-03)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalle de Ana Torres' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('opens the detail drawer from a resource card in the arrivals strip', async () => {
+    arrivals.getStrip.mockResolvedValue({
+      windowDays: 30,
+      total: 1,
+      nearest: [{
+        id: 'PROBATION_END-1',
+        type: 'PROBATION_END',
+        date: '2026-11-25',
+        daysRemaining: 11,
+        resource: { id: '2', employeeNumber: '1078', name: 'Iván Castrellón', clientRole: 'QA Funcional' },
+        resourceCount: 1,
+        client: 'TIGO',
+        project: 'Portal',
+        leader: 'Abdiel',
+        notice: { status: 'NONE', audience: null, stage: null, date: null },
+      }],
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Fin de probatoria: Iván Castrellón/ }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
@@ -326,4 +349,105 @@ describe('ResourcesPage · BUG-03 edit', () => {
 
     expect(await screen.findByRole('heading', { name: 'Pantalla de edición' })).toBeInTheDocument();
   });
+
+  describe('ResourcesPage · BUG-28 empty state on search', () => {
+  it('shows the search empty state with both actions and clears search or all filters', async () => {
+    mockedSearch.mockImplementation((filters) =>
+      Promise.resolve(
+        filters.search === 'xyzqwe'
+          ? buildResourceSearchResponse([], { totalElements: 0, totalPages: 0 })
+          : resourceSearchResponse
+      )
+    );
+
+    renderPage();
+    await screen.findByText('#1045');
+
+    fireEvent.change(screen.getByLabelText('Situación'), { target: { value: 'ASIGNADO' } });
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'xyzqwe' } });
+
+    expect(await screen.findByText('Ningún recurso coincide con «xyzqwe»')).toBeInTheDocument();
+    expect(screen.getByText('0 de 0 colaboradores')).toBeInTheDocument();
+
+    const clearSearchBtn = screen.getByRole('button', { name: 'Limpiar búsqueda' });
+    const resetAllBtn = screen.getByRole('button', { name: 'Quitar todos los filtros' });
+    expect(clearSearchBtn).toBeInTheDocument();
+    expect(resetAllBtn).toBeInTheDocument();
+
+    // Probar "Limpiar búsqueda" (mantiene los demás filtros activos)
+    fireEvent.click(clearSearchBtn);
+    await waitFor(() => expect(lastFilters()).toMatchObject({ search: '', situacion: 'ASIGNADO' }));
+
+    // Volver a buscar sin resultados y probar "Quitar todos los filtros"
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'xyzqwe' } });
+    expect(await screen.findByText('Ningún recurso coincide con «xyzqwe»')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar todos los filtros' }));
+    await waitFor(() => expect(lastFilters()).toMatchObject({ search: '', situacion: 'Todos' }));
+  });
+
+  describe('ResourcesPage · BUG-32 Roster / Tabla view selector', () => {
+  it('switches between Roster and Tabla views, keeps active filters, renders sticky column and opens detail drawer', async () => {
+    renderPage();
+    await screen.findByText('#1045');
+
+    expect(screen.getByText('SEP 26')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tabla' }));
+
+    expect(screen.queryByText('SEP 26')).not.toBeInTheDocument();
+    expect(screen.getByText('22 columnas')).toBeInTheDocument();
+    const collaboratorHeader = screen.getByRole('columnheader', { name: 'Colaborador' });
+    expect(collaboratorHeader).toHaveStyle({ position: 'sticky' });
+    expect(screen.getByText('Estado: Activo')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Ana Torres'));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle del recurso' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Roster' }));
+    expect(screen.getByText('SEP 26')).toBeInTheDocument();
+  });
+
+  describe('ResourcesPage · BUG-36 bulk selection bar & role visibility', () => {
+  it('shows Asignar a proyecto, Quitar de proyecto and Exportar selección and exports only selected rows', async () => {
+    renderPage();
+    await screen.findByText('#1045');
+
+    const rowCheckbox = screen.getByRole('checkbox', { name: /Seleccionar Ana Torres/i });
+    fireEvent.click(rowCheckbox);
+
+    expect(screen.getByText('1 seleccionados')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Asignar a proyecto…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Quitar de proyecto' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Limpiar selección' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar selección' }));
+    await waitFor(() =>
+      expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), expect.stringMatching(/^Recursos_\d{4}-\d{2}-\d{2}\.xlsx$/))
+    );
+    expect(xlsx.json_to_sheet).toHaveBeenCalledWith([
+      expect.objectContaining({ 'N° Empleado': '1045', Nombre: 'Ana Torres' }),
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar selección' }));
+    expect(screen.queryByText('1 seleccionados')).not.toBeInTheDocument();
+  });
+
+  it('hides bulk selection checkboxes for non-admin roles in both Roster and Tabla views', async () => {
+    auth.isAdmin = false;
+    renderPage();
+    await screen.findByText('#1045');
+
+    expect(screen.queryByRole('checkbox', { name: 'Seleccionar todos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Seleccionar Ana Torres/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tabla' }));
+    expect(screen.queryByRole('checkbox', { name: 'Seleccionar todos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Seleccionar Ana Torres/i })).not.toBeInTheDocument();
+  });
+});
+});
+});
 });

@@ -34,7 +34,9 @@ describe('RosterPreview', () => {
 
   it('shows a person without project', () => {
     render(<RosterPreview today="2026-10-26" hireDate="2026-10-20" probationEnd="2027-01-18" onProbation />)
-    expect(screen.getByText('Sin proyecto')).toBeInTheDocument()
+    // In the project row and as the legend chip
+    expect(screen.getAllByText('Sin proyecto')).toHaveLength(2)
+    expect(screen.getByText('Aparece en el grupo «Sin proyecto» de Recursos')).toBeInTheDocument()
     expect(screen.queryByText('Avisos fin')).not.toBeInTheDocument()
     expect(formatShortDate('2027-01-18', true)).toBe('18 ene 2027')
   })
