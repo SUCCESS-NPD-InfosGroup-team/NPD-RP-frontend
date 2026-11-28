@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { apiFetch, searchRecursos } from '../../services/api'
-import { getProjectsApi } from '../../services/projects'
+import { apiFetch } from '../../services/api'
 import {
   BellIcon,
   ChartIcon,
@@ -198,51 +197,24 @@ function OperationsBar({ status }: Readonly<{ status?: ExtendedOperationsStatus 
 
     const loadStatus = async () => {
       try {
-        const [projectsApi, activeResPage] = await Promise.all([
-          getProjectsApi(),
-          searchRecursos(
-            {
-              search: '',
-              cliente: 'Todos',
-              proyecto: 'Todos',
-              liderNPD: 'Todos',
-              rol: 'Todos',
-              nivel: '',
-              estado: 'Activo',
-              situacion: 'Todos',
-            },
-            1,
-            1,
-          ),
-        ])
-
-        const kpis = await projectsApi.getKpis()
-
-        let backendMeta: Partial<ExtendedOperationsStatus> = {}
-        try {
-          const metaRes = await apiFetch('planner', '/operations-status')
-          if (metaRes.ok) {
-            const raw = (await metaRes.json()) as {
-              lastUpdatedAt?: string | null
-              lastUpdatedBy?: string | null
-              nextNotificationAt?: string | null
-            }
-            backendMeta = {
-              lastUpdatedAt: raw.lastUpdatedAt ? new Date(raw.lastUpdatedAt) : undefined,
-              lastUpdatedBy: raw.lastUpdatedBy ?? undefined,
-              nextNotificationAt: raw.nextNotificationAt ? new Date(raw.nextNotificationAt) : undefined,
-            }
-          }
-        } catch {
-          // Si el endpoint aún no existe en backend, mantiene los conteos reales
+        const res = await apiFetch('planner', '/operations-status')
+        if (!res.ok || !active) return
+        const raw = (await res.json()) as {
+          lastUpdatedAt?: string | null
+          lastUpdatedBy?: string | null
+          nextNotificationAt?: string | null
+          activeResources?: number
+          activeProjects?: number
+          activeClients?: number
         }
-
         if (!active) return
         setFetchedStatus({
-          activeResources: activeResPage.page.totalElements,
-          projectCount: kpis.activeProjects,
-          clientCount: kpis.activeClients,
-          ...backendMeta,
+          lastUpdatedAt: raw.lastUpdatedAt ? new Date(raw.lastUpdatedAt) : undefined,
+          lastUpdatedBy: raw.lastUpdatedBy ?? undefined,
+          nextNotificationAt: raw.nextNotificationAt ? new Date(raw.nextNotificationAt) : undefined,
+          activeResources: raw.activeResources,
+          projectCount: raw.activeProjects,
+          clientCount: raw.activeClients,
         })
       } catch {
         // Mantiene estado por defecto sin romper la vista
@@ -271,17 +243,13 @@ function OperationsBar({ status }: Readonly<{ status?: ExtendedOperationsStatus 
         <strong>{effective.lastUpdatedBy?.trim() || '—'}</strong>
       </span>
       <span className="operations-status-item">
-        <strong>{effective.activeResources ?? '—'}</strong>{' '}
-        <span>recursos activos ·</span>{' '}
-        {effective.projectCount !== undefined && (
-          <>
-            <strong>{effective.projectCount}</strong>{' '}
-            <span>proyectos ·</span>{' '}
-          </>
-        )}
-        <strong>{effective.clientCount ?? '—'}</strong>{' '}
-        <span>clientes</span>
-      </span>
+      <strong>{effective.activeResources ?? '—'}</strong>{' '}
+      <span>recursos activos ·</span>{' '}
+      <strong>{effective.projectCount ?? '—'}</strong>{' '}
+      <span>proyectos ·</span>{' '}
+      <strong>{effective.clientCount ?? '—'}</strong>{' '}
+      <span>clientes</span>
+    </span>
       <span className="operations-status-item">
         <span>Próximo envío de avisos:</span>{' '}
         <strong>
@@ -289,17 +257,6 @@ function OperationsBar({ status }: Readonly<{ status?: ExtendedOperationsStatus 
             ? formatDateTime(effective.nextNotificationAt)
             : '—'}
         </strong>
-      </span>
-<span className="operations-status-item">
-        <span>La sesión expira en</span>{' '}
-        <strong>
-          {typeof effective.sessionExpiresAt === 'string'
-            ? effective.sessionExpiresAt
-            : isValidDate(effective.sessionExpiresAt)
-              ? formatTime(effective.sessionExpiresAt)
-              : '—'}
-        </strong>{' '}
-        <span>sin actividad</span>
       </span>
     </footer>
   )
@@ -322,15 +279,6 @@ function formatDateTime(value: Date): string {
   }).format(value)
 
   return `${datePart} · ${timePart}`
-}
-
-function formatTime(value: Date): string {
-  if (!isValidDate(value)) {
-    return '—'
-  }
-  const hh = String(value.getUTCHours()).padStart(2, '0')
-  const mm = String(value.getUTCMinutes()).padStart(2, '0')
-  return `${hh}:${mm}`
 }
 
 function isValidDate(value?: Date): value is Date {
