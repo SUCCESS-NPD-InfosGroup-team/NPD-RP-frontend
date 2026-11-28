@@ -49,6 +49,12 @@ vi.mock('../../hooks/useResourceDetail', () => ({
   }),
 }))
 
+const apiFetchMock = vi.hoisted(() => vi.fn().mockResolvedValue({ ok: false }))
+vi.mock('../../services/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/api')>()
+  return { ...actual, apiFetch: apiFetchMock }
+})
+
 const roleCases: Array<[Role, string[]]> = [
   [
     'operations-administrator',
@@ -263,9 +269,9 @@ describe('role-based navigation', () => {
 
     expect(screen.getByRole('contentinfo', { name: 'Estado de operaciones' }))
       .toHaveTextContent('Última actualización de datos:')
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('42 recursos activos · 3 clientes')
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('42 recursos activos · — proyectos · 3 clientes')
     expect(screen.getByRole('contentinfo')).toHaveTextContent('Próximo envío de avisos:')
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('La sesión expira en 00:00 sin actividad')
+    expect(screen.getByRole('contentinfo')).not.toHaveTextContent(/La sesión expira en/)
     expect(screen.getByText(/Ana Pérez/)).toBeInTheDocument()
     expect(screen.getByLabelText('Perfil de Ana Pérez')).toHaveTextContent('AP')
     expect(screen.queryByText(/161 recursos|16 clientes|28:41|María Pérez/))
@@ -277,9 +283,9 @@ describe('role-based navigation', () => {
 
     const operationsBar = screen.getByRole('contentinfo', { name: 'Estado de operaciones' })
     expect(operationsBar).toHaveTextContent('Última actualización de datos: — por —')
-    expect(operationsBar).toHaveTextContent('— recursos activos · — clientes')
+    expect(operationsBar).toHaveTextContent('— recursos activos · — proyectos · — clientes')
     expect(operationsBar).toHaveTextContent('Próximo envío de avisos: —')
-    expect(operationsBar).toHaveTextContent('La sesión expira en — sin actividad')
+    expect(operationsBar).not.toHaveTextContent(/La sesión expira en/)
     expect(operationsBar).not.toHaveTextContent(/María Pérez|161|16 clientes|28:41|hoy 09:12|mañana 06:00/)
   })
 
@@ -442,5 +448,27 @@ describe('authentication context', () => {
     expect(() => render(<ContextProbe />)).toThrow(
       'useAuth must be used inside <AuthProvider>',
     )
+  })
+
+  it('loads status bar data from GET /operations-status (SCRUM-207, SCRUM-225)', async () => {
+    apiFetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        lastUpdatedAt: '2026-10-07T09:12:00Z',
+        lastUpdatedBy: 'María Pérez',
+        nextNotificationAt: '2026-10-08T08:00:00Z',
+        activeResources: 142,
+        activeProjects: 31,
+        activeClients: 12,
+      }),
+    })
+
+    renderForRole('guest')
+
+    const operationsBar = screen.getByRole('contentinfo', { name: 'Estado de operaciones' })
+    expect(await within(operationsBar).findByText('María Pérez')).toBeInTheDocument()
+    expect(operationsBar).toHaveTextContent('142 recursos activos · 31 proyectos · 12 clientes')
+    expect(operationsBar).not.toHaveTextContent(/La sesión expira en/)
+    expect(apiFetchMock).toHaveBeenCalledWith('planner', '/operations-status')
   })
 })
